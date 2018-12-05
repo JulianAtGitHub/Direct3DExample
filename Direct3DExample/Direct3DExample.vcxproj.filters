@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{d15ad60e-388c-46b6-82ad-9f29812f7c0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Common">
+      <UniqueIdentifier>{6564f67f-acf4-4ebf-b51c-3e92b61ed555}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="AnExample.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\GContext.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\GUploader.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\GPipeline.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\GShaderLib.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Utils.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="AnExample.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\d3dx12.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CList.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CString.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\GContext.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\GUploader.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\GPipeline.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\GShaderLib.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CTree.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CStack.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Utils.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CUtils.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shaders.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>
