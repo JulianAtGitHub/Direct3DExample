@@ -26,7 +26,7 @@ ID3DBlob * GShaderLib::FindShader(CHashString &name) {
 bool GShaderLib::AddShader(CHashString &name, CString &code, CString &entrance, uint32_t compileFlags) {
     ID3DBlob *shader = FindShader(name);
     if (shader) {
-        LogOutput("GShaderLib: shader '%s' already exist\n", name.Get());
+        Print("GShaderLib: shader '%s' already exist\n", name.Get());
         return true;
     }
 
@@ -37,7 +37,7 @@ bool GShaderLib::AddShader(CHashString &name, CString &code, CString &entrance, 
     ID3DBlob *error = nullptr;
     HRESULT result = D3DCompile(code.Get(), code.Length() + 1, nullptr, nullptr, nullptr, entrance.Get(), "vs_5_0", compileFlags, 0, &shader, &error);
     if (error) {
-        LogOutput("GShaderLib: compile shader '%s' with error %s", name.Get(), (char*)error->GetBufferPointer());
+        Print("GShaderLib: compile shader '%s' with error %s", name.Get(), (char*)error->GetBufferPointer());
         ReleaseIfNotNull(error);
         return false;
     }

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Utils.h"
 
-void LogOutput(const char *fmt, ...) {
+void Print(const char *fmt, ...) {
     static char out[512];
     va_list ap;
     va_start(ap, fmt);

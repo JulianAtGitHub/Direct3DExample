@@ -21,5 +21,5 @@ inline void ReleaseIfNotNull(IUnknown *obj) {
     }
 }
 
-extern void LogOutput(const char *fmt, ...);
+extern void Print(const char *fmt, ...);
 

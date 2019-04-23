@@ -178,16 +178,12 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="AnExample.cpp" />
     <ClCompile Include="Common\Utils.cpp" />
-    <ClCompile Include="Common\GContext.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Common\GPipeline.cpp" />
-    <ClCompile Include="Common\GShaderLib.cpp" />
-    <ClCompile Include="Common\GUploader.cpp" />
+    <ClCompile Include="Core\GContext.cpp" />
+    <ClCompile Include="Core\GPipeline.cpp" />
+    <ClCompile Include="Core\GShaderLib.cpp" />
+    <ClCompile Include="Core\GUploader.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Model\ObjLoader.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -204,11 +200,13 @@
     <ClInclude Include="Common\CString.hpp" />
     <ClInclude Include="AnExample.h" />
     <ClInclude Include="Common\Utils.h" />
-    <ClInclude Include="Common\d3dx12.h" />
-    <ClInclude Include="Common\GContext.h" />
-    <ClInclude Include="Common\GPipeline.h" />
-    <ClInclude Include="Common\GShaderLib.h" />
-    <ClInclude Include="Common\GUploader.h" />
+    <ClInclude Include="Core\d3dx12.h" />
+    <ClInclude Include="Core\GContext.h" />
+    <ClInclude Include="Core\GPipeline.h" />
+    <ClInclude Include="Core\GShaderLib.h" />
+    <ClInclude Include="Core\GUploader.h" />
+    <ClInclude Include="Model\ObjLoader.h" />
+    <ClInclude Include="Model\tinyobj_loader_c.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

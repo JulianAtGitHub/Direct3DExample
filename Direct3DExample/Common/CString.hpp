@@ -7,14 +7,14 @@ public:
 
     const static size_t ELEMENT_SIZE = sizeof(Element);
 
-    CBaseString(void) { Copy(""); }
+    CBaseString(void):mStr(nullptr) { Copy(""); }
     CBaseString(const Element *str):mStr(nullptr) { Copy(str); }
     CBaseString(const CBaseString<Element> &str):mStr(nullptr) { Copy(str.Get()); }
     virtual ~CBaseString(void) { if (mStr != nullptr) { delete [] mStr; } }
 
     inline const Element * Get(void) const { return mStr; }
 
-    inline size_t Length(void) { return Length(mStr); }
+    inline size_t Length(void) const { return Length(mStr); }
 
     bool operator==(const CBaseString<Element> &other) const {
         return Compare(mStr, other.Get()) == 0;

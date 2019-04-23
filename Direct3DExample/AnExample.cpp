@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "AnExample.h"
 
-using namespace DirectX;
-
 struct ConstBuffer {
     XMFLOAT4 offset;
 };

@@ -6,7 +6,7 @@ public:
     typedef T Element;
 
     const static size_t ELEMENT_SIZE = sizeof(Element);
-    const static uint32_t DEFAULT_CAPACITY = 16;
+    const static uint32_t DEFAULT_CAPACITY = 1;
 
     CList(uint32_t capacity = DEFAULT_CAPACITY)
     :mData(nullptr)
@@ -19,6 +19,7 @@ public:
 
     ~CList(void) { delete [] mData; }
 
+    inline Element * Data(void) { return mData; }
     inline const Element * Data(void) const { return mData; }
     inline uint32_t Count(void) const { return mCount; }
     inline uint32_t Capacity(void) const { return mCapacity; }
@@ -33,7 +34,7 @@ public:
 
     inline void PopBack(void) { if (mCount > 0) { -- mCount; } }
 
-    void PushBack(Element &element) {
+    inline void PushBack(const Element &element) {
         if (mCount == mCapacity) {
             Reserve(mCapacity * 2);
         }
@@ -45,12 +46,20 @@ public:
         if (mCapacity >= capacity) { return; }
 
         Element *newData = new Element[capacity];
-        if (mCount) {
-            memcpy(newData, mData, mCount * ELEMENT_SIZE);
+        for (uint32_t i = 0; i < mCount; ++i) {
+            newData[i] = mData[i];
         }
+
         delete [] mData;
         mData = newData;
         mCapacity = capacity;
+    }
+
+    void Resize(uint32_t newSize) {
+        if (newSize <= mCount) { return; }
+        if (newSize <= mCapacity) { mCount = newSize; return; }
+        Reserve(newSize);
+        mCount = newSize;
     }
 
     CList<Element>& operator=(const CList<Element>& rhs) {
@@ -61,8 +70,8 @@ public:
         mCapacity = rhs.mCapacity;
         mCount = rhs.mCount;
         mData = new Element[mCapacity];
-        if (mCount) {
-            memcpy(mData, rhs.mData, mCount * ELEMENT_SIZE);
+        for (uint32_t i = 0; i < mCount; ++i) {
+            mData[i] = rhs.mData[i];
         }
 
         return *this;

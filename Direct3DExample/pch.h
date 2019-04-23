@@ -7,6 +7,12 @@
 #include <windows.h>
 #include <shellapi.h>
 
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #if defined(_DEBUG)
@@ -14,12 +20,11 @@
 #endif
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
-#include "Common/d3dx12.h"
+#include "Core/d3dx12.h"
 
-#include <cstdio>
-#include <cstdint>
-#include <cstring>
-#include <cassert>
+#ifdef __cplusplus
+using namespace DirectX;
+#endif
 
 #include "Common/Utils.h"
 
@@ -28,3 +33,4 @@
 #include "Common/CList.hpp"
 #include "Common/CStack.hpp"
 #include "Common/CTree.hpp"
+

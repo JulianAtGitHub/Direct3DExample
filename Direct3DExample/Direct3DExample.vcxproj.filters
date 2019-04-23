@@ -11,6 +11,12 @@
     <Filter Include="Sources\Common">
       <UniqueIdentifier>{6564f67f-acf4-4ebf-b51c-3e92b61ed555}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\Model">
+      <UniqueIdentifier>{0c0dd4d8-cca1-49f6-8756-c420046a52f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Core">
+      <UniqueIdentifier>{620f54a1-f430-4f00-beb6-339dc179e7a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -25,20 +31,23 @@
     <ClCompile Include="pch.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="Common\GContext.cpp">
-      <Filter>Sources\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\GUploader.cpp">
-      <Filter>Sources\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\GPipeline.cpp">
-      <Filter>Sources\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\GShaderLib.cpp">
-      <Filter>Sources\Common</Filter>
-    </ClCompile>
     <ClCompile Include="Common\Utils.cpp">
       <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ObjLoader.cpp">
+      <Filter>Sources\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\GContext.cpp">
+      <Filter>Sources\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\GPipeline.cpp">
+      <Filter>Sources\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\GShaderLib.cpp">
+      <Filter>Sources\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\GUploader.cpp">
+      <Filter>Sources\Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -51,25 +60,10 @@
     <ClInclude Include="pch.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="Common\d3dx12.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\CList.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
     <ClInclude Include="Common\CString.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GContext.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GUploader.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GPipeline.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\GShaderLib.h">
       <Filter>Sources\Common</Filter>
     </ClInclude>
     <ClInclude Include="Common\CTree.hpp">
@@ -83,6 +77,27 @@
     </ClInclude>
     <ClInclude Include="Common\CUtils.hpp">
       <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\tinyobj_loader_c.h">
+      <Filter>Sources\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ObjLoader.h">
+      <Filter>Sources\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\d3dx12.h">
+      <Filter>Sources\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\GContext.h">
+      <Filter>Sources\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\GPipeline.h">
+      <Filter>Sources\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\GShaderLib.h">
+      <Filter>Sources\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\GUploader.h">
+      <Filter>Sources\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

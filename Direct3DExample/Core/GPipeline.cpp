@@ -28,7 +28,7 @@ void GPipeline::AddRootParam(RootParamType type, uint32_t shaderRegister, D3D12_
         AddSamplerParam(shaderRegister, visibility);
         break;
     default:
-        LogOutput("Invalid RootParamType: %d\n", type);
+        Print("Invalid RootParamType: %d\n", type);
         break;
     }
 }
