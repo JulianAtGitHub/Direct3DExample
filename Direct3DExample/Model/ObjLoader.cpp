@@ -96,14 +96,13 @@ void ObjLoader::LoadFromBinaryFile(const char *fileName) {
     fread(&head, sizeof(Header), 1, binFile);
     if (!strcmp(head.tag, "bmx")) {
         mShapes.Resize(head.shapeCount);
+        char name[256];
+        uint32_t nameLen;
         for (uint32_t i = 0; i < head.shapeCount; ++i) {
             Shape &shape = mShapes.At(i);
-            uint32_t nameLen;
             fread(&nameLen, sizeof(uint32_t), 1, binFile);
-            char *name = new char[nameLen];
             fread(name, sizeof(char), nameLen, binFile);
             shape.name = name;
-            delete [] name;
 
             fread(&shape.fromIndex, sizeof(uint32_t), 1, binFile);
             fread(&shape.indexCount, sizeof(uint32_t), 1, binFile);
