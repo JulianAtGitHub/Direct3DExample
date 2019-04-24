@@ -17,6 +17,9 @@
     <Filter Include="Sources\Core">
       <UniqueIdentifier>{620f54a1-f430-4f00-beb6-339dc179e7a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{70602350-46b1-49c1-8e7a-797b0e4666a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -101,8 +104,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shaders.hlsl">
-      <Filter>Resource Files</Filter>
+    <FxCompile Include="Shaders\color2d.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\color3d.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

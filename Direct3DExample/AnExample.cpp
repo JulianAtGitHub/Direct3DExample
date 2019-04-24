@@ -352,14 +352,14 @@ void AnExample::LoadAssets(void) {
     compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION);
 #endif
 
-    result = D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error);
+    result = D3DCompileFromFile(L"Shaders\\color2d.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error);
     if (error) {
         OutputDebugStringA( (char*)error->GetBufferPointer() );
         error->Release();
     }
     assert(SUCCEEDED(result));
 
-    result = D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error);
+    result = D3DCompileFromFile(L"Shaders\\color2d.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error);
     if (error) {
         OutputDebugStringA( (char*)error->GetBufferPointer() );
         error->Release();
