@@ -2,23 +2,24 @@
 #include "AnExample.h"
 
 struct ConstBuffer {
-    XMFLOAT4 offset;
+    XMFLOAT4X4 model;
+    XMFLOAT4X4 view;
+    XMFLOAT4X4 proj;
 };
-
-static ConstBuffer constBuffer = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 
 struct Vertex {
     XMFLOAT3 position;
     XMFLOAT2 uv;
 };
 
-static Vertex triangleVertices[] = {
-    { { 0.0f, 0.25f, 0.0f }, { 0.5f, 0.0f } },
-    { { 0.25f, -0.25f, 0.0f }, { 1.0f, 1.0f } },
-    { { -0.25f, -0.25f, 0.0f }, { 0.0f, 1.0f } }
+static Vertex quadVertices[] = {
+    { { 1.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+    { { 1.0f,-1.0f, 0.0f }, { 1.0f, 1.0f } },
+    { {-1.0f,-1.0f, 0.0f }, { 0.0f, 1.0f } },
+    { {-1.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }
 };
 
-static uint16_t triangleIndices[] = { 0, 1, 2 };
+static uint16_t quadIndices[] = { 0, 1, 2, 2, 3, 0 };
 
 AnExample::AnExample(HWND hwnd)
 :mHwnd(hwnd)
@@ -73,11 +74,16 @@ void AnExample::Init(void) {
 }
 
 void AnExample::Update(void) {
-    static float delta = 0.005f;
-    constBuffer.offset.x += delta;
-    if (constBuffer.offset.x >= 1.0f || constBuffer.offset.x <= -1.0f) {
-        delta *= -1;
-    }
+    XMVECTOR cameraPos = ::XMVectorSet(0.0f, 0.0f, 5.0f, 0.0f);
+    XMVECTOR cameraFocus = ::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    XMVECTOR cameraUp = ::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    float cameraFOV = 90.0f * XM_PI / 180.0f;
+    ConstBuffer constBuffer;
+
+    XMStoreFloat4x4(&constBuffer.model, ::XMMatrixIdentity());
+    XMStoreFloat4x4(&constBuffer.view, ::XMMatrixTranspose(::XMMatrixLookAtRH(cameraPos, cameraFocus, cameraUp)));
+    XMStoreFloat4x4(&constBuffer.proj, ::XMMatrixTranspose(::XMMatrixPerspectiveFovRH(cameraFOV, mAspectRatio, 0.1f, 100.0f)));
+
     memcpy(mDataBeginCB[mCurrentFrame], &constBuffer, sizeof(constBuffer));
 }
 
@@ -352,14 +358,14 @@ void AnExample::LoadAssets(void) {
     compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION);
 #endif
 
-    result = D3DCompileFromFile(L"Shaders\\color2d.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error);
+    result = D3DCompileFromFile(L"Shaders\\color3d.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error);
     if (error) {
         OutputDebugStringA( (char*)error->GetBufferPointer() );
         error->Release();
     }
     assert(SUCCEEDED(result));
 
-    result = D3DCompileFromFile(L"Shaders\\color2d.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error);
+    result = D3DCompileFromFile(L"Shaders\\color3d.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error);
     if (error) {
         OutputDebugStringA( (char*)error->GetBufferPointer() );
         error->Release();
@@ -434,7 +440,7 @@ void AnExample::LoadAssets(void) {
     // vertex buffer
     ID3D12Resource *vertUploadHeap = nullptr;
     {
-        const uint32_t bufferSize = sizeof(triangleVertices);
+        const uint32_t bufferSize = sizeof(quadVertices);
 
         CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
         CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
@@ -446,7 +452,7 @@ void AnExample::LoadAssets(void) {
         assert(SUCCEEDED(result));
 
         D3D12_SUBRESOURCE_DATA subResData = {};
-        subResData.pData = triangleVertices;
+        subResData.pData = quadVertices;
         subResData.RowPitch = bufferSize;
         subResData.SlicePitch = subResData.RowPitch;
 
@@ -463,7 +469,7 @@ void AnExample::LoadAssets(void) {
     // index buffer
     ID3D12Resource *idxUploadHeap = nullptr;
     {
-        const uint32_t bufferSize = sizeof(triangleIndices);
+        const uint32_t bufferSize = sizeof(quadIndices);
 
         CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
         CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
@@ -475,7 +481,7 @@ void AnExample::LoadAssets(void) {
         assert(SUCCEEDED(result));
 
         D3D12_SUBRESOURCE_DATA subResData = {};
-        subResData.pData = triangleIndices;
+        subResData.pData = quadIndices;
         subResData.RowPitch = bufferSize;
         subResData.SlicePitch = subResData.RowPitch;
 
@@ -502,7 +508,6 @@ void AnExample::LoadAssets(void) {
         assert(SUCCEEDED(result));
         for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
             mDataBeginCB[i] = pDataBeginCB + mConstBufferSize * i;
-            memcpy(mDataBeginCB[i], &constBuffer, sizeof(constBuffer));
         }
     }
 
@@ -575,7 +580,7 @@ void AnExample::LoadAssets(void) {
         mBundles[i]->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         mBundles[i]->IASetVertexBuffers(0, 1, &mVertexBufferView);
         mBundles[i]->IASetIndexBuffer(&mIndexBufferView);
-        mBundles[i]->DrawIndexedInstanced(3, 1, 0, 0, 0);
+        mBundles[i]->DrawIndexedInstanced(6, 1, 0, 0, 0);
         mBundles[i]->Close();
     }
 }
@@ -606,7 +611,7 @@ void AnExample::PopulateCommandList(void) {
     mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
     // record commands
-    const float clearColor[] = { 0.0f, 0.2f, 0.3f, 1.0f };
+    const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     mCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 

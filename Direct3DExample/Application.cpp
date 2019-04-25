@@ -2,6 +2,14 @@
 #include "AnExample.h"
 #include "Application.h"
 
+#include "Model/ObjLoader.h"
+
+static void RunTest(void) {
+    //ObjLoader loader("C:\\Users\\zhuwei\\Desktop\\cornell_box.obj", false);
+    //loader.SaveToFile("C:\\Users\\zhuwei\\Desktop\\cornell_box.bmx");
+
+    //ObjLoader loader("C:\\Users\\zhuwei\\Desktop\\cornell_box.bmx");
+}
 
 Application::Application(uint32_t width, uint32_t height, const char *title)
 :mHwnd(NULL)
@@ -29,6 +37,8 @@ void Application::ParseCmds(void) {
 }
 
 int Application::Run(HINSTANCE hInstance, int nCmdShow) {
+    RunTest();
+
     // Initialize the window class.
     WNDCLASSEX windowClass = { 0 };
     windowClass.cbSize = sizeof(WNDCLASSEX);
