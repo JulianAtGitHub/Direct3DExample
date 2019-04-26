@@ -1,9 +1,11 @@
 #pragma once
 
-class ObjLoader {
+namespace Model {
+
+class Loader {
 public:
-    ObjLoader(const char *fileName, bool isBinary = true);
-    ~ObjLoader(void);
+    Loader(const char *fileName, bool isBinary = true);
+    ~Loader(void);
 
     inline void SaveToFile(const char *fileName) { SaveToBinaryFile(fileName); }
 
@@ -18,7 +20,7 @@ private:
         uint32_t indexCount;
         uint32_t shapeCount;
     };
-    
+
     struct Shape {
         CString  name;
         uint32_t fromIndex;
@@ -28,9 +30,14 @@ private:
     struct Vertex {
         XMFLOAT3 position;
         XMFLOAT2 texCoord;
+        XMFLOAT3 normal;
+        XMFLOAT3 tangent;
+        XMFLOAT3 bitangent;
     };
 
     CList<Vertex>   mVertices;
     CList<uint32_t> mIndices;
     CList<Shape>    mShapes;
 };
+
+}
