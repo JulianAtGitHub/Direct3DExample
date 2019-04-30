@@ -1,5 +1,9 @@
 #pragma once
 
+namespace Model {
+    class Scene;
+}
+
 class AnExample {
 public:
     AnExample(HWND hwnd);
@@ -57,7 +61,7 @@ private:
     ID3D12Resource *mIndexBuffer;
     D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
     ID3D12Resource *mConstBuffer;
-    ID3D12Resource *mTexture;
+    CList<ID3D12Resource *> mTextures;
 
     HANDLE mFenceEvent;
     ID3D12Fence *mFence;
@@ -71,4 +75,6 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
     float mAspectRatio;
+
+    Model::Scene *mScene;
 };

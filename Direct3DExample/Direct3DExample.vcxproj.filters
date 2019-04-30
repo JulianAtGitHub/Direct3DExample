@@ -52,6 +52,9 @@
     <ClCompile Include="Core\Model\Loader.cpp">
       <Filter>Sources\Core\Model</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Model\Scene.cpp">
+      <Filter>Sources\Core\Model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -97,6 +100,12 @@
       <Filter>Sources\Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Model\Loader.h">
+      <Filter>Sources\Core\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Model\Scene.h">
+      <Filter>Sources\Core\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Model\stb_image.h">
       <Filter>Sources\Core\Model</Filter>
     </ClInclude>
   </ItemGroup>

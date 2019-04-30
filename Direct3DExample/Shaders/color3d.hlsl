@@ -1,14 +1,15 @@
 cbuffer ConstBuffer : register(b0)
 {
-    float4x4 model;
-    float4x4 view;
-    float4x4 proj;
+    float4x4 mvp;
 };
 
 struct VSInput
 {
-    float3 pos : POSITION;
-    float2 uv : TEXCOORD;
+    float3 position : POSITION;
+    float2 texCoord : TEXCOORD;
+    float3 normal   : NORMAL;
+    float3 tangent  : TANGENT;
+    float3 biNormal : BINORMAL;
 };
 
 struct PSInput
@@ -22,14 +23,12 @@ SamplerState g_sampler : register(s0);
 
 PSInput VSMain(VSInput input)
 {
-    float4 newPos = float4(input.pos, 1.0);
-    newPos = mul(newPos, model);
-    newPos = mul(newPos, view);
-    newPos = mul(newPos, proj);
+    float4 newPos = float4(input.position, 1.0);
+    newPos = mul(newPos, mvp);
 
     PSInput ret;
     ret.pos = newPos;
-    ret.uv = input.uv;
+    ret.uv = input.texCoord;
     return ret;
 }
 
