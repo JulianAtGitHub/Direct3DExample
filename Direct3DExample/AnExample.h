@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Render/Context.h"
+
 namespace Model {
     class Scene;
 }
@@ -18,7 +20,6 @@ public:
     void OnKeyUp(uint8_t /*key*/)     {}
 
 private:
-    void GetHardwareAdapter(IDXGIFactory2 *factory, IDXGIAdapter1 **pAdapter);
     void PopulateCommandList(void);
     uint8_t * GenerateTextureData(void);
 
@@ -39,13 +40,11 @@ private:
     HWND mHwnd;
     D3D12_VIEWPORT mViewport;
     D3D12_RECT mScissorRect;
-    IDXGISwapChain3 *mSwapChain;
-    ID3D12Device *mDevice;
+    Render::Context *mContext;
     ID3D12Resource *mRenderTargets[FRAME_COUNT];
     ID3D12Resource *mDepthStencil;
     ID3D12CommandAllocator *mCommandAllocators[FRAME_COUNT];
     ID3D12CommandAllocator *mBundleAllocator;
-    ID3D12CommandQueue *mCommandQueue;
     ID3D12DescriptorHeap *mRtvHeap; // render target view heap
     ID3D12DescriptorHeap *mDsvHeap; // depth stencil view heap
     ID3D12DescriptorHeap *mCbvSrvHeap; // const buffer view and shader resource view heap

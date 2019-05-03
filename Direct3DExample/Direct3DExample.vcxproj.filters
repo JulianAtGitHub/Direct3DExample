@@ -20,6 +20,12 @@
     <Filter Include="Sources\Core\Model">
       <UniqueIdentifier>{0c0dd4d8-cca1-49f6-8756-c420046a52f1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\Core\Render">
+      <UniqueIdentifier>{a850b411-152c-42d9-bfc1-839375b37c46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\DirectX">
+      <UniqueIdentifier>{ea1204fc-3ba2-42d4-88d7-5789fc27da29}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -33,9 +39,6 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\Utils.cpp">
-      <Filter>Sources\Common</Filter>
     </ClCompile>
     <ClCompile Include="Core\GContext.cpp">
       <Filter>Sources\Core</Filter>
@@ -54,6 +57,9 @@
     </ClCompile>
     <ClCompile Include="Core\Model\Scene.cpp">
       <Filter>Sources\Core\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Context.cpp">
+      <Filter>Sources\Core\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,14 +84,8 @@
     <ClInclude Include="Common\CStack.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Common\Utils.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\CUtils.hpp">
       <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\d3dx12.h">
-      <Filter>Sources\Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\GContext.h">
       <Filter>Sources\Core</Filter>
@@ -107,6 +107,15 @@
     </ClInclude>
     <ClInclude Include="Core\Model\stb_image.h">
       <Filter>Sources\Core\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Context.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\d3dx12.h">
+      <Filter>Sources\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Utils.hpp">
+      <Filter>Sources\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
