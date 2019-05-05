@@ -1,6 +1,8 @@
 #pragma once
 
-inline char * WStr2Str(const wchar_t *wstr) {
+#define INLINE __forceinline
+
+INLINE char * WStr2Str(const wchar_t *wstr) {
     if (!wstr) { return nullptr; }
     size_t len = wcslen(wstr) * 2 + 1;
     char *str = (char *)malloc(len);
@@ -16,19 +18,13 @@ struct CHException : public std::exception {
     char mStr[64];
 };
 
-inline void ThrowIfFailed(HRESULT hr) {
+INLINE void ThrowIfFailed(HRESULT hr) {
     if (FAILED(hr)) {
         throw CHException(hr);
     }
 }
 
-inline void ReleaseIfNotNull(IUnknown *obj) {
-    if (obj) {
-        obj->Release();
-    }
-}
-
-inline void Printf(const char *str) {
+INLINE void Printf(const char *str) {
 #ifdef _DEBUG
     OutputDebugString(str);
 #else
@@ -38,7 +34,7 @@ inline void Printf(const char *str) {
 
 #define MAX_CHAR_A_LINE 256 
 
-inline void Print(const char *fmt, ...) {
+INLINE void Print(const char *fmt, ...) {
     char line[MAX_CHAR_A_LINE];
     va_list ap;
     va_start(ap, fmt);
@@ -47,7 +43,7 @@ inline void Print(const char *fmt, ...) {
     Printf(line);
 }
 
-inline void PrintSub(const char* fmt, ...)
+INLINE void PrintSub(const char* fmt, ...)
 {
     Printf("--> ");
     char line[MAX_CHAR_A_LINE];
@@ -58,7 +54,7 @@ inline void PrintSub(const char* fmt, ...)
     Printf("\n");
 }
 
-inline void PrintSub(void) {
+INLINE void PrintSub(void) {
 
 }
 
@@ -118,5 +114,8 @@ inline void PrintSub(void) {
 
 #endif // _DEBUG
 
-#define BreakIfFailed( hr ) if (FAILED(hr)) __debugbreak()
+#define DeleteAndSetNull( obj ) if (obj) { delete obj; obj = nullptr; }
 
+#define ReleaseAndSetNull( obj ) if (obj) { obj->Release(); obj = nullptr; }
+
+#define BreakIfFailed( hr ) if (FAILED(hr)) __debugbreak()

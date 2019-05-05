@@ -19,22 +19,22 @@ public:
 
     ~CList(void) { delete [] mData; }
 
-    inline Element * Data(void) { return mData; }
-    inline const Element * Data(void) const { return mData; }
-    inline uint32_t Count(void) const { return mCount; }
-    inline uint32_t Capacity(void) const { return mCapacity; }
+    INLINE Element * Data(void) { return mData; }
+    INLINE const Element * Data(void) const { return mData; }
+    INLINE uint32_t Count(void) const { return mCount; }
+    INLINE uint32_t Capacity(void) const { return mCapacity; }
 
-    inline const Element & At(uint32_t index) const { return mData[index]; }
-    inline Element & At(uint32_t index) { return mData[index]; }
+    INLINE const Element & At(uint32_t index) const { return mData[index]; }
+    INLINE Element & At(uint32_t index) { return mData[index]; }
 
-    inline const Element & Last(void) const { return mData[mCount - 1]; }
-    inline Element & Last(void) { return mData[mCount - 1]; }
+    INLINE const Element & Last(void) const { return mData[mCount - 1]; }
+    INLINE Element & Last(void) { return mData[mCount - 1]; }
 
-    inline void Clear(void) { mCount = 0; }
+    INLINE void Clear(void) { mCount = 0; }
 
-    inline void PopBack(void) { if (mCount > 0) { -- mCount; } }
+    INLINE void PopBack(void) { if (mCount > 0) { -- mCount; } }
 
-    inline void PushBack(const Element &element) {
+    INLINE void PushBack(const Element &element) {
         if (mCount == mCapacity) {
             Reserve(mCapacity * 2);
         }

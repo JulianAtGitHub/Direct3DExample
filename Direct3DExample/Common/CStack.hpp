@@ -19,14 +19,14 @@ public:
 
     ~CStack(void) { delete [] mData; }
 
-    inline uint32_t Depth(void) const { return mDepth; }
+    INLINE uint32_t Depth(void) const { return mDepth; }
 
-    inline Element & Top(void) { return mData[mDepth - 1]; }
-    inline const Element & Top(void) const { return mData[mDepth - 1]; }
+    INLINE Element & Top(void) { return mData[mDepth - 1]; }
+    INLINE const Element & Top(void) const { return mData[mDepth - 1]; }
 
-    inline void Clear(void) { mDepth = 0; }
+    INLINE void Clear(void) { mDepth = 0; }
 
-    inline void Pop(void) { if (mDepth > 0) { -- mDepth; } }
+    INLINE void Pop(void) { if (mDepth > 0) { -- mDepth; } }
 
     void Push(Element &element) {
         if (mDepth == mCapacity) {

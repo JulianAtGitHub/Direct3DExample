@@ -12,9 +12,9 @@ public:
     CBaseString(const CBaseString<Element> &str):mStr(nullptr) { Copy(str.Get()); }
     virtual ~CBaseString(void) { if (mStr != nullptr) { delete [] mStr; } }
 
-    inline const Element * Get(void) const { return mStr; }
+    INLINE const Element * Get(void) const { return mStr; }
 
-    inline size_t Length(void) const { return Length(mStr); }
+    INLINE size_t Length(void) const { return Length(mStr); }
 
     bool operator==(const CBaseString<Element> &other) const {
         return Compare(mStr, other.Get()) == 0;
@@ -63,7 +63,7 @@ public:
     CHashBaseString(const Element *str):CBaseString<T>(str), mHash(GenHash(str)) { }
     CHashBaseString(const CHashBaseString<Element> &str):CBaseString<T>(str.Get()), mHash(str.mHash) { }
 
-    inline const uint64_t Hash(void) const { return mHash; }
+    INLINE const uint64_t Hash(void) const { return mHash; }
 
     bool operator==(const CHashBaseString<Element> &other) const {
         return mHash == other.Hash();

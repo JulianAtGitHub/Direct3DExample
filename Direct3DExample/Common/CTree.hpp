@@ -34,15 +34,15 @@ public:
 
     CTreeIterator(Node *node) { Reset(node); }
 
-    inline Key & GetKey(void) { return mNode->key; }
-    inline const Key & GetKey(void) const { return mNode->key; }
+    INLINE Key & GetKey(void) { return mNode->key; }
+    INLINE const Key & GetKey(void) const { return mNode->key; }
 
-    inline Value & GetValue(void) { return mNode->value; }
-    inline const Value & GetValue(void) const { return mNode->value; }
+    INLINE Value & GetValue(void) { return mNode->value; }
+    INLINE const Value & GetValue(void) const { return mNode->value; }
 
-    inline bool IsValid(void) const { return mNode != nullptr; }
+    INLINE bool IsValid(void) const { return mNode != nullptr; }
 
-    inline void Reset(Node *node) {
+    INLINE void Reset(Node *node) {
         mStack.Clear();
         PushLeft(node);
     }
@@ -84,21 +84,21 @@ public:
     CBSTree(void): mRoot(nullptr), mCount(0), mIterator(nullptr) {}
     ~CBSTree(void) { Destory(mRoot); }
 
-    inline ValueRef Find(const Key &key) {
+    INLINE ValueRef Find(const Key &key) {
         Node *node = Search(key);
         return node ? ValueRef(node->value) : ValueRef();
     }
 
-    inline void Insert(const Key &key, const Value &value) {
+    INLINE void Insert(const Key &key, const Value &value) {
         Attach(key, value);
     }
 
-    inline void Remove(const Key &key) {
+    INLINE void Remove(const Key &key) {
         Node *node = Detach(key);
         if (node) { delete node; }
     }
 
-    inline Iterator & Traverse(void) {
+    INLINE Iterator & Traverse(void) {
         mIterator.Reset(mRoot);
         return mIterator;
     }
