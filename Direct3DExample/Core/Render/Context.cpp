@@ -7,17 +7,31 @@ Context::Context(HWND hwnd)
 : mDevice(nullptr)
 , mSwapChain(nullptr)
 , mCommandQueue(nullptr)
+, mRenderTargetHeap(nullptr)
+, mDepthStencilHeap(nullptr)
+, mDepthStencil(nullptr)
 , mTypedUAVLoadSupport_R11G11B10_FLOAT(false)
 , mTypedUAVLoadSupport_R16G16B16A16_FLOAT(false)
 , mHDROutputSupport(false)
 {
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        mRenderTarget[i] = nullptr;
+    }
     Initialize(hwnd);
 }
 
 Context::~Context(void) {
-    ReleaseIfNotNull(mCommandQueue);
-    ReleaseIfNotNull(mSwapChain);
-    ReleaseIfNotNull(mDevice);
+    DeleteAndSetNull(mDepthStencilHeap);
+    DeleteAndSetNull(mRenderTargetHeap);
+
+    DeleteAndSetNull(mDepthStencil);
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        DeleteAndSetNull(mRenderTarget[i]);
+    }
+
+    ReleaseAndSetNull(mCommandQueue);
+    ReleaseAndSetNull(mSwapChain);
+    ReleaseAndSetNull(mDevice);
 }
 
 void Context::Initialize(HWND hwnd) {
@@ -185,6 +199,19 @@ void Context::Initialize(HWND hwnd) {
         }
     }
 #endif
+
+    // frame buffer
+    mRenderTargetHeap = new DescriptorHeap(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 16);
+    mDepthStencilHeap = new DescriptorHeap(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
+
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        ID3D12Resource *resource = nullptr;
+        ASSERT_SUCCEEDED(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&resource)));
+        mRenderTarget[i] = new ColorBuffer(mDevice);
+        mRenderTarget[i]->CreateFromSwapChain(resource, mRenderTargetHeap->Allocate());
+    }
+    mDepthStencil = new DepthStencilBuffer(mDevice, width, height);
+    mDepthStencil->Create(DXGI_FORMAT_D32_FLOAT, mDepthStencilHeap->Allocate());
 }
 
 }

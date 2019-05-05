@@ -10,10 +10,7 @@ struct ConstBuffer {
 AnExample::AnExample(HWND hwnd)
 :mHwnd(hwnd)
 ,mContext(nullptr)
-,mDepthStencil(nullptr)
 ,mBundleAllocator(nullptr)
-,mRtvHeap(nullptr)
-,mDsvHeap(nullptr)
 ,mCbvSrvHeap(nullptr)
 ,mSamplerHeap(nullptr)
 ,mRootSignature(nullptr)
@@ -25,12 +22,10 @@ AnExample::AnExample(HWND hwnd)
 ,mFenceEvent(nullptr)
 ,mFence(nullptr)
 ,mCurrentFrame(0)
-,mRtvDescSize(0)
 ,mConstBufferSize(0)
 ,mScene(nullptr)
 {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mRenderTargets[i] = nullptr;
         mCommandAllocators[i] = nullptr;
         mBundles[i] = nullptr;
         mDataBeginCB[i] = nullptr;
@@ -110,15 +105,9 @@ void AnExample::Destroy(void) {
     mRootSignature->Release();
     mSamplerHeap->Release();
     mCbvSrvHeap->Release();
-    mDsvHeap->Release();
-    mRtvHeap->Release();
     mBundleAllocator->Release();
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         mCommandAllocators[i]->Release();
-    }
-    mDepthStencil->Release();
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mRenderTargets[i]->Release();
     }
 
     delete mContext;
@@ -160,49 +149,6 @@ void AnExample::LoadPipeline(void) {
     mContext = new Render::Context(mHwnd);
 
     mCurrentFrame = mContext->SwapChain()->GetCurrentBackBufferIndex();
-
-    // render target view heap
-    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = FRAME_COUNT;
-    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    result = mContext->Device()->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap));
-    assert(SUCCEEDED(result));
-    mRtvDescSize = mContext->Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-    // depth stencil view heap
-    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-    dsvHeapDesc.NumDescriptors = 1;
-    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-    dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    result = mContext->Device()->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&mDsvHeap));
-    assert(SUCCEEDED(result));
-
-    // render target views
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        result = mContext->SwapChain()->GetBuffer(i, IID_PPV_ARGS(&(mRenderTargets[i])));
-        assert(SUCCEEDED(result));
-        mContext->Device()->CreateRenderTargetView(mRenderTargets[i], nullptr, rtvHandle);
-        rtvHandle.ptr += mRtvDescSize;
-    }
-
-    // depth stencil view.
-    D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-    depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
-
-    D3D12_CLEAR_VALUE depthStencilClearValue = {};
-    depthStencilClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-    depthStencilClearValue.DepthStencil.Depth = 1.0f;
-    depthStencilClearValue.DepthStencil.Stencil = 0;
-
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
-    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, mWidth, mHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-    result = mContext->Device()->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthStencilClearValue, IID_PPV_ARGS(&mDepthStencil));
-    assert(SUCCEEDED(result));
-    mContext->Device()->CreateDepthStencilView(mDepthStencil, &depthStencilDesc, mDsvHeap->GetCPUDescriptorHandleForHeapStart());
 
     // command allocator
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
@@ -551,11 +497,12 @@ void AnExample::PopulateCommandList(void) {
     mCommandList->RSSetViewports(1, &mViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-    D3D12_RESOURCE_BARRIER barrierBefore = CD3DX12_RESOURCE_BARRIER::Transition(mRenderTargets[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    ID3D12Resource *renderTarget = mContext->GetRenderTarget(mCurrentFrame);
+    D3D12_RESOURCE_BARRIER barrierBefore = CD3DX12_RESOURCE_BARRIER::Transition(renderTarget, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
     mCommandList->ResourceBarrier(1, &barrierBefore);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentFrame, mRtvDescSize);
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(mDsvHeap->GetCPUDescriptorHandleForHeapStart());
+    const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mContext->GetRenderTargetViewHandle(mCurrentFrame);
+    const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = mContext->GetDepthStencilViewHandle();
     mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
     // record commands
@@ -565,7 +512,7 @@ void AnExample::PopulateCommandList(void) {
 
     mCommandList->ExecuteBundle(mBundles[mCurrentFrame]);
 
-    D3D12_RESOURCE_BARRIER barrierAfter = CD3DX12_RESOURCE_BARRIER::Transition(mRenderTargets[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    D3D12_RESOURCE_BARRIER barrierAfter = CD3DX12_RESOURCE_BARRIER::Transition(renderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
     mCommandList->ResourceBarrier(1, &barrierAfter);
 
     mCommandList->Close();

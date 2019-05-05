@@ -41,12 +41,8 @@ private:
     D3D12_VIEWPORT mViewport;
     D3D12_RECT mScissorRect;
     Render::Context *mContext;
-    ID3D12Resource *mRenderTargets[FRAME_COUNT];
-    ID3D12Resource *mDepthStencil;
     ID3D12CommandAllocator *mCommandAllocators[FRAME_COUNT];
     ID3D12CommandAllocator *mBundleAllocator;
-    ID3D12DescriptorHeap *mRtvHeap; // render target view heap
-    ID3D12DescriptorHeap *mDsvHeap; // depth stencil view heap
     ID3D12DescriptorHeap *mCbvSrvHeap; // const buffer view and shader resource view heap
     ID3D12DescriptorHeap *mSamplerHeap;
 
@@ -67,7 +63,6 @@ private:
     uint64_t mFenceValues[FRAME_COUNT];
 
     uint32_t mCurrentFrame;
-    uint32_t mRtvDescSize;
     uint32_t mConstBufferSize;
     void *mDataBeginCB[FRAME_COUNT];
 
