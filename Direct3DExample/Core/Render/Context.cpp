@@ -207,11 +207,11 @@ void Context::Initialize(HWND hwnd) {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         ID3D12Resource *resource = nullptr;
         ASSERT_SUCCEEDED(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&resource)));
-        mRenderTarget[i] = new ColorBuffer(mDevice);
+        mRenderTarget[i] = new RenderTargetBuffer(mDevice);
         mRenderTarget[i]->CreateFromSwapChain(resource, mRenderTargetHeap->Allocate());
     }
-    mDepthStencil = new DepthStencilBuffer(mDevice, width, height);
-    mDepthStencil->Create(DXGI_FORMAT_D32_FLOAT, mDepthStencilHeap->Allocate());
+    mDepthStencil = new DepthStencilBuffer(mDevice);
+    mDepthStencil->Create(width, height, DXGI_FORMAT_D32_FLOAT, mDepthStencilHeap->Allocate());
 }
 
 }

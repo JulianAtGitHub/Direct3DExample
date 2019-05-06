@@ -3,8 +3,8 @@
 
 namespace Render {
 
-DepthStencilBuffer::DepthStencilBuffer(ID3D12Device *device, uint32_t width, uint32_t height)
-: PixelBuffer(device, width, height)
+DepthStencilBuffer::DepthStencilBuffer(ID3D12Device *device)
+: PixelBuffer(device)
 , mClearedDepth(1.0f)
 , mClearedStencil(0)
 {
@@ -15,10 +15,15 @@ DepthStencilBuffer::~DepthStencilBuffer(void) {
 
 }
 
-void DepthStencilBuffer::Create(DXGI_FORMAT format, DescriptorHandle &handle) {
+void DepthStencilBuffer::Create(uint32_t width, uint32_t height, DXGI_FORMAT format, DescriptorHandle &handle) {
+    DestoryResource();
+
+    mWidth = width;
+    mHeight = height;
+    mFormat = format;
 
     D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-    depthStencilDesc.Format = format;
+    depthStencilDesc.Format = mFormat;
     depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
@@ -35,7 +40,6 @@ void DepthStencilBuffer::Create(DXGI_FORMAT format, DescriptorHandle &handle) {
 
     mGPUVirtualAddress = mResource->GetGPUVirtualAddress();
 
-    mFormat = format;
     mHandle = handle;
 }
 

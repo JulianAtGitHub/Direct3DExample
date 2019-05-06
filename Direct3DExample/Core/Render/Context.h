@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DescriptorHeap.h"
-#include "ColorBuffer.h"
+#include "RenderTargetBuffer.h"
 #include "DepthStencilBuffer.h"
 
 namespace Render {
@@ -32,7 +32,7 @@ private:
     DescriptorHeap         *mRenderTargetHeap;
     DescriptorHeap         *mDepthStencilHeap;
 
-    ColorBuffer            *mRenderTarget[FRAME_COUNT];
+    RenderTargetBuffer     *mRenderTarget[FRAME_COUNT];
     DepthStencilBuffer     *mDepthStencil;
 
     // feature abilities

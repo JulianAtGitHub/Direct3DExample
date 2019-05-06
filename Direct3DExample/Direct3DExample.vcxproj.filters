@@ -49,19 +49,19 @@
     <ClCompile Include="Core\Render\Context.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\PixelBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Render\DescriptorHeap.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\Render\GPUResource.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\ColorBuffer.cpp">
+    <ClCompile Include="Core\Render\DepthStencilBuffer.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\DepthStencilBuffer.cpp">
+    <ClCompile Include="Core\Render\PixelBuffer.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\RenderTargetBuffer.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -108,19 +108,19 @@
     <ClInclude Include="Common\Utils.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\PixelBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Render\DescriptorHeap.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\GPUResource.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\ColorBuffer.h">
+    <ClInclude Include="Core\Render\DepthStencilBuffer.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\DepthStencilBuffer.h">
+    <ClInclude Include="Core\Render\PixelBuffer.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\RenderTargetBuffer.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>

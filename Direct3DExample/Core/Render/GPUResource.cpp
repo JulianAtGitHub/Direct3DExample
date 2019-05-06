@@ -12,6 +12,10 @@ GPUResource::GPUResource(ID3D12Device *device)
 }
 
 GPUResource::~GPUResource(void) {
+    DestoryResource();
+}
+
+void GPUResource::DestoryResource(void) {
     ReleaseAndSetNull(mResource);
 }
 

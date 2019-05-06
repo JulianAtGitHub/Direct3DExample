@@ -4,10 +4,10 @@
 
 namespace Render {
 
-class ColorBuffer : public PixelBuffer {
+class RenderTargetBuffer : public PixelBuffer {
 public:
-    ColorBuffer(ID3D12Device *device);
-    virtual ~ColorBuffer(void);
+    RenderTargetBuffer(ID3D12Device *device);
+    virtual ~RenderTargetBuffer(void);
 
     INLINE XMFLOAT4 GetClearedColor(void) { return mClearedColor; }
 

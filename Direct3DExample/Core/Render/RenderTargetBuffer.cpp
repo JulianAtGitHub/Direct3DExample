@@ -1,23 +1,25 @@
 #include "pch.h"
-#include "ColorBuffer.h"
+#include "RenderTargetBuffer.h"
 
 namespace Render {
 
-ColorBuffer::ColorBuffer(ID3D12Device *device)
+RenderTargetBuffer::RenderTargetBuffer(ID3D12Device *device)
 : PixelBuffer(device)
 , mClearedColor(0.0f, 0.0f, 0.0f, 1.0f)
 {
 
 }
 
-ColorBuffer::~ColorBuffer(void) {
+RenderTargetBuffer::~RenderTargetBuffer(void) {
 
 }
 
-void ColorBuffer::CreateFromSwapChain(ID3D12Resource *resource, DescriptorHandle &handle) {
+void RenderTargetBuffer::CreateFromSwapChain(ID3D12Resource *resource, DescriptorHandle &handle) {
     if (!resource) {
         return;
     }
+
+    DestoryResource();
 
     mResource = resource;
     mGPUVirtualAddress = resource->GetGPUVirtualAddress();
