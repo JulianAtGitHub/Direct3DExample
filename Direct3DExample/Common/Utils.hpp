@@ -119,3 +119,6 @@ INLINE void PrintSub(void) {
 #define ReleaseAndSetNull( obj ) if (obj) { obj->Release(); obj = nullptr; }
 
 #define BreakIfFailed( hr ) if (FAILED(hr)) __debugbreak()
+
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))

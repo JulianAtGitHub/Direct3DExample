@@ -64,6 +64,9 @@
     <ClCompile Include="Core\Render\RenderTargetBuffer.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\CommandQueue.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -122,6 +125,12 @@
     </ClInclude>
     <ClInclude Include="Core\Render\RenderTargetBuffer.h">
       <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\CommandQueue.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CQueue.hpp">
+      <Filter>Sources\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

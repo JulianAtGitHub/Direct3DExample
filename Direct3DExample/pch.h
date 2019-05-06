@@ -44,6 +44,7 @@
 #include "Common/CUtils.hpp"
 #include "Common/CString.hpp"
 #include "Common/CList.hpp"
+#include "Common/CQueue.hpp"
 #include "Common/CStack.hpp"
 #include "Common/CTree.hpp"
 
