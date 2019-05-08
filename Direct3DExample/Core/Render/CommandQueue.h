@@ -4,19 +4,23 @@ namespace Render {
 
 class CommandQueue {
 public:
-    CommandQueue(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type);
+    CommandQueue(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type);
     ~CommandQueue(void);
+
+    INLINE uint64_t GetLastCompleteValue(void) const { return mLastCompleteValue; }
 
     bool IsFenceComplete(uint64_t fenceValue);
     void WaitForFence(uint64_t fenceValue);
     void WaitForIdle(void);
     void StallForFence(ID3D12Fence *fence, uint64_t fenceValue);
 
-private:
-    void Initialize(void);
-
     ID3D12CommandAllocator * QueryAllocator(void);
     void DiscardAllocator(ID3D12CommandAllocator *allocator, uint64_t fenceValue);
+    uint64_t ExecuteCommandList(ID3D12CommandList* commandList);
+
+private:
+    void Initialize(void);
+    void Destroy(void);
 
     uint64_t IncreaseFence(void);
 

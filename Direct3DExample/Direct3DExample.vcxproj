@@ -183,6 +183,7 @@
     <ClCompile Include="AnExample.cpp" />
     <ClCompile Include="Core\Model\Loader.cpp" />
     <ClCompile Include="Core\Model\Scene.cpp" />
+    <ClCompile Include="Core\Render\CommandContext.cpp" />
     <ClCompile Include="Core\Render\CommandQueue.cpp" />
     <ClCompile Include="Core\Render\RenderTargetBuffer.cpp" />
     <ClCompile Include="Core\Render\Context.cpp" />
@@ -211,6 +212,7 @@
     <ClInclude Include="Core\Model\Loader.h" />
     <ClInclude Include="Core\Model\Scene.h" />
     <ClInclude Include="Core\Model\stb_image.h" />
+    <ClInclude Include="Core\Render\CommandContext.h" />
     <ClInclude Include="Core\Render\CommandQueue.h" />
     <ClInclude Include="Core\Render\RenderTargetBuffer.h" />
     <ClInclude Include="Core\Render\Context.h" />

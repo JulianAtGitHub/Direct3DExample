@@ -3,7 +3,7 @@
 
 namespace Render {
 
-CommandQueue::CommandQueue(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type)
+CommandQueue::CommandQueue(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
 , mDevice(device)
 , mQueue(nullptr)
@@ -16,7 +16,7 @@ CommandQueue::CommandQueue(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type)
 }
 
 CommandQueue::~CommandQueue(void) {
-
+    Destroy();
 }
 
 void CommandQueue::Initialize(void) {
@@ -29,9 +29,23 @@ void CommandQueue::Initialize(void) {
 
     ASSERT_SUCCEEDED(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
     mFence->SetName(L"CommandQueue::mFence");
+    mFence->Signal((uint64_t)mType << FENCE_VALUE_MASK);
 
     mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     ASSERT_PRINT(mFenceEvent != INVALID_HANDLE_VALUE);
+}
+
+void CommandQueue::Destroy(void) {
+    for (uint32_t i = 0; i < mAllocatorPool.Count(); ++i) {
+        mAllocatorPool.At(i)->Release();
+    }
+    mAllocatorPool.Clear();
+    mUsedAllocators.Clear();
+
+    CloseHandle(mFenceEvent);
+    mFenceEvent = INVALID_HANDLE_VALUE;
+    ReleaseAndSetNull(mFence);
+    ReleaseAndSetNull(mQueue);
 }
 
 ID3D12CommandAllocator * CommandQueue::QueryAllocator(void) {
@@ -65,6 +79,12 @@ void CommandQueue::DiscardAllocator(ID3D12CommandAllocator *allocator, uint64_t 
 
     UsedAllocator usedAlloctor = { fenceValue, allocator };
     mUsedAllocators.Push(usedAlloctor);
+}
+
+uint64_t CommandQueue::ExecuteCommandList(ID3D12CommandList* commandList) {
+    ASSERT_SUCCEEDED(((ID3D12GraphicsCommandList*)commandList)->Close());
+    mQueue->ExecuteCommandLists(1, &commandList);
+    return IncreaseFence();
 }
 
 uint64_t CommandQueue::IncreaseFence(void) {
