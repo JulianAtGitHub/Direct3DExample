@@ -15,6 +15,7 @@ DescriptorHeap::DescriptorHeap(ID3D12Device *device, D3D12_DESCRIPTOR_HEAP_TYPE 
     mHeapDesc.NumDescriptors = count;
     mHeapDesc.Type = type;
     mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    mHeapDesc.NodeMask = 0;
 }
 
 DescriptorHeap::~DescriptorHeap(void) {
