@@ -38,7 +38,7 @@ void DepthStencilBuffer::Create(uint32_t width, uint32_t height, DXGI_FORMAT for
 
     mDevice->CreateDepthStencilView(mResource, &depthStencilDesc, handle.cpu);
 
-    mGPUVirtualAddress = mResource->GetGPUVirtualAddress();
+    FillVirtualAddress();
 
     mHandle = handle;
 }
