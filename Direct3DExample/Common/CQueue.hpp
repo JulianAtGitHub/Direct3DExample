@@ -10,10 +10,10 @@ public:
 
     INLINE uint32_t Count(void) const { return mCount; }
 
-    INLINE Element & Front(void) { return mHead->value; }
+    INLINE Element & Front(void) { return const_cast<Element&>(mHead->value); }
     INLINE const Element & Front(void) const { return mHead->value; }
 
-    void Push(Element &element) { 
+    void Push(const Element &element) { 
         Node *node = new Node(element);
         if (!mHead) {
             mHead = node;
@@ -49,9 +49,9 @@ public:
 
 private:
     struct Node {
-        Node(Element &element): value(element), prev(nullptr), next(nullptr) { }
+        Node(const Element &element): value(element), prev(nullptr), next(nullptr) { }
 
-        Element value;
+        const Element &value;
         Node *prev;
         Node *next;
     };
