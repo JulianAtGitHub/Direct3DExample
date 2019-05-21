@@ -70,6 +70,9 @@
     <ClCompile Include="Core\Render\CommandContext.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\LinerAllocator.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -136,6 +139,9 @@
       <Filter>Sources\Common</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\CommandContext.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\LinerAllocator.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
