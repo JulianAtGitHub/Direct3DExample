@@ -52,7 +52,7 @@ void CommandContext::Begin(ID3D12PipelineState *pipeline) {
     }
 }
 
-void CommandContext::End(bool flush) {
+void CommandContext::End(bool waitUtilComplete) {
     if (!mCommandList) {
         return;
     }
@@ -67,7 +67,7 @@ void CommandContext::End(bool flush) {
     mCpuAllocator->CleanupPages(fenceValue, completeValue);
     mGpuAllocator->CleanupPages(fenceValue, completeValue);
 
-    if (flush) {
+    if (waitUtilComplete) {
         mQueue->WaitForFence(fenceValue);
     }
 }

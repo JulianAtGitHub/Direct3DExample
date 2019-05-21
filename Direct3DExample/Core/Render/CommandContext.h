@@ -13,7 +13,7 @@ public:
     INLINE CommandQueue * GetCommandQueue(void) { return mQueue; }
 
     void Begin(ID3D12PipelineState *pipeline = nullptr);
-    void End(bool flush = false);
+    void End(bool waitUtilComplete = false);
 
 private:
     void Initialize(void);
