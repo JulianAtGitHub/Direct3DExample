@@ -30,3 +30,23 @@ struct CLess {
     }
 };
 
+template <typename T>
+INLINE T AlignUpWithMask(T value, size_t mask) {
+    return (T)(((size_t)value + mask) & ~mask);
+}
+
+template <typename T> 
+INLINE T AlignDownWithMask(T value, size_t mask) {
+    return (T)((size_t)value & ~mask);
+}
+
+template <typename T> 
+INLINE T AlignUp(T value, size_t alignment) {
+    return AlignUpWithMask(value, alignment - 1);
+}
+
+template <typename T> 
+INLINE T AlignDown(T value, size_t alignment) {
+    return AlignDownWithMask(value, alignment - 1);
+}
+
