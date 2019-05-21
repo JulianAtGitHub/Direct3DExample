@@ -7,7 +7,7 @@ public:
     CommandQueue(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type);
     ~CommandQueue(void);
 
-    INLINE uint64_t GetLastCompleteValue(void) const { return mLastCompleteValue; }
+    uint64_t UpdateCompleteFence(void);
 
     bool IsFenceComplete(uint64_t fenceValue);
     void WaitForFence(uint64_t fenceValue);
@@ -16,7 +16,7 @@ public:
 
     ID3D12CommandAllocator * QueryAllocator(void);
     void DiscardAllocator(ID3D12CommandAllocator *allocator, uint64_t fenceValue);
-    uint64_t ExecuteCommandList(ID3D12CommandList* commandList);
+    uint64_t ExecuteCommandList(ID3D12GraphicsCommandList* commandList);
 
 private:
     void Initialize(void);
@@ -42,5 +42,10 @@ private:
     uint64_t                        mNextFenceValue;
     uint64_t                        mLastCompleteValue;
 };
+
+INLINE uint64_t CommandQueue::UpdateCompleteFence(void) { 
+    mLastCompleteValue = mFence->GetCompletedValue(); 
+    return mLastCompleteValue; 
+}
 
 }

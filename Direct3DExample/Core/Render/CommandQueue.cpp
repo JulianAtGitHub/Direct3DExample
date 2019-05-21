@@ -28,7 +28,7 @@ void CommandQueue::Initialize(void) {
     ASSERT_SUCCEEDED(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mQueue)));
     mQueue->SetName(L"CommandQueue::mQueue");
 
-    ASSERT_SUCCEEDED(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+    ASSERT_SUCCEEDED(mDevice->CreateFence(mLastCompleteValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
     mFence->SetName(L"CommandQueue::mFence");
     mFence->Signal((uint64_t)mType << FENCE_VALUE_MASK);
 
@@ -82,9 +82,10 @@ void CommandQueue::DiscardAllocator(ID3D12CommandAllocator *allocator, uint64_t 
     mUsedAllocators.Push(usedAlloctor);
 }
 
-uint64_t CommandQueue::ExecuteCommandList(ID3D12CommandList* commandList) {
-    ASSERT_SUCCEEDED(((ID3D12GraphicsCommandList*)commandList)->Close());
-    mQueue->ExecuteCommandLists(1, &commandList);
+uint64_t CommandQueue::ExecuteCommandList(ID3D12GraphicsCommandList* commandList) {
+    ASSERT_SUCCEEDED(commandList->Close());
+    ID3D12CommandList *commandLists[] = { commandList };
+    mQueue->ExecuteCommandLists(1, commandLists);
     return IncreaseFence();
 }
 
@@ -95,7 +96,7 @@ uint64_t CommandQueue::IncreaseFence(void) {
 
 bool CommandQueue::IsFenceComplete(uint64_t fenceValue) {
     if (fenceValue > mLastCompleteValue) {
-        mLastCompleteValue = MAX(mLastCompleteValue, mFence->GetCompletedValue());
+        UpdateCompleteFence();
     }
 
     return fenceValue <= mLastCompleteValue;
