@@ -10,7 +10,9 @@ public:
     CommandContext(const D3D12_COMMAND_LIST_TYPE type);
     ~CommandContext(void);
 
-    void Begin(void);
+    INLINE CommandQueue * GetCommandQueue(void) { return mQueue; }
+
+    void Begin(ID3D12PipelineState *pipeline = nullptr);
     void End(bool flush = false);
 
 private:

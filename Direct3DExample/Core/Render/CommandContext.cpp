@@ -43,12 +43,12 @@ void CommandContext::Destroy(void) {
     DeleteAndSetNull(mGpuAllocator);
 }
 
-void CommandContext::Begin(void) {
+void CommandContext::Begin(ID3D12PipelineState *pipeline) {
     mCommandAlloctor = mQueue->QueryAllocator();
     if (mCommandList) {
-        mCommandList->Reset(mCommandAlloctor, nullptr);
+        mCommandList->Reset(mCommandAlloctor, pipeline);
     } else {
-        ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, nullptr, IID_PPV_ARGS(&mCommandList)));
+        ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
     }
 }
 
