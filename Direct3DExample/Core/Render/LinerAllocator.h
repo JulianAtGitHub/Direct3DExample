@@ -20,7 +20,7 @@ public:
         UINT64          gpuAddress;
     };
 
-    LinerAllocator(ID3D12Device *device, MemoryType type);
+    LinerAllocator(MemoryType type);
     ~LinerAllocator(void);
 
     MemoryBlock Allocate(size_t size);
@@ -33,7 +33,7 @@ private:
         size_t      mOffset;
         void       *mCPUAddress;
 
-        MemoryPage(ID3D12Device *device, MemoryType type, size_t size);
+        MemoryPage(MemoryType type, size_t size);
         virtual ~MemoryPage(void);
 
         INLINE size_t LeftSize(void) { return mSize - mOffset; }
@@ -63,7 +63,6 @@ private:
     const static size_t GPU_MEMORY_PAGE_SIZE    = 0x10000;  // 64K
     const static size_t CPU_MEMORY_PAGE_SIZE    = 0x200000; // 2MB
 
-    ID3D12Device           *mDevice;
     MemoryType              mType;
     size_t                  mPageSize;
 

@@ -4,7 +4,7 @@ namespace Render {
 
 class CommandQueue {
 public:
-    CommandQueue(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type);
+    CommandQueue(const D3D12_COMMAND_LIST_TYPE type);
     ~CommandQueue(void);
 
     uint64_t UpdateCompleteFence(void);
@@ -32,7 +32,6 @@ private:
     const static uint32_t           FENCE_VALUE_MASK = 56;
 
     const D3D12_COMMAND_LIST_TYPE   mType;
-    ID3D12Device                   *mDevice;
     ID3D12CommandQueue             *mQueue;
     CList<ID3D12CommandAllocator *> mAllocatorPool;
     CQueue<UsedAllocator>           mUsedAllocators;

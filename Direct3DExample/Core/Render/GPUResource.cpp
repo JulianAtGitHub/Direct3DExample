@@ -3,9 +3,8 @@
 
 namespace Render {
 
-GPUResource::GPUResource(ID3D12Device *device)
-: mDevice(device)
-, mResource(nullptr)
+GPUResource::GPUResource(void)
+: mResource(nullptr)
 , mGPUVirtualAddress(0)
 {
 

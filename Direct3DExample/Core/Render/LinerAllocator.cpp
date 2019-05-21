@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "LinerAllocator.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-LinerAllocator::MemoryPage::MemoryPage(ID3D12Device *device, MemoryType type, size_t size)
-: GPUResource(device)
+LinerAllocator::MemoryPage::MemoryPage(MemoryType type, size_t size)
+: GPUResource()
 , mType(Invalid)
 , mSize(0)
 , mOffset(0)
@@ -54,7 +55,7 @@ void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
         usage = D3D12_RESOURCE_STATE_GENERIC_READ;
     }
 
-    ASSERT_SUCCEEDED(mDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, usage, nullptr, IID_PPV_ARGS(&mResource)));
+    ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, usage, nullptr, IID_PPV_ARGS(&mResource)));
     mResource->SetName(L"LinerAllocator Page");
 
     FillVirtualAddress();
@@ -72,9 +73,8 @@ void LinerAllocator::MemoryPage::Destory(void) {
     mOffset = 0;
 }
 
-LinerAllocator::LinerAllocator(ID3D12Device *device, MemoryType type) 
-: mDevice(device)
-, mType(type)
+LinerAllocator::LinerAllocator(MemoryType type) 
+: mType(type)
 , mPageSize(type == GpuExclusive ? GPU_MEMORY_PAGE_SIZE : CPU_MEMORY_PAGE_SIZE)
 , mCurrentPage(nullptr)
 {
@@ -87,7 +87,7 @@ LinerAllocator::~LinerAllocator(void) {
 
 LinerAllocator::MemoryBlock LinerAllocator::AllocateLarge(size_t size) {
     ASSERT_PRINT((size > 0));
-    MemoryPage *page = new MemoryPage(mDevice, mType, size);
+    MemoryPage *page = new MemoryPage(mType, size);
     mLargePages.PushBack(page);
     return { page, size, page->mCPUAddress, page->GetGPUAddress() };
 }
@@ -99,7 +99,7 @@ LinerAllocator::MemoryPage * LinerAllocator::AllocatePage(void) {
         mPendingPages.Pop();
         page->mOffset = 0;
     } else {
-        page = new MemoryPage(mDevice, mType, mPageSize);
+        page = new MemoryPage(mType, mPageSize);
         mPagePool.PushBack(page);
     }
 

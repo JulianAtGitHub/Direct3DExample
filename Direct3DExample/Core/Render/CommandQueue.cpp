@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "CommandQueue.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-CommandQueue::CommandQueue(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type)
+CommandQueue::CommandQueue(const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
-, mDevice(device)
 , mQueue(nullptr)
 , mFence(nullptr)
 , mFenceEvent(INVALID_HANDLE_VALUE)
@@ -25,10 +25,10 @@ void CommandQueue::Initialize(void) {
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     queueDesc.NodeMask = 0;
-    ASSERT_SUCCEEDED(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mQueue)));
+    ASSERT_SUCCEEDED(gDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mQueue)));
     mQueue->SetName(L"CommandQueue::mQueue");
 
-    ASSERT_SUCCEEDED(mDevice->CreateFence(mLastCompleteValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+    ASSERT_SUCCEEDED(gDevice->CreateFence(mLastCompleteValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
     mFence->SetName(L"CommandQueue::mFence");
     mFence->Signal((uint64_t)mType << FENCE_VALUE_MASK);
 
@@ -63,7 +63,7 @@ ID3D12CommandAllocator * CommandQueue::QueryAllocator(void) {
     }
 
     if (!allocator) {
-        ASSERT_SUCCEEDED(mDevice->CreateCommandAllocator(mType, IID_PPV_ARGS(&allocator)));
+        ASSERT_SUCCEEDED(gDevice->CreateCommandAllocator(mType, IID_PPV_ARGS(&allocator)));
         wchar_t allocatorName[64];
         swprintf(allocatorName, 64, L"CommandAllocator %u", mAllocatorPool.Count());
         allocator->SetName(allocatorName);

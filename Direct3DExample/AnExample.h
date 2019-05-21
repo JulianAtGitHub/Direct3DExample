@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Core/Render/Context.h"
-
 namespace Model {
     class Scene;
 }
@@ -40,7 +38,6 @@ private:
     HWND mHwnd;
     D3D12_VIEWPORT mViewport;
     D3D12_RECT mScissorRect;
-    Render::Context *mContext;
     ID3D12CommandAllocator *mCommandAllocators[FRAME_COUNT];
     ID3D12CommandAllocator *mBundleAllocator;
     ID3D12DescriptorHeap *mCbvSrvHeap; // const buffer view and shader resource view heap

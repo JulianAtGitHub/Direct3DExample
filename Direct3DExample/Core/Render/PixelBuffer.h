@@ -7,7 +7,7 @@ namespace Render {
 
 class PixelBuffer: public GPUResource {
 public:
-    PixelBuffer(ID3D12Device *device, uint32_t width = 0, uint32_t height = 0);
+    PixelBuffer(uint32_t width = 0, uint32_t height = 0);
     virtual ~PixelBuffer(void);
 
     INLINE uint32_t GetWidth(void) { return mWidth; }

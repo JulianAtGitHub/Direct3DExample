@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "RenderTargetBuffer.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-RenderTargetBuffer::RenderTargetBuffer(ID3D12Device *device)
-: PixelBuffer(device)
+RenderTargetBuffer::RenderTargetBuffer(void)
+: PixelBuffer()
 , mClearedColor(0.0f, 0.0f, 0.0f, 1.0f)
 {
 
@@ -22,7 +23,7 @@ void RenderTargetBuffer::CreateFromSwapChain(ID3D12Resource *resource, Descripto
     DestoryResource();
 
     mResource = resource;
-    mDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
+    gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
 
     FillVirtualAddress();
 

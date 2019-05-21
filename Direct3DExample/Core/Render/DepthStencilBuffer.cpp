@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "DepthStencilBuffer.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-DepthStencilBuffer::DepthStencilBuffer(ID3D12Device *device)
-: PixelBuffer(device)
+DepthStencilBuffer::DepthStencilBuffer(void)
+: PixelBuffer()
 , mClearedDepth(1.0f)
 , mClearedStencil(0)
 {
@@ -34,9 +35,9 @@ void DepthStencilBuffer::Create(uint32_t width, uint32_t height, DXGI_FORMAT for
 
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
     CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, mWidth, mHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-    ASSERT_SUCCEEDED(mDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthStencilClearValue, IID_PPV_ARGS(&mResource)));
+    ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthStencilClearValue, IID_PPV_ARGS(&mResource)));
 
-    mDevice->CreateDepthStencilView(mResource, &depthStencilDesc, handle.cpu);
+    gDevice->CreateDepthStencilView(mResource, &depthStencilDesc, handle.cpu);
 
     FillVirtualAddress();
 

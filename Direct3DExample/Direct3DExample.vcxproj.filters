@@ -46,9 +46,6 @@
     <ClCompile Include="Core\Model\Scene.cpp">
       <Filter>Sources\Core\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\Context.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Render\DescriptorHeap.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
@@ -71,6 +68,9 @@
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\Render\LinerAllocator.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\RenderCore.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -108,9 +108,6 @@
     <ClInclude Include="Core\Model\stb_image.h">
       <Filter>Sources\Core\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\Context.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
     <ClInclude Include="DirectX\d3dx12.h">
       <Filter>Sources\DirectX</Filter>
     </ClInclude>
@@ -142,6 +139,9 @@
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\LinerAllocator.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\RenderCore.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>

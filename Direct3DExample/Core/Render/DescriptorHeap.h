@@ -15,7 +15,7 @@ struct DescriptorHandle {
 class DescriptorHeap {
 public:
 
-    DescriptorHeap(ID3D12Device *device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count);
+    DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count);
     ~DescriptorHeap(void);
 
     DescriptorHandle Allocate(void);
@@ -23,7 +23,6 @@ public:
 private:
     void DestroyAll(void);
 
-    ID3D12Device                   *mDevice;
     CList<ID3D12DescriptorHeap *>   mHeapPool;
     ID3D12DescriptorHeap           *mHeap;
     D3D12_DESCRIPTOR_HEAP_DESC      mHeapDesc;

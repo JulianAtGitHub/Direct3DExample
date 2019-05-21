@@ -7,7 +7,7 @@ class LinerAllocator;
 
 class CommandContext {
 public:
-    CommandContext(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type);
+    CommandContext(const D3D12_COMMAND_LIST_TYPE type);
     ~CommandContext(void);
 
     void Begin(void);
@@ -23,7 +23,6 @@ private:
     const static uint32_t MAX_RESOURCE_BARRIER = 16;
 
     const D3D12_COMMAND_LIST_TYPE   mType;
-    ID3D12Device                   *mDevice;
     CommandQueue                   *mQueue;
     ID3D12GraphicsCommandList      *mCommandList;
     ID3D12CommandAllocator         *mCommandAlloctor;

@@ -6,7 +6,7 @@ namespace Render {
 
 class DepthStencilBuffer : public PixelBuffer {
 public:
-    DepthStencilBuffer(ID3D12Device *device);
+    DepthStencilBuffer(void);
     virtual ~DepthStencilBuffer(void);
 
     INLINE float GetClearedDepth(void) { return mClearedDepth; }

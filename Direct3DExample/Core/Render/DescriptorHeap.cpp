@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "DescriptorHeap.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-DescriptorHeap::DescriptorHeap(ID3D12Device *device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
-: mDevice(device)
-, mHeap(nullptr)
+DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
+: mHeap(nullptr)
 , mDescriptorSize(0)
 , mRemainingCount(0)
 {
@@ -33,8 +33,8 @@ void DescriptorHeap::DestroyAll(void) {
 
 DescriptorHandle DescriptorHeap::Allocate(void) {
     if (mRemainingCount == 0) {
-        ASSERT_SUCCEEDED(mDevice->CreateDescriptorHeap(&mHeapDesc, IID_PPV_ARGS(&mHeap)));
-        mDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(mHeapDesc.Type);
+        ASSERT_SUCCEEDED(gDevice->CreateDescriptorHeap(&mHeapDesc, IID_PPV_ARGS(&mHeap)));
+        mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(mHeapDesc.Type);
         mRemainingCount = mHeapDesc.NumDescriptors;
         mHeapPool.PushBack(mHeap);
     }

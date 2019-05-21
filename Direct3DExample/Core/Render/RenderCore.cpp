@@ -1,40 +1,27 @@
 #include "pch.h"
-#include "Context.h"
+#include "RenderCore.h"
+#include "DescriptorHeap.h"
+#include "RenderTargetBuffer.h"
+#include "DepthStencilBuffer.h"
 
 namespace Render {
 
-Context::Context(HWND hwnd)
-: mDevice(nullptr)
-, mSwapChain(nullptr)
-, mCommandQueue(nullptr)
-, mRenderTargetHeap(nullptr)
-, mDepthStencilHeap(nullptr)
-, mDepthStencil(nullptr)
-, mTypedUAVLoadSupport_R11G11B10_FLOAT(false)
-, mTypedUAVLoadSupport_R16G16B16A16_FLOAT(false)
-, mHDROutputSupport(false)
-{
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mRenderTarget[i] = nullptr;
-    }
-    Initialize(hwnd);
-}
+ID3D12Device       *gDevice                     = nullptr;
+IDXGISwapChain3    *gSwapChain                  = nullptr;
+ID3D12CommandQueue *gCommandQueue               = nullptr;
 
-Context::~Context(void) {
-    DeleteAndSetNull(mDepthStencilHeap);
-    DeleteAndSetNull(mRenderTargetHeap);
+DescriptorHeap     *gRenderTargetHeap           = nullptr;
+DescriptorHeap     *gDepthStencilHeap           = nullptr;
 
-    DeleteAndSetNull(mDepthStencil);
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        DeleteAndSetNull(mRenderTarget[i]);
-    }
+RenderTargetBuffer *gRenderTarget[FRAME_COUNT]  = { nullptr };
+DepthStencilBuffer *gDepthStencil               = nullptr;
 
-    ReleaseAndSetNull(mCommandQueue);
-    ReleaseAndSetNull(mSwapChain);
-    ReleaseAndSetNull(mDevice);
-}
+// feature abilities
+bool                gTypedUAVLoadSupport_R11G11B10_FLOAT = false;
+bool                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = false;
+bool                gHDROutputSupport = false;
 
-void Context::Initialize(HWND hwnd) {
+void Initialize(HWND hwnd) {
     // fill view port
     WINDOWINFO windowInfo;
     GetWindowInfo(hwnd, &windowInfo);
@@ -76,20 +63,20 @@ void Context::Initialize(HWND hwnd) {
     }
 
     if (maxMemSize > 0) {
-        mDevice = d3dDevice.Detach();
+        gDevice = d3dDevice.Detach();
     }
 
     // using software instead
-    if (!mDevice) {
+    if (!gDevice) {
         Print("WARP software adapter requested.  Initializing...\n");
         ASSERT_SUCCEEDED(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&dxgiAdapter)));
         ASSERT_SUCCEEDED(D3D12CreateDevice(dxgiAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3dDevice)));
-        mDevice = d3dDevice.Detach();
+        gDevice = d3dDevice.Detach();
     }
 
 #if _DEBUG
     ID3D12InfoQueue* infoQueue = nullptr;
-    if (SUCCEEDED(mDevice->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+    if (SUCCEEDED(gDevice->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
         // Suppress whole categories of messages
         //D3D12_MESSAGE_CATEGORY Categories[] = {};
 
@@ -136,22 +123,22 @@ void Context::Initialize(HWND hwnd) {
     // decode an R32_UINT representation of the same buffer.  This code determines if we get the hardware
     // load support.
     D3D12_FEATURE_DATA_D3D12_OPTIONS featureData = {};
-    if (SUCCEEDED(mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureData, sizeof(featureData)))) {
+    if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureData, sizeof(featureData)))) {
         if (featureData.TypedUAVLoadAdditionalFormats) {
             D3D12_FEATURE_DATA_FORMAT_SUPPORT support = {
                 DXGI_FORMAT_R11G11B10_FLOAT, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE
             };
 
-            if (SUCCEEDED(mDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
+            if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
                 (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
-                mTypedUAVLoadSupport_R11G11B10_FLOAT = true;
+                gTypedUAVLoadSupport_R11G11B10_FLOAT = true;
             }
 
             support.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-            if (SUCCEEDED(mDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
+            if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
                 (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
-                mTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
+                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
             }
         }
     }
@@ -160,7 +147,7 @@ void Context::Initialize(HWND hwnd) {
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    ASSERT_SUCCEEDED(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+    ASSERT_SUCCEEDED(gDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&gCommandQueue)));
 
     // create swap chain
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -176,8 +163,8 @@ void Context::Initialize(HWND hwnd) {
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 
     WRL::ComPtr<IDXGISwapChain1> swapChain1;
-    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(mCommandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
-    ASSERT_SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&mSwapChain)));
+    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(gCommandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
+    ASSERT_SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&gSwapChain)));
 
 #if defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
     {
@@ -195,23 +182,51 @@ void Context::Initialize(HWND hwnd) {
             && SUCCEEDED(swapChain4->CheckColorSpaceSupport(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020, &colorSpaceSupport))
             && (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)
             && SUCCEEDED(swapChain4->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020))) {
-            mHDROutputSupport = true;
+            gHDROutputSupport = true;
         }
     }
 #endif
 
     // frame buffer
-    mRenderTargetHeap = new DescriptorHeap(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 16);
-    mDepthStencilHeap = new DescriptorHeap(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
+    gRenderTargetHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 16);
+    gDepthStencilHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
 
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         ID3D12Resource *resource = nullptr;
-        ASSERT_SUCCEEDED(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&resource)));
-        mRenderTarget[i] = new RenderTargetBuffer(mDevice);
-        mRenderTarget[i]->CreateFromSwapChain(resource, mRenderTargetHeap->Allocate());
+        ASSERT_SUCCEEDED(gSwapChain->GetBuffer(i, IID_PPV_ARGS(&resource)));
+        gRenderTarget[i] = new RenderTargetBuffer();
+        gRenderTarget[i]->CreateFromSwapChain(resource, gRenderTargetHeap->Allocate());
     }
-    mDepthStencil = new DepthStencilBuffer(mDevice);
-    mDepthStencil->Create(width, height, DXGI_FORMAT_D32_FLOAT, mDepthStencilHeap->Allocate());
+    gDepthStencil = new DepthStencilBuffer();
+    gDepthStencil->Create(width, height, DXGI_FORMAT_D32_FLOAT, gDepthStencilHeap->Allocate());
+}
+
+void Terminate(void) {
+    DeleteAndSetNull(gDepthStencilHeap);
+    DeleteAndSetNull(gRenderTargetHeap);
+
+    DeleteAndSetNull(gDepthStencil);
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        DeleteAndSetNull(gRenderTarget[i]);
+    }
+
+    ReleaseAndSetNull(gCommandQueue);
+    ReleaseAndSetNull(gSwapChain);
+    ReleaseAndSetNull(gDevice);
+}
+
+ID3D12Resource * GetRenderTarget(uint32_t frameIndex) { 
+    ASSERT_PRINT(frameIndex < FRAME_COUNT);
+    return gRenderTarget[frameIndex]->GetResource();
+}
+
+const D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewHandle(uint32_t frameIndex) { 
+    ASSERT_PRINT(frameIndex < FRAME_COUNT);
+    return gRenderTarget[frameIndex]->GetHandle().cpu;
+}
+
+const D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewHandle(void) {
+    return gDepthStencil->GetHandle().cpu;
 }
 
 }

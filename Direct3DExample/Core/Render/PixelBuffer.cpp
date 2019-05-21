@@ -3,8 +3,8 @@
 
 namespace Render {
 
-PixelBuffer::PixelBuffer(ID3D12Device *device, uint32_t width, uint32_t height)
-: GPUResource(device)
+PixelBuffer::PixelBuffer(uint32_t width, uint32_t height)
+: GPUResource()
 , mWidth(width)
 , mHeight(height)
 , mFormat(DXGI_FORMAT_UNKNOWN)

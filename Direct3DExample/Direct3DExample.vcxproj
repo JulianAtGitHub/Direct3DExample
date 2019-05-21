@@ -187,7 +187,7 @@
     <ClCompile Include="Core\Render\CommandQueue.cpp" />
     <ClCompile Include="Core\Render\LinerAllocator.cpp" />
     <ClCompile Include="Core\Render\RenderTargetBuffer.cpp" />
-    <ClCompile Include="Core\Render\Context.cpp" />
+    <ClCompile Include="Core\Render\RenderCore.cpp" />
     <ClCompile Include="Core\Render\DepthStencilBuffer.cpp" />
     <ClCompile Include="Core\Render\DescriptorHeap.cpp" />
     <ClCompile Include="Core\Render\GPUResource.cpp" />
@@ -217,7 +217,7 @@
     <ClInclude Include="Core\Render\CommandQueue.h" />
     <ClInclude Include="Core\Render\LinerAllocator.h" />
     <ClInclude Include="Core\Render\RenderTargetBuffer.h" />
-    <ClInclude Include="Core\Render\Context.h" />
+    <ClInclude Include="Core\Render\RenderCore.h" />
     <ClInclude Include="Core\Render\DepthStencilBuffer.h" />
     <ClInclude Include="Core\Render\DescriptorHeap.h" />
     <ClInclude Include="Core\Render\GPUResource.h" />

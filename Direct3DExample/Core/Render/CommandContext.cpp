@@ -2,12 +2,12 @@
 #include "CommandContext.h"
 #include "CommandQueue.h"
 #include "LinerAllocator.h"
+#include "RenderCore.h"
 
 namespace Render {
 
-CommandContext::CommandContext(ID3D12Device *device, const D3D12_COMMAND_LIST_TYPE type)
+CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
-, mDevice(device)
 , mQueue(nullptr)
 , mCommandList(nullptr)
 , mCommandAlloctor(nullptr)
@@ -24,10 +24,10 @@ CommandContext::~CommandContext(void) {
 }
 
 void CommandContext::Initialize(void) {
-    mQueue = new CommandQueue(mDevice, mType);
+    mQueue = new CommandQueue(mType);
 
-    mCpuAllocator = new LinerAllocator(mDevice, LinerAllocator::CpuWritable);
-    mGpuAllocator = new LinerAllocator(mDevice, LinerAllocator::GpuExclusive);
+    mCpuAllocator = new LinerAllocator(LinerAllocator::CpuWritable);
+    mGpuAllocator = new LinerAllocator(LinerAllocator::GpuExclusive);
 }
 
 void CommandContext::Destroy(void) {
@@ -48,7 +48,7 @@ void CommandContext::Begin(void) {
     if (mCommandList) {
         mCommandList->Reset(mCommandAlloctor, nullptr);
     } else {
-        ASSERT_SUCCEEDED(mDevice->CreateCommandList(0, mType, mCommandAlloctor, nullptr, IID_PPV_ARGS(&mCommandList)));
+        ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, nullptr, IID_PPV_ARGS(&mCommandList)));
     }
 }
 
@@ -74,7 +74,7 @@ void CommandContext::End(bool flush) {
 
 void CommandContext::AddResourceBarrier(D3D12_RESOURCE_BARRIER &barrier) {
     mResourceBarriers.PushBack(barrier);
-    if (mResourceBarriers.Count >= MAX_RESOURCE_BARRIER) {
+    if (mResourceBarriers.Count() >= MAX_RESOURCE_BARRIER) {
         FlushResourceBarriers();
     }
 }
