@@ -6,6 +6,7 @@
 
 namespace Render {
 
+class CommandContext;
 class DescriptorHeap;
 class RenderTargetBuffer;
 class DepthStencilBuffer;
@@ -15,6 +16,7 @@ constexpr uint32_t          FRAME_COUNT = 3;
 extern ID3D12Device        *gDevice;
 extern IDXGISwapChain3     *gSwapChain;
 extern ID3D12CommandQueue  *gCommandQueue;
+extern CommandContext      *gCommand;
 
 extern DescriptorHeap      *gRenderTargetHeap;
 extern DescriptorHeap      *gDepthStencilHeap;

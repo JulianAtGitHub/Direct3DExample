@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "RenderCore.h"
+#include "CommandContext.h"
 #include "DescriptorHeap.h"
 #include "RenderTargetBuffer.h"
 #include "DepthStencilBuffer.h"
@@ -9,6 +10,7 @@ namespace Render {
 ID3D12Device       *gDevice                     = nullptr;
 IDXGISwapChain3    *gSwapChain                  = nullptr;
 ID3D12CommandQueue *gCommandQueue               = nullptr;
+CommandContext     *gCommand                    = nullptr;
 
 DescriptorHeap     *gRenderTargetHeap           = nullptr;
 DescriptorHeap     *gDepthStencilHeap           = nullptr;
@@ -149,6 +151,8 @@ void Initialize(HWND hwnd) {
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     ASSERT_SUCCEEDED(gDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&gCommandQueue)));
 
+    gCommand = new CommandContext(D3D12_COMMAND_LIST_TYPE_DIRECT);
+
     // create swap chain
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = width;
@@ -210,6 +214,7 @@ void Terminate(void) {
         DeleteAndSetNull(gRenderTarget[i]);
     }
 
+    DeleteAndSetNull(gCommand);
     ReleaseAndSetNull(gCommandQueue);
     ReleaseAndSetNull(gSwapChain);
     ReleaseAndSetNull(gDevice);
