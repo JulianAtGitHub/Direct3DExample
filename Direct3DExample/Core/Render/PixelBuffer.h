@@ -13,13 +13,11 @@ public:
     INLINE uint32_t GetWidth(void) { return mWidth; }
     INLINE uint32_t GetHeight(void) { return mHeight; }
     INLINE DXGI_FORMAT GetFormat(void) { return mFormat; }
-    INLINE const DescriptorHandle & GetHandle(void) const { return mHandle; }
 
 protected:
     uint32_t            mWidth;
     uint32_t            mHeight;
     DXGI_FORMAT         mFormat;
-    DescriptorHandle    mHandle;
 };
 
 }
