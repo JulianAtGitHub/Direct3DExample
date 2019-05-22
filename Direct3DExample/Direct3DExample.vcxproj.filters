@@ -73,6 +73,9 @@
     <ClCompile Include="Core\Render\RenderCore.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\GPUBuffer.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -142,6 +145,9 @@
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\RenderCore.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\GPUBuffer.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>

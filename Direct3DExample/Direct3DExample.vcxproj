@@ -185,6 +185,7 @@
     <ClCompile Include="Core\Model\Scene.cpp" />
     <ClCompile Include="Core\Render\CommandContext.cpp" />
     <ClCompile Include="Core\Render\CommandQueue.cpp" />
+    <ClCompile Include="Core\Render\GPUBuffer.cpp" />
     <ClCompile Include="Core\Render\LinerAllocator.cpp" />
     <ClCompile Include="Core\Render\RenderTargetBuffer.cpp" />
     <ClCompile Include="Core\Render\RenderCore.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="Core\Model\stb_image.h" />
     <ClInclude Include="Core\Render\CommandContext.h" />
     <ClInclude Include="Core\Render\CommandQueue.h" />
+    <ClInclude Include="Core\Render\GPUBuffer.h" />
     <ClInclude Include="Core\Render\LinerAllocator.h" />
     <ClInclude Include="Core\Render\RenderTargetBuffer.h" />
     <ClInclude Include="Core\Render\RenderCore.h" />
