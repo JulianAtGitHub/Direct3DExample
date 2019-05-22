@@ -43,19 +43,17 @@ void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
     resDesc.SampleDesc.Quality = 0;
     resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-    D3D12_RESOURCE_STATES usage;
-
     if (mType == GpuExclusive) {
         heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
         resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        usage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        mUsageState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     } else {
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
         resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-        usage = D3D12_RESOURCE_STATE_GENERIC_READ;
+        mUsageState = D3D12_RESOURCE_STATE_GENERIC_READ;
     }
 
-    ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, usage, nullptr, IID_PPV_ARGS(&mResource)));
+    ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, mUsageState, nullptr, IID_PPV_ARGS(&mResource)));
     mResource->SetName(L"LinerAllocator Page");
 
     FillVirtualAddress();

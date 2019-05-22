@@ -8,7 +8,7 @@ RenderTargetBuffer::RenderTargetBuffer(void)
 : PixelBuffer()
 , mClearedColor(0.0f, 0.0f, 0.0f, 1.0f)
 {
-
+    mUsageState = D3D12_RESOURCE_STATE_RENDER_TARGET;
 }
 
 RenderTargetBuffer::~RenderTargetBuffer(void) {

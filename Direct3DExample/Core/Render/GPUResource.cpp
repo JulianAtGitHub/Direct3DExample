@@ -4,7 +4,8 @@
 namespace Render {
 
 GPUResource::GPUResource(void)
-: mResource(nullptr)
+: mUsageState(D3D12_RESOURCE_STATE_COMMON)
+, mResource(nullptr)
 , mGPUVirtualAddress(0)
 {
 
