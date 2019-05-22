@@ -14,7 +14,6 @@ CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 , mFenceValue(0)
 , mCpuAllocator(nullptr)
 , mGpuAllocator(nullptr)
-, mResourceBarriers(MAX_RESOURCE_BARRIER)
 {
     Initialize();
 }
@@ -57,8 +56,6 @@ void CommandContext::End(bool waitUtilComplete) {
         return;
     }
 
-    FlushResourceBarriers();
-
     uint64_t fenceValue = mQueue->ExecuteCommandList(mCommandList);
     mQueue->DiscardAllocator(mCommandAlloctor, fenceValue);
     mCommandAlloctor = nullptr;
@@ -72,19 +69,32 @@ void CommandContext::End(bool waitUtilComplete) {
     }
 }
 
-void CommandContext::AddResourceBarrier(D3D12_RESOURCE_BARRIER &barrier) {
-    mResourceBarriers.PushBack(barrier);
-    if (mResourceBarriers.Count() >= MAX_RESOURCE_BARRIER) {
-        FlushResourceBarriers();
-    }
-}
+void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState) {
+    D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
 
-void CommandContext::FlushResourceBarriers(void) {
-    if (mResourceBarriers.Count() > 0) {
-        mCommandList->ResourceBarrier(mResourceBarriers.Count(), mResourceBarriers.Data());
-        mResourceBarriers.Clear();
+    if (mType == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+        ASSERT_PRINT((oldState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == oldState);
+        ASSERT_PRINT((newState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == newState);
     }
 
+    D3D12_RESOURCE_BARRIER BarrierDesc = {};
+    if (oldState != newState) {
+        BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        BarrierDesc.Transition.pResource = resource->GetResource();
+        BarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        BarrierDesc.Transition.StateBefore = oldState;
+        BarrierDesc.Transition.StateAfter = newState;
+        BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
+        resource->SetUsageState(newState);
+    }
+    else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
+        BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+        BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        BarrierDesc.UAV.pResource = resource->GetResource();
+    }
+
+    mCommandList->ResourceBarrier(1, &BarrierDesc);
 }
 
 }

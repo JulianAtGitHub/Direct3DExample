@@ -4,6 +4,7 @@ namespace Render {
 
 class CommandQueue;
 class LinerAllocator;
+class GPUResource;
 
 class CommandContext {
 public:
@@ -15,14 +16,15 @@ public:
     void Begin(ID3D12PipelineState *pipeline = nullptr);
     void End(bool waitUtilComplete = false);
 
+    void TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState);
+
 private:
     void Initialize(void);
     void Destroy(void);
-
-    void AddResourceBarrier(D3D12_RESOURCE_BARRIER &barrier);
-    void FlushResourceBarriers(void);
-
-    const static uint32_t MAX_RESOURCE_BARRIER = 16;
+    const static uint32_t VALID_COMPUTE_QUEUE_RESOURCE_STATES = D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+                                                              | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+                                                              | D3D12_RESOURCE_STATE_COPY_DEST
+                                                              | D3D12_RESOURCE_STATE_COPY_SOURCE;
 
     const D3D12_COMMAND_LIST_TYPE   mType;
     CommandQueue                   *mQueue;
@@ -31,7 +33,6 @@ private:
     uint64_t                        mFenceValue;
     LinerAllocator                 *mCpuAllocator;
     LinerAllocator                 *mGpuAllocator;
-    CList<D3D12_RESOURCE_BARRIER>   mResourceBarriers;
 };
 
 }
