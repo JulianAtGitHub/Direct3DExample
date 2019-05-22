@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="AnExample.cpp" />
+    <ClCompile Include="Common\Common.cpp" />
     <ClCompile Include="Core\Model\Loader.cpp" />
     <ClCompile Include="Core\Model\Scene.cpp" />
     <ClCompile Include="Core\Render\CommandContext.cpp" />
@@ -210,7 +211,7 @@
     <ClInclude Include="Common\CList.hpp" />
     <ClInclude Include="Common\CString.hpp" />
     <ClInclude Include="AnExample.h" />
-    <ClInclude Include="Common\Utils.hpp" />
+    <ClInclude Include="Common\Common.h" />
     <ClInclude Include="Core\Model\Loader.h" />
     <ClInclude Include="Core\Model\Scene.h" />
     <ClInclude Include="Core\Model\stb_image.h" />

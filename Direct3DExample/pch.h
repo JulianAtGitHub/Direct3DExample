@@ -39,8 +39,7 @@
     using namespace DirectX;
 #endif
 
-#include "Common/Utils.hpp"
-
+#include "Common/Common.h"
 #include "Common/CUtils.hpp"
 #include "Common/CString.hpp"
 #include "Common/CList.hpp"

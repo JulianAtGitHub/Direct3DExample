@@ -2,6 +2,9 @@
 
 #define INLINE __forceinline
 
+extern void SIMDMemCopy( void* __restrict Dest, const void* __restrict Source, size_t NumQuadwords );
+extern void SIMDMemFill( void* __restrict Dest, __m128 FillVector, size_t NumQuadwords );
+
 INLINE char * WStr2Str(const wchar_t *wstr) {
     if (!wstr) { return nullptr; }
     size_t len = wcslen(wstr) * 2 + 1;
@@ -43,8 +46,7 @@ INLINE void Print(const char *fmt, ...) {
     Printf(line);
 }
 
-INLINE void PrintSub(const char* fmt, ...)
-{
+INLINE void PrintSub(const char* fmt, ...) {
     Printf("--> ");
     char line[MAX_CHAR_A_LINE];
     va_list ap;

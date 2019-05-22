@@ -76,6 +76,9 @@
     <ClCompile Include="Core\Render\GPUBuffer.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Common\Common.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -114,9 +117,6 @@
     <ClInclude Include="DirectX\d3dx12.h">
       <Filter>Sources\DirectX</Filter>
     </ClInclude>
-    <ClInclude Include="Common\Utils.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Render\DescriptorHeap.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
@@ -149,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="Core\Render\GPUBuffer.h">
       <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Common.h">
+      <Filter>Sources\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
