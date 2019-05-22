@@ -4,29 +4,22 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(void)
+GPUBuffer::GPUBuffer(uint32_t size, uint32_t count)
 : GPUResource()
-, mBufferSize(0)
-, mElementSize(0)
-, mElementCount(0)
+, mBufferSize(size * count)
+, mElementSize(size)
+, mElementCount(count)
 {
-
+    Initialize();
 }
 
 GPUBuffer::~GPUBuffer(void) {
-    DestoryResource();
     mBufferSize = 0;
     mElementSize = 0;
     mElementCount = 0;
 }
 
-void GPUBuffer::Create(uint32_t size, uint32_t count) {
-    DestoryResource();
-
-    mElementSize = size;
-    mElementCount = count;
-    mBufferSize = size * count;
-
+void GPUBuffer::Initialize(void) {
     D3D12_RESOURCE_DESC resourceDesc = {};
     resourceDesc.Alignment = 0;
     resourceDesc.DepthOrArraySize = 1;

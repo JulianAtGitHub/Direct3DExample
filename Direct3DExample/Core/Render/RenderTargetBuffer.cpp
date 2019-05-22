@@ -4,33 +4,38 @@
 
 namespace Render {
 
-RenderTargetBuffer::RenderTargetBuffer(void)
+RenderTargetBuffer::RenderTargetBuffer(ID3D12Resource *resource)
 : PixelBuffer()
 , mClearedColor(0.0f, 0.0f, 0.0f, 1.0f)
 {
-    mUsageState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    Initialize(resource);
 }
 
 RenderTargetBuffer::~RenderTargetBuffer(void) {
 
 }
 
-void RenderTargetBuffer::CreateFromSwapChain(ID3D12Resource *resource, DescriptorHandle &handle) {
+void RenderTargetBuffer::Initialize(ID3D12Resource *resource) {
     if (!resource) {
         return;
     }
 
-    DestoryResource();
-
+    mUsageState = D3D12_RESOURCE_STATE_RENDER_TARGET;
     mResource = resource;
-    gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
-
     FillGPUAddress();
 
-    D3D12_RESOURCE_DESC desc = resource->GetDesc();
+    D3D12_RESOURCE_DESC desc = mResource->GetDesc();
     mWidth = static_cast<uint32_t>(desc.Width);
     mHeight = static_cast<uint32_t>(desc.Height);
     mFormat = desc.Format;
+}
+
+void RenderTargetBuffer::CreateView(DescriptorHandle &handle) {
+    if (!mResource) {
+        return;
+    }
+
+    gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
     mHandle = handle;
 }
 

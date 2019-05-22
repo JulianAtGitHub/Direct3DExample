@@ -198,11 +198,11 @@ void Initialize(HWND hwnd) {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         ID3D12Resource *resource = nullptr;
         ASSERT_SUCCEEDED(gSwapChain->GetBuffer(i, IID_PPV_ARGS(&resource)));
-        gRenderTarget[i] = new RenderTargetBuffer();
-        gRenderTarget[i]->CreateFromSwapChain(resource, gRenderTargetHeap->Allocate());
+        gRenderTarget[i] = new RenderTargetBuffer(resource);
+        gRenderTarget[i]->CreateView(gRenderTargetHeap->Allocate());
     }
-    gDepthStencil = new DepthStencilBuffer();
-    gDepthStencil->Create(width, height, DXGI_FORMAT_D32_FLOAT, gDepthStencilHeap->Allocate());
+    gDepthStencil = new DepthStencilBuffer(width, height, DXGI_FORMAT_D32_FLOAT);
+    gDepthStencil->CreateView(gDepthStencilHeap->Allocate());
 }
 
 void Terminate(void) {
