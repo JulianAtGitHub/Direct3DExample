@@ -16,7 +16,7 @@ public:
     INLINE D3D12_GPU_VIRTUAL_ADDRESS GetGPUAddress(void) const { return mGPUVirtualAddress; }
     INLINE const DescriptorHandle & GetHandle(void) const { return mHandle; }
 
-    void FillVirtualAddress(void);
+    void FillGPUAddress(void);
 
 protected:
     void DestoryResource(void);
@@ -27,7 +27,7 @@ protected:
     DescriptorHandle            mHandle;
 };
 
-INLINE void GPUResource::FillVirtualAddress(void) {
+INLINE void GPUResource::FillGPUAddress(void) {
     if (mResource) {
         mGPUVirtualAddress = mResource->GetGPUVirtualAddress();
     }

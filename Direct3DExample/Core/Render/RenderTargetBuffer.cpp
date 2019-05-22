@@ -25,7 +25,7 @@ void RenderTargetBuffer::CreateFromSwapChain(ID3D12Resource *resource, Descripto
     mResource = resource;
     gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
 
-    FillVirtualAddress();
+    FillGPUAddress();
 
     D3D12_RESOURCE_DESC desc = resource->GetDesc();
     mWidth = static_cast<uint32_t>(desc.Width);

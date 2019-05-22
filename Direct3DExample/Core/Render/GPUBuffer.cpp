@@ -51,7 +51,7 @@ void GPUBuffer::Create(uint32_t size, uint32_t count) {
 
     ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, mUsageState, nullptr, IID_PPV_ARGS(&mResource)));
 
-    FillVirtualAddress();
+    FillGPUAddress();
 
 }
 

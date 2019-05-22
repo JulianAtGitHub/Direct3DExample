@@ -56,7 +56,7 @@ void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
     ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, mUsageState, nullptr, IID_PPV_ARGS(&mResource)));
     mResource->SetName(L"LinerAllocator Page");
 
-    FillVirtualAddress();
+    FillGPUAddress();
 
     Map();
 }
