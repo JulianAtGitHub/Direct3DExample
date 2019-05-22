@@ -87,7 +87,7 @@ LinerAllocator::MemoryBlock LinerAllocator::AllocateLarge(size_t size) {
     ASSERT_PRINT((size > 0));
     MemoryPage *page = new MemoryPage(mType, size);
     mLargePages.PushBack(page);
-    return { page, size, page->mCPUAddress, page->GetGPUAddress() };
+    return { page, size, page->mOffset, page->mCPUAddress, page->GetGPUAddress() };
 }
 
 LinerAllocator::MemoryPage * LinerAllocator::AllocatePage(void) {
@@ -121,7 +121,7 @@ LinerAllocator::MemoryBlock LinerAllocator::Allocate(size_t size) {
         mCurrentPage = AllocatePage();
     }
 
-    MemoryBlock block = { mCurrentPage , alignedSize, mCurrentPage->GetCurrentCPUAddress(), mCurrentPage->GetCurrentGPUAddress() };
+    MemoryBlock block = { mCurrentPage , alignedSize, mCurrentPage->mOffset, mCurrentPage->GetCurrentCPUAddress(), mCurrentPage->GetCurrentGPUAddress() };
     mCurrentPage->mOffset = AlignUp(mCurrentPage->mOffset + alignedSize, MEMORY_ALIGNMENT);
 
     return block;

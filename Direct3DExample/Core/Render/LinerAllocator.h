@@ -16,6 +16,7 @@ public:
     struct MemoryBlock {
         GPUResource    *buffer;
         size_t          size;
+        size_t          offset;
         void           *cpuAddress;
         UINT64          gpuAddress;
     };
