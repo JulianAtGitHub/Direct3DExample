@@ -6,19 +6,26 @@ namespace Render {
 
 class GPUBuffer : public GPUResource {
 public:
-    GPUBuffer(uint32_t size, uint32_t count);
+    GPUBuffer(uint32_t size);
     virtual ~GPUBuffer(void);
 
     INLINE size_t GetBufferSize(void) const { return mBufferSize; }
-    INLINE uint32_t GetElementSize(void) const { return mElementSize; }
-    INLINE uint32_t GetElementCount(void) const { return mElementCount; }
+
+    D3D12_VERTEX_BUFFER_VIEW FillVertexBufferView(size_t offset, uint32_t size, uint32_t stride);
+    D3D12_INDEX_BUFFER_VIEW FillIndexBufferView(size_t offset, uint32_t size, bool is16Bit = true);
 
 private:
     void Initialize(void);
 
     size_t      mBufferSize;
-    uint32_t    mElementSize;
-    uint32_t    mElementCount;
 };
+
+INLINE D3D12_VERTEX_BUFFER_VIEW GPUBuffer::FillVertexBufferView(size_t offset, uint32_t size, uint32_t stride) {
+    return { mGPUVirtualAddress + offset, size, stride };
+}
+
+INLINE D3D12_INDEX_BUFFER_VIEW GPUBuffer::FillIndexBufferView(size_t offset, uint32_t size, bool is16Bit) {
+    return { mGPUVirtualAddress + offset, size, is16Bit ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT };
+}
 
 }

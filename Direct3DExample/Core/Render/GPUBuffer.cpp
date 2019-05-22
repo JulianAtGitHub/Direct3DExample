@@ -4,19 +4,15 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(uint32_t size, uint32_t count)
+GPUBuffer::GPUBuffer(uint32_t size)
 : GPUResource()
-, mBufferSize(size * count)
-, mElementSize(size)
-, mElementCount(count)
+, mBufferSize(size)
 {
     Initialize();
 }
 
 GPUBuffer::~GPUBuffer(void) {
     mBufferSize = 0;
-    mElementSize = 0;
-    mElementCount = 0;
 }
 
 void GPUBuffer::Initialize(void) {
