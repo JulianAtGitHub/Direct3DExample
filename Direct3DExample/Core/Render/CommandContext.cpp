@@ -70,8 +70,11 @@ void CommandContext::End(bool waitUtilComplete) {
 }
 
 void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState) {
-    D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
+    if (!resource) {
+        return;
+    }
 
+    D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
     if (mType == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
         ASSERT_PRINT((oldState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == oldState);
         ASSERT_PRINT((newState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == newState);
@@ -95,6 +98,20 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
     }
 
     mCommandList->ResourceBarrier(1, &BarrierDesc);
+}
+
+void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, void *buffer, size_t size) {
+    if (!resource || !buffer) {
+        return;
+    }
+
+    LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(size);
+
+    SIMDMemCopy(uploadMem.cpuAddress, buffer, DivideByMultiple(size, 16));
+
+    TransitResource(resource, D3D12_RESOURCE_STATE_COPY_DEST);
+    mCommandList->CopyBufferRegion(resource->GetResource(), offset, uploadMem.buffer->GetResource(), uploadMem.offset, size);
+    TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
 }

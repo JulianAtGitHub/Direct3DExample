@@ -17,10 +17,12 @@ public:
     void End(bool waitUtilComplete = false);
 
     void TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState);
+    void UploadBuffer(GPUResource *resource, size_t offset, void *buffer, size_t size);
 
 private:
     void Initialize(void);
     void Destroy(void);
+
     const static uint32_t VALID_COMPUTE_QUEUE_RESOURCE_STATES = D3D12_RESOURCE_STATE_UNORDERED_ACCESS
                                                               | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
                                                               | D3D12_RESOURCE_STATE_COPY_DEST
