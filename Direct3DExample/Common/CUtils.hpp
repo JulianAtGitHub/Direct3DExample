@@ -50,3 +50,20 @@ INLINE T AlignDown(T value, size_t alignment) {
     return AlignDownWithMask(value, alignment - 1);
 }
 
+template <typename T> 
+INLINE bool IsAligned( T value, size_t alignment ) {
+    return 0 == ((size_t)value & (alignment - 1));
+}
+
+template <typename T> 
+INLINE bool IsPowerOfTwo(T value) {
+    return 0 == (value & (value - 1));
+}
+
+template <typename T> 
+INLINE T DivideByMultiple( T value, size_t alignment ) {
+    return (T)((value + alignment - 1) / alignment);
+}
+
+
+
