@@ -20,6 +20,8 @@ public:
 
     DescriptorHandle Allocate(void);
 
+    INLINE ID3D12DescriptorHeap * GetCurrentHeap(void) const { return mHeap; }
+
 private:
     void DestroyAll(void);
 
