@@ -2,6 +2,7 @@
 #include "CommandContext.h"
 #include "CommandQueue.h"
 #include "LinerAllocator.h"
+#include "PixelBuffer.h"
 #include "RenderCore.h"
 
 namespace Render {
@@ -100,7 +101,7 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
     mCommandList->ResourceBarrier(1, &BarrierDesc);
 }
 
-void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, void *buffer, size_t size) {
+void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size) {
     if (!resource || !buffer) {
         return;
     }
@@ -111,6 +112,27 @@ void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, void *bu
 
     TransitResource(resource, D3D12_RESOURCE_STATE_COPY_DEST);
     mCommandList->CopyBufferRegion(resource->GetResource(), offset, uploadMem.buffer->GetResource(), uploadMem.offset, size);
+    TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
+}
+
+void CommandContext::UploadTexture(PixelBuffer *resource, const void *data) {
+    if (!resource || !data) {
+        return;
+    }
+
+    D3D12_SUBRESOURCE_DATA texRes;
+    texRes.pData = data;
+    texRes.RowPitch = resource->GetPitch() * (BitsPerPixel(resource->GetFormat()) >> 3);
+    texRes.SlicePitch = texRes.RowPitch * resource->GetHeight();
+
+    UploadTexture(resource, &texRes, 1);
+}
+
+void CommandContext::UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count) {
+    UINT64 uploadSize = GetRequiredIntermediateSize(resource->GetResource(), 0, count);
+
+    LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(uploadSize);
+    UpdateSubresources(mCommandList, resource->GetResource(), uploadMem.buffer->GetResource(), uploadMem.offset, 0, count, subDatas);
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 

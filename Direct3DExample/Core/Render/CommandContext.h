@@ -5,6 +5,7 @@ namespace Render {
 class CommandQueue;
 class LinerAllocator;
 class GPUResource;
+class PixelBuffer;
 
 class CommandContext {
 public:
@@ -17,7 +18,9 @@ public:
     void End(bool waitUtilComplete = false);
 
     void TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState);
-    void UploadBuffer(GPUResource *resource, size_t offset, void *buffer, size_t size);
+    void UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size);
+    void UploadTexture(PixelBuffer *resource, const void *data);
+    void UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count);
 
 private:
     void Initialize(void);
