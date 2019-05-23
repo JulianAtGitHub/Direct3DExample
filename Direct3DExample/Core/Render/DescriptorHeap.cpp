@@ -16,6 +16,11 @@ DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
     mHeapDesc.Type = type;
     mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     mHeapDesc.NodeMask = 1;
+
+    if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+        || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
+        mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    }
 }
 
 DescriptorHeap::~DescriptorHeap(void) {
