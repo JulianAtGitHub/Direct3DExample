@@ -39,6 +39,7 @@ void GPUBuffer::Initialize(void) {
     heapProps.VisibleNodeMask = 1;
 
     ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, mUsageState, nullptr, IID_PPV_ARGS(&mResource)));
+    mResource->SetName(L"GPUBuffer");
 
     FillGPUAddress();
 
