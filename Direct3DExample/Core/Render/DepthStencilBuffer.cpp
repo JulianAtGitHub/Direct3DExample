@@ -31,8 +31,6 @@ void DepthStencilBuffer::Initialize(DXGI_FORMAT format) {
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
     CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, mWidth, mHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
     ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, mUsageState, &depthStencilClearValue, IID_PPV_ARGS(&mResource)));
-
-    FillGPUAddress();
 }
 
 void DepthStencilBuffer::CreateView(DescriptorHandle &handle) {

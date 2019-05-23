@@ -56,8 +56,6 @@ void PixelBuffer::Initialize(void) {
 
     ASSERT_SUCCEEDED(gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc, mUsageState, nullptr, IID_PPV_ARGS(&mResource)));
     mResource->SetName(L"Texture");
-
-    FillGPUAddress();
 }
 
 void PixelBuffer::CreateSRView(DescriptorHandle &handle) {
