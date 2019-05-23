@@ -14,6 +14,8 @@ CommandContext     *gCommand                    = nullptr;
 
 DescriptorHeap     *gRenderTargetHeap           = nullptr;
 DescriptorHeap     *gDepthStencilHeap           = nullptr;
+DescriptorHeap     *gShaderResourceHeap         = nullptr;
+DescriptorHeap     *gSamplerHeap                = nullptr;
 
 RenderTargetBuffer *gRenderTarget[FRAME_COUNT]  = { nullptr };
 DepthStencilBuffer *gDepthStencil               = nullptr;
@@ -194,6 +196,8 @@ void Initialize(HWND hwnd) {
     // frame buffer
     gRenderTargetHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 16);
     gDepthStencilHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
+    gShaderResourceHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 64);
+    gSamplerHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
 
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         ID3D12Resource *resource = nullptr;
@@ -206,6 +210,8 @@ void Initialize(HWND hwnd) {
 }
 
 void Terminate(void) {
+    DeleteAndSetNull(gSamplerHeap);
+    DeleteAndSetNull(gShaderResourceHeap);
     DeleteAndSetNull(gDepthStencilHeap);
     DeleteAndSetNull(gRenderTargetHeap);
 
