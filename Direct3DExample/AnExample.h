@@ -4,6 +4,12 @@ namespace Model {
     class Scene;
 }
 
+namespace Render {
+    class GPUBuffer;
+    class ConstantBuffer;
+    class PixelBuffer;
+}
+
 class AnExample {
 public:
     AnExample(HWND hwnd);
@@ -40,28 +46,23 @@ private:
     D3D12_RECT mScissorRect;
     ID3D12CommandAllocator *mCommandAllocators[FRAME_COUNT];
     ID3D12CommandAllocator *mBundleAllocator;
-    ID3D12DescriptorHeap *mCbvSrvHeap; // const buffer view and shader resource view heap
-    ID3D12DescriptorHeap *mSamplerHeap;
 
     ID3D12RootSignature *mRootSignature;
     ID3D12PipelineState *mPipelineState;
     ID3D12GraphicsCommandList *mCommandList;
     ID3D12GraphicsCommandList *mBundles[FRAME_COUNT];
 
-    ID3D12Resource *mVertexBuffer;
+    Render::GPUBuffer *mVertexIndexBuffer;
     D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;
-    ID3D12Resource *mIndexBuffer;
     D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
-    ID3D12Resource *mConstBuffer;
-    CList<ID3D12Resource *> mTextures;
+    Render::ConstantBuffer *mConstBuffer;
+    CList<Render::PixelBuffer *> mTextures;
 
     HANDLE mFenceEvent;
     ID3D12Fence *mFence;
     uint64_t mFenceValues[FRAME_COUNT];
 
     uint32_t mCurrentFrame;
-    uint32_t mConstBufferSize;
-    void *mDataBeginCB[FRAME_COUNT];
 
     uint32_t mWidth;
     uint32_t mHeight;

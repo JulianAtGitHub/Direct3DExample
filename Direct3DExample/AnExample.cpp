@@ -3,6 +3,11 @@
 #include "Core/Model/Scene.h"
 #include "Core/Model/Loader.h"
 #include "Core/Render/RenderCore.h"
+#include "Core/Render/CommandContext.h"
+#include "Core/Render/DescriptorHeap.h"
+#include "Core/Render/GPUBuffer.h"
+#include "Core/Render/ConstantBuffer.h"
+#include "Core/Render/PixelBuffer.h"
 
 struct ConstBuffer {
     XMFLOAT4X4 mvp;
@@ -11,24 +16,19 @@ struct ConstBuffer {
 AnExample::AnExample(HWND hwnd)
 :mHwnd(hwnd)
 ,mBundleAllocator(nullptr)
-,mCbvSrvHeap(nullptr)
-,mSamplerHeap(nullptr)
 ,mRootSignature(nullptr)
 ,mPipelineState(nullptr)
 ,mCommandList(nullptr)
-,mVertexBuffer(nullptr)
-,mIndexBuffer(nullptr)
+,mVertexIndexBuffer(nullptr)
 ,mConstBuffer(nullptr)
 ,mFenceEvent(nullptr)
 ,mFence(nullptr)
 ,mCurrentFrame(0)
-,mConstBufferSize(0)
 ,mScene(nullptr)
 {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         mCommandAllocators[i] = nullptr;
         mBundles[i] = nullptr;
-        mDataBeginCB[i] = nullptr;
         mFenceValues[i] = 1;
     }
     mVertexBufferView = {};
@@ -69,7 +69,7 @@ void AnExample::Update(void) {
     XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, mAspectRatio, 0.1f, 100.0f);
     XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
 
-    memcpy(mDataBeginCB[mCurrentFrame], &constBuffer, sizeof(constBuffer));
+    memcpy(mConstBuffer->GetMappedBuffer(0, mCurrentFrame), &constBuffer, sizeof(constBuffer));
 }
 
 void AnExample::Render(void) {
@@ -87,24 +87,21 @@ void AnExample::Destroy(void) {
     WaitForGPU();
     CloseHandle(mFenceEvent);
 
-    mConstBuffer->Unmap(0, nullptr);
-
     mFence->Release();
 
     for (uint32_t i = 0; i < mTextures.Count(); ++i) {
-        mTextures.At(i)->Release();
+        delete mTextures.At(i);
     };
-    mConstBuffer->Release();
-    mIndexBuffer->Release();
-    mVertexBuffer->Release();
+    mTextures.Clear();
+
+    DeleteAndSetNull(mConstBuffer);
+    DeleteAndSetNull(mVertexIndexBuffer);
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         mBundles[i]->Release();
     }
     mCommandList->Release();
     mPipelineState->Release();
     mRootSignature->Release();
-    mSamplerHeap->Release();
-    mCbvSrvHeap->Release();
     mBundleAllocator->Release();
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         mCommandAllocators[i]->Release();
@@ -158,22 +155,6 @@ void AnExample::LoadAssets(void) {
     //Model::Loader::SaveToBinaryFile(mScene, "Models\\Arwing\\arwing.bsx");
 
     HRESULT result = S_OK;
-
-    // const buffer view and shader resource view heap
-    D3D12_DESCRIPTOR_HEAP_DESC cbvSrvHeapDesc = {};
-    cbvSrvHeapDesc.NumDescriptors = mScene->mImages.Count();
-    cbvSrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    cbvSrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    result = Render::gDevice->CreateDescriptorHeap(&cbvSrvHeapDesc, IID_PPV_ARGS(&mCbvSrvHeap));
-    assert(SUCCEEDED(result));
-
-    // sampler heap
-    D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
-    samplerHeapDesc.NumDescriptors = 1;
-    samplerHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-    samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    result = Render::gDevice->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&mSamplerHeap));
-    assert(SUCCEEDED(result));
 
     // root signature
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -291,134 +272,48 @@ void AnExample::LoadAssets(void) {
     samplerDesc.MipLODBias = 0;
     samplerDesc.MaxAnisotropy = 0;
     samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    //samplerDesc.BorderColor[0] = samplerDesc.BorderColor[1] = samplerDesc.BorderColor[2] = 0.0f;
-    //samplerDesc.BorderColor[3] = 1.0f;
     samplerDesc.MinLOD = 0.0f;
     samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-    Render::gDevice->CreateSampler(&samplerDesc, mSamplerHeap->GetCPUDescriptorHandleForHeapStart());
+    Render::DescriptorHandle samplerHandle = Render::gSamplerHeap->Allocate();
+    Render::gDevice->CreateSampler(&samplerDesc, samplerHandle.cpu);
+
+    Render::gCommand->Begin();
+
+    // vertex and index
+    {
+        const uint32_t vertexSize = mScene->mVertices.Count() * sizeof(Model::Scene::Vertex);
+        const uint32_t vertexAlignSize = AlignUp(vertexSize, 256);
+        const uint32_t indexSize = mScene->mIndices.Count() * sizeof(uint32_t);
+        const uint32_t indexAlignSize = AlignUp(indexSize, 256);
+        mVertexIndexBuffer = new Render::GPUBuffer(vertexAlignSize + indexAlignSize);
+
+        Render::gCommand->UploadBuffer(mVertexIndexBuffer, 0, mScene->mVertices.Data(), vertexSize);
+        Render::gCommand->UploadBuffer(mVertexIndexBuffer, vertexAlignSize, mScene->mIndices.Data(), indexSize);
+
+        mVertexBufferView = mVertexIndexBuffer->FillVertexBufferView(0, vertexSize, sizeof(Model::Scene::Vertex));
+        mIndexBufferView = mVertexIndexBuffer->FillIndexBufferView(vertexAlignSize, indexSize, false);
+    }
+
+    // texture
+    {
+        mTextures.Reserve(mScene->mImages.Count());
+        for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
+            Model::Scene::Image &image = mScene->mImages.At(i);
+            Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
+            Render::gCommand->UploadTexture(texture, image.pixels);
+            texture->CreateSRView(Render::gShaderResourceHeap->Allocate());
+            mTextures.PushBack(texture);
+        }
+    }
+
+    Render::gCommand->End(true);
+
+    // const buffer
+    mConstBuffer = new Render::ConstantBuffer(sizeof(ConstBuffer), 1);
 
     // command list
     result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocators[mCurrentFrame], mPipelineState, IID_PPV_ARGS(&mCommandList));
     assert(SUCCEEDED(result));
-
-    // vertex buffer
-    ID3D12Resource *vertUploadHeap = nullptr;
-    {
-        const uint32_t bufferSize = mScene->mVertices.Count() * sizeof(Model::Scene::Vertex);
-
-        CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
-        CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-        result = Render::gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mVertexBuffer));
-        assert(SUCCEEDED(result));
-
-        CD3DX12_HEAP_PROPERTIES uploadHeapProps(D3D12_HEAP_TYPE_UPLOAD);
-        result = Render::gDevice->CreateCommittedResource(&uploadHeapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertUploadHeap));
-        assert(SUCCEEDED(result));
-
-        D3D12_SUBRESOURCE_DATA subResData = {};
-        subResData.pData = mScene->mVertices.Data();
-        subResData.RowPitch = bufferSize;
-        subResData.SlicePitch = subResData.RowPitch;
-
-        UpdateSubresources(mCommandList, mVertexBuffer, vertUploadHeap, 0, 0, 1, &subResData);
-        D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        mCommandList->ResourceBarrier(1, &barrier);
-
-        // vertex buffer view
-        mVertexBufferView.BufferLocation = mVertexBuffer->GetGPUVirtualAddress();
-        mVertexBufferView.StrideInBytes = sizeof(Model::Scene::Vertex);
-        mVertexBufferView.SizeInBytes = bufferSize;
-    }
-
-    // index buffer
-    ID3D12Resource *idxUploadHeap = nullptr;
-    {
-        const uint32_t bufferSize = mScene->mIndices.Count() * sizeof(uint32_t);
-
-        CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
-        CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-        result = Render::gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mIndexBuffer));
-        assert(SUCCEEDED(result));
-
-        CD3DX12_HEAP_PROPERTIES uploadHeapProps(D3D12_HEAP_TYPE_UPLOAD);
-        result = Render::gDevice->CreateCommittedResource(&uploadHeapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&idxUploadHeap));
-        assert(SUCCEEDED(result));
-
-        D3D12_SUBRESOURCE_DATA subResData = {};
-        subResData.pData = mScene->mIndices.Data();
-        subResData.RowPitch = bufferSize;
-        subResData.SlicePitch = subResData.RowPitch;
-
-        UpdateSubresources(mCommandList, mIndexBuffer, idxUploadHeap, 0, 0, 1, &subResData);
-        D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-        mCommandList->ResourceBarrier(1, &barrier);
-
-        mIndexBufferView.BufferLocation = mIndexBuffer->GetGPUVirtualAddress();
-        mIndexBufferView.SizeInBytes = bufferSize;
-        mIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
-    }
-
-    // const buffer
-    {
-        mConstBufferSize = (sizeof(ConstBuffer) + 255) & ~255; // CB size is required to be 256-byte aligned.
-        CD3DX12_HEAP_PROPERTIES cbHeapProps(D3D12_HEAP_TYPE_UPLOAD);
-        CD3DX12_RESOURCE_DESC cbResDesc = CD3DX12_RESOURCE_DESC::Buffer(mConstBufferSize * FRAME_COUNT);
-        result = Render::gDevice->CreateCommittedResource(&cbHeapProps, D3D12_HEAP_FLAG_NONE, &cbResDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mConstBuffer));
-        assert(SUCCEEDED(result));
-
-        uint8_t *pDataBeginCB = nullptr;
-        CD3DX12_RANGE readRangeCB(0, 0);
-        result = mConstBuffer->Map(0, &readRangeCB, (void**)&pDataBeginCB);
-        assert(SUCCEEDED(result));
-        for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-            mDataBeginCB[i] = pDataBeginCB + mConstBufferSize * i;
-        }
-    }
-
-    // texture
-    mTextures.Reserve(mScene->mImages.Count());
-    CList<ID3D12Resource *> textureUploadHeaps(mScene->mImages.Count());
-    UINT srvDescriptorSize = Render::gDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    {
-        CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandler(mCbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
-        for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
-            Model::Scene::Image &image = mScene->mImages.At(i);
-            ID3D12Resource *aTexture = nullptr;
-            ID3D12Resource *textureUploadHeap = nullptr;
-            uint8_t *rawData = image.pixels;
-
-            CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
-            CD3DX12_RESOURCE_DESC textureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, image.width, image.height);
-            result = Render::gDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&aTexture));
-            assert(SUCCEEDED(result));
-
-            CD3DX12_HEAP_PROPERTIES uploadHeapProps(D3D12_HEAP_TYPE_UPLOAD);
-            CD3DX12_RESOURCE_DESC texUploadDesc = CD3DX12_RESOURCE_DESC::Buffer(GetRequiredIntermediateSize(aTexture, 0, 1));
-            result = Render::gDevice->CreateCommittedResource(&uploadHeapProps, D3D12_HEAP_FLAG_NONE, &texUploadDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&textureUploadHeap));
-            assert(SUCCEEDED(result));
-
-            D3D12_SUBRESOURCE_DATA textureData = {};
-            textureData.pData = rawData;
-            textureData.RowPitch = image.width * image.channels;
-            textureData.SlicePitch = textureData.RowPitch * image.height;
-
-            UpdateSubresources(mCommandList, aTexture, textureUploadHeap, 0, 0, 1, &textureData);
-            D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(aTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-            mCommandList->ResourceBarrier(1, &barrier);
-
-            // texture resource view
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Format = textureDesc.Format;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MipLevels = 1;
-            Render::gDevice->CreateShaderResourceView(aTexture, &srvDesc, srvHandler);
-            srvHandler.Offset(1, srvDescriptorSize);
-
-            mTextures.PushBack(aTexture);
-            textureUploadHeaps.PushBack(textureUploadHeap);
-        }
-    }
 
     // fence
     result = Render::gDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence));
@@ -436,14 +331,6 @@ void AnExample::LoadAssets(void) {
 
     WaitForGPU();
 
-    vertUploadHeap->Release();
-    idxUploadHeap->Release();
-
-    for (uint32_t i = 0; i < textureUploadHeaps.Count(); ++i) {
-        textureUploadHeaps.At(i)->Release();
-    }
-    textureUploadHeaps.Clear();
-
     // bundle
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mPipelineState, IID_PPV_ARGS(&(mBundles[i])));
@@ -451,19 +338,18 @@ void AnExample::LoadAssets(void) {
 
         // record command to bundle
         mBundles[i]->SetGraphicsRootSignature(mRootSignature);
-        ID3D12DescriptorHeap *heaps[] = { mCbvSrvHeap, mSamplerHeap };
+        ID3D12DescriptorHeap *shaderResourceHeap = Render::gShaderResourceHeap->GetCurrentHeap();
+        ID3D12DescriptorHeap *samplerHeap = Render::gSamplerHeap->GetCurrentHeap();
+        ID3D12DescriptorHeap *heaps[] = { shaderResourceHeap, samplerHeap };
         mBundles[i]->SetDescriptorHeaps(_countof(heaps), heaps);
-        mBundles[i]->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUVirtualAddress() + i * mConstBufferSize);
-        //mBundles[i]->SetGraphicsRootDescriptorTable(1, CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvSrvHeap->GetGPUDescriptorHandleForHeapStart()));
-        mBundles[i]->SetGraphicsRootDescriptorTable(2, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSamplerHeap->GetGPUDescriptorHandleForHeapStart()));
+        mBundles[i]->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, i));
+        mBundles[i]->SetGraphicsRootDescriptorTable(2, CD3DX12_GPU_DESCRIPTOR_HANDLE(samplerHeap->GetGPUDescriptorHandleForHeapStart()));
         mBundles[i]->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         mBundles[i]->IASetVertexBuffers(0, 1, &mVertexBufferView);
         mBundles[i]->IASetIndexBuffer(&mIndexBufferView);
         for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
             const Model::Scene::Shape &shape = mScene->mShapes.At(j);
-            CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandler(mCbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
-            srvHandler.Offset(shape.imageIndex, srvDescriptorSize);
-            mBundles[i]->SetGraphicsRootDescriptorTable(1, srvHandler);
+            mBundles[i]->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.imageIndex)->GetHandle().gpu);
             mBundles[i]->DrawIndexedInstanced(shape.indexCount, 1, shape.fromIndex, 0, 0);
         }
         mBundles[i]->Close();
@@ -482,7 +368,9 @@ void AnExample::PopulateCommandList(void) {
 
     mCommandList->SetGraphicsRootSignature(mRootSignature);
 
-    ID3D12DescriptorHeap *heaps[] = { mCbvSrvHeap, mSamplerHeap };
+    ID3D12DescriptorHeap *shaderResourceHeap = Render::gShaderResourceHeap->GetCurrentHeap();
+    ID3D12DescriptorHeap *samplerHeap = Render::gSamplerHeap->GetCurrentHeap();
+    ID3D12DescriptorHeap *heaps[] = { shaderResourceHeap, samplerHeap };
     mCommandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     mCommandList->RSSetViewports(1, &mViewport);
