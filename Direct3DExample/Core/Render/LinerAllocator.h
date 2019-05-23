@@ -59,8 +59,8 @@ private:
     MemoryBlock AllocateLarge(size_t size);
     void DestoryPages(void);
 
-    const static size_t MEMORY_ALIGNMENT        = 0x100;    // 256
-    const static size_t MEMORY_ALIGNMENT_MASK   = 0xff;     // 255
+    const static size_t MEMORY_ALIGNMENT        = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+    const static size_t MEMORY_ALIGNMENT_MASK   = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
     const static size_t GPU_MEMORY_PAGE_SIZE    = 0x10000;  // 64K
     const static size_t CPU_MEMORY_PAGE_SIZE    = 0x200000; // 2MB
 
