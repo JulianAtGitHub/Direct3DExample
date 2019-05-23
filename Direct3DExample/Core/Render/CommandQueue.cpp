@@ -24,7 +24,7 @@ void CommandQueue::Initialize(void) {
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    queueDesc.NodeMask = 0;
+    queueDesc.NodeMask = 1;
     ASSERT_SUCCEEDED(gDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mQueue)));
     mQueue->SetName(L"CommandQueue::mQueue");
 

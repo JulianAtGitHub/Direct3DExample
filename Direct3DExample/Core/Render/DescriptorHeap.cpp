@@ -15,7 +15,7 @@ DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
     mHeapDesc.NumDescriptors = count;
     mHeapDesc.Type = type;
     mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    mHeapDesc.NodeMask = 0;
+    mHeapDesc.NodeMask = 1;
 }
 
 DescriptorHeap::~DescriptorHeap(void) {

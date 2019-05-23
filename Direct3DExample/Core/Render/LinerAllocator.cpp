@@ -28,8 +28,8 @@ void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
     D3D12_HEAP_PROPERTIES heapProps;
     heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
     heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProps.CreationNodeMask = 0;
-    heapProps.VisibleNodeMask = 0;
+    heapProps.CreationNodeMask = 1;
+    heapProps.VisibleNodeMask = 1;
 
     D3D12_RESOURCE_DESC resDesc;
     resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
