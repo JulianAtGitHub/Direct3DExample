@@ -79,6 +79,9 @@
     <ClCompile Include="Common\Common.cpp">
       <Filter>Sources\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\ConstantBuffer.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -152,6 +155,9 @@
     </ClInclude>
     <ClInclude Include="Common\Common.h">
       <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\ConstantBuffer.h">
+      <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
