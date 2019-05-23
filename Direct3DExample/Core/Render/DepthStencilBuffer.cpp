@@ -5,10 +5,13 @@
 namespace Render {
 
 DepthStencilBuffer::DepthStencilBuffer(uint32_t width, uint32_t height, DXGI_FORMAT format)
-: PixelBuffer(width, height)
+: PixelBuffer()
 , mClearedDepth(1.0f)
 , mClearedStencil(0)
 {
+    mPitch = width;
+    mWidth = width;
+    mHeight = height;
     Initialize(format);
 }
 
