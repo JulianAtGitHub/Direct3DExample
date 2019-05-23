@@ -36,4 +36,6 @@ extern ID3D12Resource * GetRenderTarget(uint32_t frameIndex);
 extern const D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewHandle(uint32_t frameIndex);
 extern const D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewHandle(void);
 
+extern uint32_t BitsPerPixel(DXGI_FORMAT format);
+
 }
