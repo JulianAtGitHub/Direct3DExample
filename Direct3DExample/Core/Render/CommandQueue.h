@@ -7,8 +7,9 @@ public:
     CommandQueue(const D3D12_COMMAND_LIST_TYPE type);
     ~CommandQueue(void);
 
-    uint64_t UpdateCompleteFence(void);
+    INLINE ID3D12CommandQueue * GetQueue(void) const { return mQueue; }
 
+    uint64_t UpdateCompleteFence(void);
     bool IsFenceComplete(uint64_t fenceValue);
     void WaitForFence(uint64_t fenceValue);
     void WaitForIdle(void);
