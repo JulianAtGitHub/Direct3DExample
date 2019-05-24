@@ -9,7 +9,6 @@ namespace Render {
 
 ID3D12Device       *gDevice                     = nullptr;
 IDXGISwapChain3    *gSwapChain                  = nullptr;
-ID3D12CommandQueue *gCommandQueue               = nullptr;
 CommandContext     *gCommand                    = nullptr;
 
 DescriptorHeap     *gRenderTargetHeap           = nullptr;
@@ -147,12 +146,6 @@ void Initialize(HWND hwnd) {
         }
     }
 
-    // command queue
-    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    ASSERT_SUCCEEDED(gDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&gCommandQueue)));
-
     gCommand = new CommandContext(D3D12_COMMAND_LIST_TYPE_DIRECT);
 
     // create swap chain
@@ -169,7 +162,7 @@ void Initialize(HWND hwnd) {
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 
     WRL::ComPtr<IDXGISwapChain1> swapChain1;
-    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(gCommandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
+    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(gCommand->GetQueue()->GetQueue(), hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
     ASSERT_SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&gSwapChain)));
 
 #if defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
@@ -221,23 +214,8 @@ void Terminate(void) {
     }
 
     DeleteAndSetNull(gCommand);
-    ReleaseAndSetNull(gCommandQueue);
     ReleaseAndSetNull(gSwapChain);
     ReleaseAndSetNull(gDevice);
-}
-
-ID3D12Resource * GetRenderTarget(uint32_t frameIndex) { 
-    ASSERT_PRINT(frameIndex < FRAME_COUNT);
-    return gRenderTarget[frameIndex]->GetResource();
-}
-
-const D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewHandle(uint32_t frameIndex) { 
-    ASSERT_PRINT(frameIndex < FRAME_COUNT);
-    return gRenderTarget[frameIndex]->GetHandle().cpu;
-}
-
-const D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewHandle(void) {
-    return gDepthStencil->GetHandle().cpu;
 }
 
 uint32_t BitsPerPixel(DXGI_FORMAT format) {

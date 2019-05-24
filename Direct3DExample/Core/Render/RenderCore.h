@@ -15,7 +15,6 @@ constexpr uint32_t          FRAME_COUNT = 3;
 
 extern ID3D12Device        *gDevice;
 extern IDXGISwapChain3     *gSwapChain;
-extern ID3D12CommandQueue  *gCommandQueue;
 extern CommandContext      *gCommand;
 
 extern DescriptorHeap      *gRenderTargetHeap;
@@ -33,10 +32,6 @@ extern bool                 gHDROutputSupport;
 
 extern void Initialize(HWND hwnd);
 extern void Terminate(void);
-
-extern ID3D12Resource * GetRenderTarget(uint32_t frameIndex);
-extern const D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewHandle(uint32_t frameIndex);
-extern const D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewHandle(void);
 
 extern uint32_t BitsPerPixel(DXGI_FORMAT format);
 
