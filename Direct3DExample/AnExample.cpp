@@ -18,16 +18,12 @@ AnExample::AnExample(HWND hwnd)
 ,mBundleAllocator(nullptr)
 ,mRootSignature(nullptr)
 ,mPipelineState(nullptr)
-,mCommandList(nullptr)
 ,mVertexIndexBuffer(nullptr)
 ,mConstBuffer(nullptr)
-,mFenceEvent(nullptr)
-,mFence(nullptr)
 ,mCurrentFrame(0)
 ,mScene(nullptr)
 {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mCommandAllocators[i] = nullptr;
         mBundles[i] = nullptr;
         mFenceValues[i] = 1;
     }
@@ -38,9 +34,6 @@ AnExample::AnExample(HWND hwnd)
     GetWindowInfo(mHwnd, &windowInfo);
     mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
     mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
-    mAspectRatio = static_cast<float>(mWidth) / static_cast<float>(mHeight);
-    mViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
-    mScissorRect = { 0, 0, static_cast<long>(mWidth), static_cast<long>(mHeight) };
 }
 
 AnExample::~AnExample(void) {
@@ -66,17 +59,16 @@ void AnExample::Update(void) {
     //XMMATRIX model = ::XMMatrixIdentity();
     XMMATRIX model = ::XMMatrixRotationY(y);
     XMMATRIX view = ::XMMatrixLookAtRH(cameraPos, cameraFocus, cameraUp);
-    XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, mAspectRatio, 0.1f, 100.0f);
+    XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 100.0f);
     XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
 
     memcpy(mConstBuffer->GetMappedBuffer(0, mCurrentFrame), &constBuffer, sizeof(constBuffer));
 }
 
 void AnExample::Render(void) {
+    Render::gCommand->Begin(mPipelineState);
     PopulateCommandList();
-    
-    ID3D12CommandList *commandLists[] = { mCommandList };
-    Render::gCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+    mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
     HRESULT result = Render::gSwapChain->Present(1, 0);
 
@@ -84,10 +76,7 @@ void AnExample::Render(void) {
 }
 
 void AnExample::Destroy(void) {
-    WaitForGPU();
-    CloseHandle(mFenceEvent);
-
-    mFence->Release();
+    Render::gCommand->GetQueue()->WaitForIdle();
 
     for (uint32_t i = 0; i < mTextures.Count(); ++i) {
         delete mTextures.At(i);
@@ -99,36 +88,16 @@ void AnExample::Destroy(void) {
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         mBundles[i]->Release();
     }
-    mCommandList->Release();
     mPipelineState->Release();
     mRootSignature->Release();
     mBundleAllocator->Release();
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mCommandAllocators[i]->Release();
-    }
 
     Render::Terminate();
 }
 
-void AnExample::WaitForGPU(void) {
-    const uint64_t fenceValue = mFenceValues[mCurrentFrame];
-    Render::gCommandQueue->Signal(mFence, fenceValue);
-    mFence->SetEventOnCompletion(fenceValue, mFenceEvent);
-    WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
-}
-
 void AnExample::MoveToNextFrame(void) {
-    const uint64_t fenceValue = mFenceValues[mCurrentFrame];
-    Render::gCommandQueue->Signal(mFence, fenceValue);
-
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
-
-    if (mFence->GetCompletedValue() < mFenceValues[mCurrentFrame]) {
-        mFence->SetEventOnCompletion(mFenceValues[mCurrentFrame], mFenceEvent);
-        WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
-    }
-
-    mFenceValues[mCurrentFrame] = fenceValue + 1;
+    Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
 }
 
 void AnExample::LoadPipeline(void) {
@@ -137,12 +106,6 @@ void AnExample::LoadPipeline(void) {
     Render::Initialize(mHwnd);
 
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
-
-    // command allocator
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        result = Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&(mCommandAllocators[i])));
-        assert(SUCCEEDED(result));
-    }
 
     result = Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&mBundleAllocator));
     assert(SUCCEEDED(result));
@@ -311,26 +274,6 @@ void AnExample::LoadAssets(void) {
     // const buffer
     mConstBuffer = new Render::ConstantBuffer(sizeof(ConstBuffer), 1);
 
-    // command list
-    result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocators[mCurrentFrame], mPipelineState, IID_PPV_ARGS(&mCommandList));
-    assert(SUCCEEDED(result));
-
-    // fence
-    result = Render::gDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence));
-    assert(SUCCEEDED(result));
-
-    mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (mFence == nullptr) {
-        result = HRESULT_FROM_WIN32(GetLastError());
-        assert(SUCCEEDED(result));
-    }
-
-    mCommandList->Close();
-    ID3D12CommandList* ppCommandLists[] = { mCommandList };
-    Render::gCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    WaitForGPU();
-
     // bundle
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mPipelineState, IID_PPV_ARGS(&(mBundles[i])));
@@ -357,44 +300,23 @@ void AnExample::LoadAssets(void) {
 }
 
 void AnExample::PopulateCommandList(void) {
-    HRESULT result = S_OK;
 
-    // reset commands
-    result = mCommandAllocators[mCurrentFrame]->Reset();
-    assert(SUCCEEDED(result));
+    Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
+    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+    Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);
+    Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
+    Render::gCommand->ClearDepth(Render::gDepthStencil);
 
-    result = mCommandList->Reset(mCommandAllocators[mCurrentFrame], mPipelineState);
-    assert(SUCCEEDED(result));
-
-    mCommandList->SetGraphicsRootSignature(mRootSignature);
+    ID3D12GraphicsCommandList *commandList = Render::gCommand->GetCommandList();
+    commandList->SetGraphicsRootSignature(mRootSignature);
 
     ID3D12DescriptorHeap *shaderResourceHeap = Render::gShaderResourceHeap->GetCurrentHeap();
     ID3D12DescriptorHeap *samplerHeap = Render::gSamplerHeap->GetCurrentHeap();
     ID3D12DescriptorHeap *heaps[] = { shaderResourceHeap, samplerHeap };
-    mCommandList->SetDescriptorHeaps(_countof(heaps), heaps);
+    commandList->SetDescriptorHeaps(_countof(heaps), heaps);
+    commandList->ExecuteBundle(mBundles[mCurrentFrame]);
 
-    mCommandList->RSSetViewports(1, &mViewport);
-    mCommandList->RSSetScissorRects(1, &mScissorRect);
-
-    ID3D12Resource *renderTarget =  Render::GetRenderTarget(mCurrentFrame);
-    D3D12_RESOURCE_BARRIER barrierBefore = CD3DX12_RESOURCE_BARRIER::Transition(renderTarget, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-    mCommandList->ResourceBarrier(1, &barrierBefore);
-
-    const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = Render::GetRenderTargetViewHandle(mCurrentFrame);
-    const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = Render::GetDepthStencilViewHandle();
-    mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-
-    // record commands
-    const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-    mCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-    mCommandList->ExecuteBundle(mBundles[mCurrentFrame]);
-
-    D3D12_RESOURCE_BARRIER barrierAfter = CD3DX12_RESOURCE_BARRIER::Transition(renderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-    mCommandList->ResourceBarrier(1, &barrierAfter);
-
-    mCommandList->Close();
+    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 }
 
 uint8_t * AnExample::GenerateTextureData(void) {

@@ -27,7 +27,6 @@ private:
     void PopulateCommandList(void);
     uint8_t * GenerateTextureData(void);
 
-    void WaitForGPU(void);
     void MoveToNextFrame(void);
 
     void LoadPipeline(void);
@@ -42,14 +41,10 @@ private:
     static const uint32_t TEXTURE_PIXEL_SIZE = 4;
 
     HWND mHwnd;
-    D3D12_VIEWPORT mViewport;
-    D3D12_RECT mScissorRect;
-    ID3D12CommandAllocator *mCommandAllocators[FRAME_COUNT];
-    ID3D12CommandAllocator *mBundleAllocator;
 
     ID3D12RootSignature *mRootSignature;
     ID3D12PipelineState *mPipelineState;
-    ID3D12GraphicsCommandList *mCommandList;
+    ID3D12CommandAllocator *mBundleAllocator;
     ID3D12GraphicsCommandList *mBundles[FRAME_COUNT];
 
     Render::GPUBuffer *mVertexIndexBuffer;
@@ -58,15 +53,11 @@ private:
     Render::ConstantBuffer *mConstBuffer;
     CList<Render::PixelBuffer *> mTextures;
 
-    HANDLE mFenceEvent;
-    ID3D12Fence *mFence;
     uint64_t mFenceValues[FRAME_COUNT];
-
     uint32_t mCurrentFrame;
 
     uint32_t mWidth;
     uint32_t mHeight;
-    float mAspectRatio;
 
     Model::Scene *mScene;
 };
