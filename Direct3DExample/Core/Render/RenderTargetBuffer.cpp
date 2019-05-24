@@ -20,7 +20,7 @@ void RenderTargetBuffer::Initialize(ID3D12Resource *resource) {
         return;
     }
 
-    mUsageState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    mUsageState = D3D12_RESOURCE_STATE_PRESENT;
     mResource = resource;
 
     D3D12_RESOURCE_DESC desc = mResource->GetDesc();
