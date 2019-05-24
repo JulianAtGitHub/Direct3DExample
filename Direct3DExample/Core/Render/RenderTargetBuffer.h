@@ -10,6 +10,7 @@ public:
     virtual ~RenderTargetBuffer(void);
 
     INLINE XMFLOAT4 GetClearedColor(void) { return mClearedColor; }
+    INLINE float * GetClearedColorData(void) { return &mClearedColor.x; }
 
     void CreateView(DescriptorHandle &handle);
 

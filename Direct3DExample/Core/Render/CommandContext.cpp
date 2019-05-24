@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "CommandContext.h"
 #include "CommandQueue.h"
+#include "RenderCore.h"
 #include "LinerAllocator.h"
 #include "PixelBuffer.h"
-#include "RenderCore.h"
+#include "RenderTargetBuffer.h"
+#include "DepthStencilBuffer.h"
 
 namespace Render {
 
@@ -135,6 +137,22 @@ void CommandContext::UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA
     LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(uploadSize);
     UpdateSubresources(mCommandList, resource->GetResource(), uploadMem.buffer->GetResource(), uploadMem.offset, 0, count, subDatas);
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
+}
+
+void CommandContext::ClearColor(RenderTargetBuffer *resource) {
+    mCommandList->ClearRenderTargetView(resource->GetHandle().cpu, resource->GetClearedColorData(), 0, nullptr);
+}
+
+void CommandContext::ClearDepth(DepthStencilBuffer *resource) {
+    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_DEPTH, resource->GetClearedDepth(), 0, 0, nullptr);
+}
+
+void CommandContext::ClearStencil(DepthStencilBuffer *resource) {
+    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_STENCIL, 0.0f, resource->GetClearedStencil(), 0, nullptr);
+}
+
+void CommandContext::ClearDepthAndStencil(DepthStencilBuffer *resource) {
+    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, resource->GetClearedDepth(), resource->GetClearedStencil(), 0, nullptr);
 }
 
 }

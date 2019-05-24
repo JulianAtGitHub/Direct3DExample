@@ -7,6 +7,8 @@ namespace Render {
 class LinerAllocator;
 class GPUResource;
 class PixelBuffer;
+class RenderTargetBuffer;
+class DepthStencilBuffer;
 
 class CommandContext {
 public:
@@ -23,6 +25,11 @@ public:
     void UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size);
     void UploadTexture(PixelBuffer *resource, const void *data);
     void UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count);
+
+    void ClearColor(RenderTargetBuffer *resource);
+    void ClearDepth(DepthStencilBuffer *resource);
+    void ClearStencil(DepthStencilBuffer *resource);
+    void ClearDepthAndStencil(DepthStencilBuffer *resource);
 
     void SetViewport(const D3D12_VIEWPORT& viewport);
     void SetViewport(float x, float y, float w, float h, float minDepth = D3D12_MIN_DEPTH, float maxDepth = D3D12_MAX_DEPTH);
