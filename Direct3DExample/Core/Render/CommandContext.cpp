@@ -100,8 +100,6 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
         BarrierDesc.UAV.pResource = resource->GetResource();
         mCommandList->ResourceBarrier(1, &BarrierDesc);
     }
-
-    
 }
 
 void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size) {
