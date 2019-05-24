@@ -1,8 +1,9 @@
 #pragma once
 
+#include "CommandQueue.h"
+
 namespace Render {
 
-class CommandQueue;
 class LinerAllocator;
 class GPUResource;
 class PixelBuffer;
@@ -12,10 +13,11 @@ public:
     CommandContext(const D3D12_COMMAND_LIST_TYPE type);
     ~CommandContext(void);
 
-    INLINE CommandQueue * GetCommandQueue(void) { return mQueue; }
+    INLINE CommandQueue * GetQueue(void) const { return mQueue; }
+    INLINE ID3D12GraphicsCommandList * GetCommandList(void) const { return mCommandList; }
 
     void Begin(ID3D12PipelineState *pipeline = nullptr);
-    void End(bool waitUtilComplete = false);
+    uint64_t End(bool waitUtilComplete = false);
 
     void TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState);
     void UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size);
