@@ -31,6 +31,8 @@ public:
     void ClearStencil(DepthStencilBuffer *resource);
     void ClearDepthAndStencil(DepthStencilBuffer *resource);
 
+    void SetRenderTarget(RenderTargetBuffer *renderTarget, DepthStencilBuffer *depthStencil);
+
     void SetViewport(const D3D12_VIEWPORT& viewport);
     void SetViewport(float x, float y, float w, float h, float minDepth = D3D12_MIN_DEPTH, float maxDepth = D3D12_MAX_DEPTH);
     void SetScissor(const D3D12_RECT& scissor);

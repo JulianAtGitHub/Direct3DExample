@@ -155,4 +155,10 @@ void CommandContext::ClearDepthAndStencil(DepthStencilBuffer *resource) {
     mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, resource->GetClearedDepth(), resource->GetClearedStencil(), 0, nullptr);
 }
 
+void CommandContext::SetRenderTarget(RenderTargetBuffer *renderTarget, DepthStencilBuffer *depthStencil) {
+    const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTarget->GetHandle().cpu;
+    const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = depthStencil->GetHandle().cpu;
+    mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+}
+
 }
