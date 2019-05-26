@@ -14,22 +14,22 @@ struct DescriptorHandle {
 
 class DescriptorHeap {
 public:
-
     DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count);
     ~DescriptorHeap(void);
 
     DescriptorHandle Allocate(void);
 
-    INLINE ID3D12DescriptorHeap * GetCurrentHeap(void) const { return mHeap; }
+    INLINE ID3D12DescriptorHeap * GetHeap(void) const { return mHeap; }
+    INLINE uint32_t GetRemainingCount(void) const { return mRemainingCount; }
 
 private:
-    void DestroyAll(void);
+    void Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count);
+    void Destory(void);
 
-    CList<ID3D12DescriptorHeap *>   mHeapPool;
-    ID3D12DescriptorHeap           *mHeap;
-    D3D12_DESCRIPTOR_HEAP_DESC      mHeapDesc;
-    uint32_t                        mDescriptorSize;
-    uint32_t                        mRemainingCount;
+    ID3D12DescriptorHeap   *mHeap;
+    uint32_t                mDescriptorSize;
+    uint32_t                mTotalCount;
+    uint32_t                mRemainingCount;
 };
 
 }

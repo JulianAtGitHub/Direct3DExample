@@ -7,50 +7,51 @@ namespace Render {
 DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
 : mHeap(nullptr)
 , mDescriptorSize(0)
+, mTotalCount(0)
 , mRemainingCount(0)
 {
-    assert(count > 0);
-
-    mHeapDesc = {};
-    mHeapDesc.NumDescriptors = count;
-    mHeapDesc.Type = type;
-    mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    mHeapDesc.NodeMask = 1;
-
-    if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-        || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
-        mHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    }
+    Initialize(type, count);
 }
 
 DescriptorHeap::~DescriptorHeap(void) {
-    DestroyAll();
+    Destory();
 }
 
-void DescriptorHeap::DestroyAll(void) {
-    for (uint32_t i = 0; i < mHeapPool.Count(); ++i) {
-        mHeapPool.At(i)->Release();
+void DescriptorHeap::Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count) {
+    ASSERT_PRINT((count > 0));
+
+    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+    heapDesc.NumDescriptors = count;
+    heapDesc.Type = type;
+    heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    heapDesc.NodeMask = 1;
+
+    if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+        || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
+        heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     }
 
-    mHeap = nullptr;
+    ASSERT_SUCCEEDED(gDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mHeap)));
+    mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(type);
+    mTotalCount = count;
+    mRemainingCount = count;
+}
+
+void DescriptorHeap::Destory(void) {
+    ReleaseAndSetNull(mHeap);
+    mDescriptorSize = 0;
+    mTotalCount = 0;
     mRemainingCount = 0;
 }
 
 DescriptorHandle DescriptorHeap::Allocate(void) {
-    if (mRemainingCount == 0) {
-        ASSERT_SUCCEEDED(gDevice->CreateDescriptorHeap(&mHeapDesc, IID_PPV_ARGS(&mHeap)));
-        mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(mHeapDesc.Type);
-        mRemainingCount = mHeapDesc.NumDescriptors;
-        mHeapPool.PushBack(mHeap);
-    }
+    ASSERT_PRINT((mRemainingCount > 0));
 
-    uint32_t offset = mHeapDesc.NumDescriptors - mRemainingCount;
-    DescriptorHandle handle(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize,
-                            mHeap->GetGPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize);
-
+    uint32_t offset = mTotalCount - mRemainingCount;
     -- mRemainingCount;
 
-    return handle;
+    return DescriptorHandle(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize,
+                            mHeap->GetGPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize);
 }
 
 }
