@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Render/RenderCore.h"
+
 namespace Model {
     class Scene;
 }
@@ -8,6 +10,8 @@ namespace Render {
     class GPUBuffer;
     class ConstantBuffer;
     class PixelBuffer;
+    class DescriptorHeap;
+    class Sampler;
 }
 
 class AnExample {
@@ -32,10 +36,6 @@ private:
     void LoadPipeline(void);
     void LoadAssets(void);
 
-    static const D3D_FEATURE_LEVEL FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
-
-    static const uint32_t FRAME_COUNT = 3;
-
     static const uint32_t TEXTURE_WIDTH = 256;
     static const uint32_t TEXTURE_HEIGHT = 256;
     static const uint32_t TEXTURE_PIXEL_SIZE = 4;
@@ -45,15 +45,20 @@ private:
     ID3D12RootSignature *mRootSignature;
     ID3D12PipelineState *mPipelineState;
     ID3D12CommandAllocator *mBundleAllocator;
-    ID3D12GraphicsCommandList *mBundles[FRAME_COUNT];
+    ID3D12GraphicsCommandList *mBundles[Render::FRAME_COUNT];
 
     Render::GPUBuffer *mVertexIndexBuffer;
     D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;
     D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
     Render::ConstantBuffer *mConstBuffer;
+
+    Render::DescriptorHeap *mShaderResourceHeap;
     CList<Render::PixelBuffer *> mTextures;
 
-    uint64_t mFenceValues[FRAME_COUNT];
+    Render::DescriptorHeap *mSamplerHeap;
+    Render::Sampler *mSampler;
+
+    uint64_t mFenceValues[Render::FRAME_COUNT];
     uint32_t mCurrentFrame;
 
     uint32_t mWidth;
