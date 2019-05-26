@@ -82,6 +82,12 @@
     <ClCompile Include="Core\Render\ConstantBuffer.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\DescriptorHeapPool.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Sampler.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -157,6 +163,12 @@
       <Filter>Sources\Common</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\ConstantBuffer.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\DescriptorHeapPool.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Sampler.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>

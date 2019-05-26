@@ -187,6 +187,7 @@
     <ClCompile Include="Core\Render\CommandContext.cpp" />
     <ClCompile Include="Core\Render\CommandQueue.cpp" />
     <ClCompile Include="Core\Render\ConstantBuffer.cpp" />
+    <ClCompile Include="Core\Render\DescriptorHeapPool.cpp" />
     <ClCompile Include="Core\Render\GPUBuffer.cpp" />
     <ClCompile Include="Core\Render\LinerAllocator.cpp" />
     <ClCompile Include="Core\Render\RenderTargetBuffer.cpp" />
@@ -195,6 +196,7 @@
     <ClCompile Include="Core\Render\DescriptorHeap.cpp" />
     <ClCompile Include="Core\Render\GPUResource.cpp" />
     <ClCompile Include="Core\Render\PixelBuffer.cpp" />
+    <ClCompile Include="Core\Render\Sampler.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -219,6 +221,7 @@
     <ClInclude Include="Core\Render\CommandContext.h" />
     <ClInclude Include="Core\Render\CommandQueue.h" />
     <ClInclude Include="Core\Render\ConstantBuffer.h" />
+    <ClInclude Include="Core\Render\DescriptorHeapPool.h" />
     <ClInclude Include="Core\Render\GPUBuffer.h" />
     <ClInclude Include="Core\Render\LinerAllocator.h" />
     <ClInclude Include="Core\Render\RenderTargetBuffer.h" />
@@ -227,6 +230,7 @@
     <ClInclude Include="Core\Render\DescriptorHeap.h" />
     <ClInclude Include="Core\Render\GPUResource.h" />
     <ClInclude Include="Core\Render\PixelBuffer.h" />
+    <ClInclude Include="Core\Render\Sampler.h" />
     <ClInclude Include="DirectX\d3dx12.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
