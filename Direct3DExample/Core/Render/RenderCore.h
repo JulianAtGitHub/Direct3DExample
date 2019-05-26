@@ -17,11 +17,6 @@ extern ID3D12Device        *gDevice;
 extern IDXGISwapChain3     *gSwapChain;
 extern CommandContext      *gCommand;
 
-extern DescriptorHeap      *gRenderTargetHeap;
-extern DescriptorHeap      *gDepthStencilHeap;
-extern DescriptorHeap      *gShaderResourceHeap;
-extern DescriptorHeap      *gSamplerHeap;
-
 extern RenderTargetBuffer  *gRenderTarget[FRAME_COUNT];
 extern DepthStencilBuffer  *gDepthStencil;
 
