@@ -51,7 +51,7 @@ private:
     struct Node {
         Node(const Element &element): value(element), prev(nullptr), next(nullptr) { }
 
-        const Element &value;
+        const Element value;
         Node *prev;
         Node *next;
     };
