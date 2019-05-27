@@ -88,6 +88,9 @@
     <ClCompile Include="Core\Render\Sampler.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\PipelineState.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -169,6 +172,9 @@
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\Sampler.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\PipelineState.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
