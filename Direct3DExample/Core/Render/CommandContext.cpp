@@ -33,8 +33,6 @@ void CommandContext::Initialize(void) {
 }
 
 void CommandContext::Destroy(void) {
-    mCommandList->Close();
-
     mQueue->DiscardAllocator(mCommandAlloctor, mFenceValue);
     mCommandAlloctor = nullptr;
     DeleteAndSetNull(mQueue);
