@@ -8,6 +8,7 @@
 #include "Core/Render/ConstantBuffer.h"
 #include "Core/Render/PixelBuffer.h"
 #include "Core/Render/Sampler.h"
+#include "Core/Render/PipelineState.h"
 
 struct ConstBuffer {
     XMFLOAT4X4 mvp;
@@ -17,7 +18,7 @@ AnExample::AnExample(HWND hwnd)
 :mHwnd(hwnd)
 ,mBundleAllocator(nullptr)
 ,mRootSignature(nullptr)
-,mPipelineState(nullptr)
+,mGraphicsState(nullptr)
 ,mVertexIndexBuffer(nullptr)
 ,mConstBuffer(nullptr)
 ,mShaderResourceHeap(nullptr)
@@ -69,7 +70,7 @@ void AnExample::Update(void) {
 }
 
 void AnExample::Render(void) {
-    Render::gCommand->Begin(mPipelineState);
+    Render::gCommand->Begin(mGraphicsState->GetPipelineState());
     PopulateCommandList();
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
@@ -93,7 +94,7 @@ void AnExample::Destroy(void) {
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
         mBundles[i]->Release();
     }
-    mPipelineState->Release();
+    DeleteAndSetNull(mGraphicsState);
     mRootSignature->Release();
     mBundleAllocator->Release();
 
@@ -183,9 +184,6 @@ void AnExample::LoadAssets(void) {
     }
     assert(SUCCEEDED(result));
 
-    CD3DX12_SHADER_BYTECODE vsByteCode(vertexShader);
-    CD3DX12_SHADER_BYTECODE psByteCode(pixelShader);
-
     // input layout
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -194,42 +192,14 @@ void AnExample::LoadAssets(void) {
         { "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
-    D3D12_INPUT_LAYOUT_DESC inputDesc = {};
-    inputDesc.pInputElementDescs = inputElementDesc;
-    inputDesc.NumElements = _countof(inputElementDesc);
 
-    // resterizer
-    CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
-    rasterizerDesc.FrontCounterClockwise = TRUE;
-    
-    // blend
-    CD3DX12_BLEND_DESC blendDesc(D3D12_DEFAULT);
-
-    // depth stencil
-    CD3DX12_DEPTH_STENCIL_DESC depthStencilDesc(D3D12_DEFAULT);
-
-    // sample
-    DXGI_SAMPLE_DESC sampleDesc = {};
-    sampleDesc.Count = 1;
-
-    // pipeline 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc = {};
-    pipelineStateDesc.InputLayout = inputDesc;
-    pipelineStateDesc.pRootSignature = mRootSignature;
-    pipelineStateDesc.VS = vsByteCode;
-    pipelineStateDesc.PS = psByteCode;
-    pipelineStateDesc.RasterizerState = rasterizerDesc;
-    pipelineStateDesc.BlendState = blendDesc;
-    pipelineStateDesc.DepthStencilState = depthStencilDesc;
-    pipelineStateDesc.SampleMask = UINT_MAX;
-    pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    pipelineStateDesc.NumRenderTargets = 1;
-    pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-    pipelineStateDesc.SampleDesc = sampleDesc;
-
-    result = Render::gDevice->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState));
-    assert(SUCCEEDED(result));
+    mGraphicsState = new Render::GraphicsState();
+    mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
+    mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
+    mGraphicsState->GetVertexShader() = CD3DX12_SHADER_BYTECODE(vertexShader);
+    mGraphicsState->GetPixelShader() = CD3DX12_SHADER_BYTECODE(pixelShader);
+    mGraphicsState->SetRootSignature(mRootSignature);
+    mGraphicsState->Create();
 
     vertexShader->Release();
     pixelShader->Release();
@@ -270,7 +240,7 @@ void AnExample::LoadAssets(void) {
 
     // bundle
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
-        result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mPipelineState, IID_PPV_ARGS(&(mBundles[i])));
+        result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mGraphicsState->GetPipelineState(), IID_PPV_ARGS(&(mBundles[i])));
         assert(SUCCEEDED(result));
 
         // record command to bundle
