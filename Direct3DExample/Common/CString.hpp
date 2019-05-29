@@ -7,33 +7,66 @@ public:
 
     const static size_t ELEMENT_SIZE = sizeof(Element);
 
-    CBaseString(void):mStr(nullptr) { Copy(""); }
-    CBaseString(const Element *str):mStr(nullptr) { Copy(str); }
-    CBaseString(const CBaseString<Element> &str):mStr(nullptr) { Copy(str.Get()); }
+    CBaseString(void):mStr(nullptr) { Copy("", 0); }
+    CBaseString(const Element *str):mStr(nullptr) { Copy(str, Length(str)); }
+    CBaseString(const CBaseString<Element> &str):mStr(nullptr) { Copy(str.Get(), str.Length()); }
     virtual ~CBaseString(void) { if (mStr != nullptr) { delete [] mStr; } }
 
     INLINE const Element * Get(void) const { return mStr; }
 
-    INLINE size_t Length(void) const { return Length(mStr); }
+    INLINE size_t Length(void) const { return mLenth; }
 
     bool operator==(const CBaseString<Element> &other) const {
         return Compare(mStr, other.Get()) == 0;
     }
 
     CBaseString<Element>& operator=(const CBaseString<Element>& rhs) {
-        Copy(rhs.Get());
+        Copy(rhs.Get(), rhs.Length());
+        return *this;
+    }
+
+    CBaseString<Element>& operator+=(const Element *str) {
+        Append(str, Length(str));
+        return *this;
+    }
+
+    CBaseString<Element>& operator+=(const CBaseString<Element>& str) {
+        Append(str);
         return *this;
     }
 
 protected:
-    void Copy(const Element *str) {
+    void Copy(const Element *str, size_t length) {
         if (mStr != nullptr) {
             delete [] mStr;
         }
 
-        size_t size = Length(str) + 1;
-        mStr = new char[size];
-        memcpy(mStr, str, size * ELEMENT_SIZE);
+        mLenth = length;
+        mSize = length + 1;
+        mStr = new Element[mSize];
+        memcpy(mStr, str, mSize * ELEMENT_SIZE);
+    }
+
+    void Append(const Element *str, size_t length) {
+        if (length == 0) {
+            return;
+        }
+
+        if (mSize - mLenth - 1 >= length) {
+            memcpy(mStr + mLenth, str, (length + 1) * ELEMENT_SIZE);
+        } else {
+            mSize = MAX(mSize, length) >> 1;
+            Element *oldStr = mStr;
+            mStr = new Element[mSize];
+            memcpy(mStr, oldStr, mLenth * ELEMENT_SIZE);
+            memcpy(mStr + mLenth, str, (length + 1) * ELEMENT_SIZE);
+            delete[] oldStr;
+        }
+        mLenth += length;
+    }
+
+    void Append(const CBaseString<Element>& str) {
+        Append(str.Get(), str.Length());
     }
 
 private:
@@ -51,6 +84,8 @@ private:
         return (*lend) - (*rend);
     }
 
+    size_t mLenth;
+    size_t mSize;   // buffer size
     Element *mStr;
 };
 
