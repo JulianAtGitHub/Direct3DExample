@@ -7,10 +7,9 @@ namespace Render {
 class LinerAllocator {
 public:
     enum MemoryType {
-        Invalid         =-1,
-        GpuExclusive    = 0,
-        CpuWritable     = 1,
-        MemoryTypeMax   = 2
+        Invalid         = 0,
+        GpuExclusive    = 1,
+        CpuWritable     = 2
     };
 
     struct MemoryBlock {
@@ -28,12 +27,8 @@ public:
     void CleanupPages(uint64_t fenceValue, uint64_t completeValue);
 
 private:
-    struct MemoryPage : public GPUResource {
-        MemoryType  mType;
-        size_t      mSize;
-        size_t      mOffset;
-        void       *mCPUAddress;
-
+    class MemoryPage : public GPUResource {
+    public:
         MemoryPage(MemoryType type, size_t size);
         virtual ~MemoryPage(void);
 
@@ -48,6 +43,12 @@ private:
         void Create(MemoryType type, size_t size);
         void Destory(void);
 
+        MemoryType  mType;
+        size_t      mSize;
+        size_t      mOffset;
+        void       *mCPUAddress;
+
+        friend class LinerAllocator;
     };
 
     struct UsedPage {
@@ -68,13 +69,13 @@ private:
     size_t                  mPageSize;
 
     MemoryPage             *mCurrentPage;
-    CList<MemoryPage *>     mPagePool;
-    CList<MemoryPage *>     mUsingPages;
-    CQueue<MemoryPage *>    mPendingPages;
-    CQueue<UsedPage>        mUsedPages;
+    CList<MemoryPage *>     mPagePool;      // all pages
+    CList<MemoryPage *>     mUsingPages;    // pages are using in current render loop
+    CQueue<MemoryPage *>    mPendingPages;  // pagea are created and ready for re-use
+    CQueue<UsedPage>        mUsedPages;     // pages are using in previous render loop which is not finished
 
-    CList<MemoryPage *>     mLargePages;
-    CQueue<UsedPage>        mUsedLargePages;
+    CQueue<UsedPage>        mUsedLargePages;// pages are ready to destroy
+    CList<MemoryPage *>     mLargePages;    // pages are using in current render loop
 };
 
 }
