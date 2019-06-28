@@ -13,6 +13,7 @@ namespace Render {
     class DescriptorHeap;
     class Sampler;
     class GraphicsState;
+    class RootSignature;
 }
 
 class AnExample {
@@ -43,7 +44,7 @@ private:
 
     HWND mHwnd;
 
-    ID3D12RootSignature *mRootSignature;
+    Render::RootSignature *mRootSignature;
     Render::GraphicsState *mGraphicsState;
     ID3D12CommandAllocator *mBundleAllocator;
     ID3D12GraphicsCommandList *mBundles[Render::FRAME_COUNT];

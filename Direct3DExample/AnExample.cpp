@@ -9,6 +9,7 @@
 #include "Core/Render/PixelBuffer.h"
 #include "Core/Render/Sampler.h"
 #include "Core/Render/PipelineState.h"
+#include "Core/Render/RootSignature.h"
 
 struct ConstBuffer {
     XMFLOAT4X4 mvp;
@@ -95,7 +96,7 @@ void AnExample::Destroy(void) {
         mBundles[i]->Release();
     }
     DeleteAndSetNull(mGraphicsState);
-    mRootSignature->Release();
+    DeleteAndSetNull(mRootSignature);
     mBundleAllocator->Release();
 
     Render::Terminate();
@@ -128,41 +129,14 @@ void AnExample::LoadAssets(void) {
     HRESULT result = S_OK;
 
     // root signature
-    D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
-    featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-    result = Render::gDevice->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData));
-    if (FAILED(result)) {
-        featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-    }
-
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
-
-    CD3DX12_ROOT_PARAMETER1 rootParams[3];
-    rootParams[0].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_VERTEX);
-    rootParams[1].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
-    rootParams[2].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
-
-    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-    ID3DBlob *signature = nullptr;
-    ID3DBlob *error = nullptr;
-    result = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error);
-    assert(SUCCEEDED(result));
-
-    result = Render::gDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature));
-    assert(SUCCEEDED(result));
-
-    signature->Release();
-    if (error) {
-        error->Release();
-    }
-
-    // build pipeline state
+    mRootSignature = new Render::RootSignature(3);
+    mRootSignature->SetConstantBuffer(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_VERTEX);
+    mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0);
+    mRootSignature->Create();
 
     // shaders
+    ID3DBlob *error = nullptr;
     ID3DBlob *vertexShader = nullptr;
     ID3DBlob *pixelShader = nullptr;
     uint32_t compileFlags = 0;
@@ -198,8 +172,7 @@ void AnExample::LoadAssets(void) {
     mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
     mGraphicsState->GetVertexShader() = CD3DX12_SHADER_BYTECODE(vertexShader);
     mGraphicsState->GetPixelShader() = CD3DX12_SHADER_BYTECODE(pixelShader);
-    mGraphicsState->SetRootSignature(mRootSignature);
-    mGraphicsState->Create();
+    mGraphicsState->Create(mRootSignature->Get());
 
     vertexShader->Release();
     pixelShader->Release();
@@ -244,8 +217,8 @@ void AnExample::LoadAssets(void) {
         assert(SUCCEEDED(result));
 
         // record command to bundle
-        mBundles[i]->SetGraphicsRootSignature(mRootSignature);
-        ID3D12DescriptorHeap *heaps[] = { mShaderResourceHeap->GetHeap(), mSamplerHeap->GetHeap() };
+        mBundles[i]->SetGraphicsRootSignature(mRootSignature->Get());
+        ID3D12DescriptorHeap *heaps[] = { mShaderResourceHeap->Get(), mSamplerHeap->Get() };
         mBundles[i]->SetDescriptorHeaps(_countof(heaps), heaps);
         mBundles[i]->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, i));
         mBundles[i]->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle().gpu);
@@ -262,19 +235,15 @@ void AnExample::LoadAssets(void) {
 }
 
 void AnExample::PopulateCommandList(void) {
-
     Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
     Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);
     Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
     Render::gCommand->ClearDepth(Render::gDepthStencil);
-
-    ID3D12GraphicsCommandList *commandList = Render::gCommand->GetCommandList();
-    commandList->SetGraphicsRootSignature(mRootSignature);
-    ID3D12DescriptorHeap *heaps[] = { mShaderResourceHeap->GetHeap(), mSamplerHeap->GetHeap() };
-    commandList->SetDescriptorHeaps(_countof(heaps), heaps);
-    commandList->ExecuteBundle(mBundles[mCurrentFrame]);
-
+    Render::gCommand->SetRootSignature(mRootSignature);
+    Render::DescriptorHeap *heaps[] = { mShaderResourceHeap, mSamplerHeap };
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+    Render::gCommand->ExecuteBundle(mBundles[mCurrentFrame]);
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 }
 
