@@ -19,7 +19,7 @@ public:
 
     DescriptorHandle Allocate(void);
 
-    INLINE ID3D12DescriptorHeap * GetHeap(void) const { return mHeap; }
+    INLINE ID3D12DescriptorHeap * Get(void) const { return mHeap; }
     INLINE uint32_t GetRemainingCount(void) const { return mRemainingCount; }
 
 private:

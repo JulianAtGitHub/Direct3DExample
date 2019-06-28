@@ -9,6 +9,8 @@ class GPUResource;
 class PixelBuffer;
 class RenderTargetBuffer;
 class DepthStencilBuffer;
+class RootSignature;
+class DescriptorHeap;
 
 class CommandContext {
 public:
@@ -40,6 +42,11 @@ public:
     void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissor);
     void SetViewportAndScissor(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 
+    void SetRootSignature(RootSignature *rootSignature);
+    void SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count);
+
+    void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
+
 private:
     void Initialize(void);
     void Destroy(void);
@@ -48,6 +55,7 @@ private:
                                                               | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
                                                               | D3D12_RESOURCE_STATE_COPY_DEST
                                                               | D3D12_RESOURCE_STATE_COPY_SOURCE;
+    static ID3D12DescriptorHeap    *msDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
     const D3D12_COMMAND_LIST_TYPE   mType;
     CommandQueue                   *mQueue;

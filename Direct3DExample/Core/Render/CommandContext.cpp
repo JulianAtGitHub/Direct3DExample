@@ -6,8 +6,12 @@
 #include "PixelBuffer.h"
 #include "RenderTargetBuffer.h"
 #include "DepthStencilBuffer.h"
+#include "RootSignature.h"
+#include "DescriptorHeap.h"
 
 namespace Render {
+
+ID3D12DescriptorHeap * CommandContext::msDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
 CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
@@ -86,7 +90,7 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
     D3D12_RESOURCE_BARRIER BarrierDesc = {};
     if (oldState != newState) {
         BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        BarrierDesc.Transition.pResource = resource->GetResource();
+        BarrierDesc.Transition.pResource = resource->Get();
         BarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
         BarrierDesc.Transition.StateBefore = oldState;
         BarrierDesc.Transition.StateAfter = newState;
@@ -97,7 +101,7 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
     } else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
         BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
         BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        BarrierDesc.UAV.pResource = resource->GetResource();
+        BarrierDesc.UAV.pResource = resource->Get();
         mCommandList->ResourceBarrier(1, &BarrierDesc);
     }
 }
@@ -112,7 +116,7 @@ void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, const vo
     SIMDMemCopy(uploadMem.cpuAddress, buffer, DivideByMultiple(size, 16));
 
     TransitResource(resource, D3D12_RESOURCE_STATE_COPY_DEST);
-    mCommandList->CopyBufferRegion(resource->GetResource(), offset, uploadMem.buffer->GetResource(), uploadMem.offset, size);
+    mCommandList->CopyBufferRegion(resource->Get(), offset, uploadMem.buffer->Get(), uploadMem.offset, size);
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
@@ -130,10 +134,10 @@ void CommandContext::UploadTexture(PixelBuffer *resource, const void *data) {
 }
 
 void CommandContext::UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count) {
-    UINT64 uploadSize = GetRequiredIntermediateSize(resource->GetResource(), 0, count);
+    UINT64 uploadSize = GetRequiredIntermediateSize(resource->Get(), 0, count);
 
     LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(uploadSize);
-    UpdateSubresources(mCommandList, resource->GetResource(), uploadMem.buffer->GetResource(), uploadMem.offset, 0, count, subDatas);
+    UpdateSubresources(mCommandList, resource->Get(), uploadMem.buffer->Get(), uploadMem.offset, 0, count, subDatas);
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
@@ -157,6 +161,23 @@ void CommandContext::SetRenderTarget(RenderTargetBuffer *renderTarget, DepthSten
     const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTarget->GetHandle().cpu;
     const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = depthStencil->GetHandle().cpu;
     mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+}
+
+void CommandContext::SetRootSignature(RootSignature *rootSignature) {
+    ASSERT_PRINT(rootSignature->Get() != nullptr);
+    mCommandList->SetGraphicsRootSignature(rootSignature->Get());
+}
+
+void CommandContext::SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count) {
+    ASSERT_PRINT((heaps != nullptr && count <= D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES));
+    for (uint32_t i = 0; i < count; ++i) {
+        msDescriptorHeaps[i] = heaps[i]->Get();
+    }
+    mCommandList->SetDescriptorHeaps(count, msDescriptorHeaps);
+}
+
+void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {
+    mCommandList->ExecuteBundle(bundle);
 }
 
 }
