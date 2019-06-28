@@ -5,15 +5,13 @@
 namespace Render {
 
 PipelineState::PipelineState(void)
-: mRootSignature(nullptr)
-, mPipelineState(nullptr)
+: mPipelineState(nullptr)
 {
 
 }
 
 
 PipelineState::~PipelineState( void) {
-    mRootSignature = nullptr;
     ReleaseAndSetNull(mPipelineState);
 }
 
@@ -45,11 +43,11 @@ void GraphicsState::Initialize(void) {
     mDesc.NodeMask = 1;
 }
 
-void GraphicsState::Create(void) {
-    ASSERT_PRINT((mRootSignature != nullptr));
+void GraphicsState::Create(ID3D12RootSignature *rootSignature) {
+    ASSERT_PRINT((rootSignature != nullptr));
     ReleaseAndSetNull(mPipelineState);
 
-    mDesc.pRootSignature = const_cast<ID3D12RootSignature *>(mRootSignature);
+    mDesc.pRootSignature = rootSignature;
     ASSERT_SUCCEEDED(gDevice->CreateGraphicsPipelineState(&mDesc, IID_PPV_ARGS(&mPipelineState)));
 }
 

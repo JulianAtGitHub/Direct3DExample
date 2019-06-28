@@ -7,12 +7,10 @@ public:
     PipelineState(void);
     virtual ~PipelineState( void);
 
-    INLINE const ID3D12RootSignature * GetRootSignature(void) const { return mRootSignature; }
-    INLINE void SetRootSignature(const ID3D12RootSignature *rootSignature) { mRootSignature = rootSignature; }
     INLINE ID3D12PipelineState * GetPipelineState(void) const { return mPipelineState; }
+    virtual void Create(ID3D12RootSignature *rootSignature) = 0;
 
 protected:
-    const ID3D12RootSignature  *mRootSignature;
     ID3D12PipelineState        *mPipelineState;
 };
 
@@ -40,7 +38,7 @@ public:
     INLINE DXGI_FORMAT GetDepthStencilFormat(void) const { return mDesc.DSVFormat; }
     INLINE void SetDepthStencilFormat(DXGI_FORMAT format) { mDesc.DSVFormat = format; }
 
-    void Create(void);
+    void Create(ID3D12RootSignature *rootSignature);
 
 private:
     void Initialize(void);
