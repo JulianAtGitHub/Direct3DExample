@@ -18,6 +18,7 @@ RenderTargetBuffer *gRenderTarget[FRAME_COUNT]  = { nullptr };
 DepthStencilBuffer *gDepthStencil               = nullptr;
 
 // feature abilities
+bool                gRootSignatureSupport_Version_1_1 = false;
 bool                gTypedUAVLoadSupport_R11G11B10_FLOAT = false;
 bool                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = false;
 bool                gHDROutputSupport = false;
@@ -119,27 +120,37 @@ void Initialize(HWND hwnd) {
     }
 #endif
 
-    // We like to do read-modify-write operations on UAVs during post processing.  To support that, we
-    // need to either have the hardware do typed UAV loads of R11G11B10_FLOAT or we need to manually
-    // decode an R32_UINT representation of the same buffer.  This code determines if we get the hardware
-    // load support.
-    D3D12_FEATURE_DATA_D3D12_OPTIONS featureData = {};
-    if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureData, sizeof(featureData)))) {
-        if (featureData.TypedUAVLoadAdditionalFormats) {
-            D3D12_FEATURE_DATA_FORMAT_SUPPORT support = {
-                DXGI_FORMAT_R11G11B10_FLOAT, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE
-            };
+    {
+        D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+        featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+        if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)))) {
+            gRootSignatureSupport_Version_1_1 = true;
+        }
+    }
 
-            if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
-                (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
-                gTypedUAVLoadSupport_R11G11B10_FLOAT = true;
-            }
+    {
+        // We like to do read-modify-write operations on UAVs during post processing.  To support that, we
+        // need to either have the hardware do typed UAV loads of R11G11B10_FLOAT or we need to manually
+        // decode an R32_UINT representation of the same buffer.  This code determines if we get the hardware
+        // load support.
+        D3D12_FEATURE_DATA_D3D12_OPTIONS featureData = {};
+        if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureData, sizeof(featureData)))) {
+            if (featureData.TypedUAVLoadAdditionalFormats) {
+                D3D12_FEATURE_DATA_FORMAT_SUPPORT support = {
+                    DXGI_FORMAT_R11G11B10_FLOAT, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE
+                };
 
-            support.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+                if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
+                    (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+                    gTypedUAVLoadSupport_R11G11B10_FLOAT = true;
+                }
 
-            if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
-                (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
-                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
+                support.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+                if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
+                    (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+                    gTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
+                }
             }
         }
     }
@@ -160,7 +171,7 @@ void Initialize(HWND hwnd) {
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 
     WRL::ComPtr<IDXGISwapChain1> swapChain1;
-    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(gCommand->GetQueue()->GetQueue(), hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
+    ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForHwnd(gCommand->GetQueue()->Get(), hwnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
     ASSERT_SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&gSwapChain)));
 
 #if defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
