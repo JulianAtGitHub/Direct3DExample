@@ -90,52 +90,28 @@ private:
 };
 
 template <typename T>
-class CHashBaseString : public CBaseString<T> {
+class CBaseStringHash {
 public:
-    typedef T Element;
-
-    CHashBaseString(void) { Copy(""); }
-    CHashBaseString(const Element *str):CBaseString<T>(str), mHash(GenHash(str)) { }
-    CHashBaseString(const CHashBaseString<Element> &str):CBaseString<T>(str.Get()), mHash(str.mHash) { }
-
-    INLINE const uint64_t Hash(void) const { return mHash; }
-
-    bool operator==(const CHashBaseString<Element> &other) const {
-        return mHash == other.Hash();
-    }
-
-    bool operator<(const CHashBaseString<Element> &other) const {
-        return mHash < other.Hash();
-    }
-
-    CHashBaseString<Element>& operator=(const CHashBaseString<Element>& rhs) {
-        Copy(rhs.Get());
-        return *this;
-    }
-
-protected:
-    void Copy(const Element *str) {
-        CBaseString<Element>::Copy(str);
-        mHash = GenHash(str);
+    INLINE uint32_t operator()(const CBaseString<T> &str) const {
+        return DJBHash(str.Get());
     }
 
 private:
-    // Ref from http://www.cse.yorku.ca/~oz/hash.html
-    uint64_t GenHash(const Element *str) {
-        const uint8_t *bytes = (const uint8_t *)str;
-        uint64_t hash = 5381;
-        int32_t c;
-
-        while (c = *bytes++) {
-            hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-        }
-
-        return hash;
+    // BKDR Hash Function
+    INLINE static uint32_t BKDRHash(const T *str) {
+        uint32_t seed = 131; // 31 131 1313 13131 131313 etc..
+        uint32_t hash = 0;
+        while (*str) { hash = hash * seed + (*str++);  }
+        return (hash & 0x7FFFFFFF);
     }
-    
-    uint64_t mHash;
+    // DJB Hash Function
+    INLINE static uint32_t DJBHash(const T *str) {
+        uint32_t hash = 5381;
+        while (*str) { hash += (hash << 5) + (*str++); }
+        return (hash & 0x7FFFFFFF);
+    }
 };
 
 typedef CBaseString<char> CString;
 
-typedef CHashBaseString<char> CHashString;
+typedef CBaseStringHash<char> CStringHash;
