@@ -45,5 +45,4 @@
 #include "Common/CList.hpp"
 #include "Common/CQueue.hpp"
 #include "Common/CStack.hpp"
-#include "Common/CTree.hpp"
 

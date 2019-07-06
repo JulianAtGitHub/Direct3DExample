@@ -111,9 +111,6 @@
     <ClInclude Include="Common\CString.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Common\CTree.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\CStack.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
