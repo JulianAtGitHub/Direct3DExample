@@ -1,6 +1,29 @@
 #include "pch.h"
 #include "Common.h"
 
+void * ReadFileData(const char *fileName, size_t &size) {
+    size = 0;
+    if (!fileName) {
+        return nullptr;
+    }
+
+    FILE *file = nullptr;
+    if (fopen_s(&file, fileName, "rb")) {
+        Print("ReadFileData: open file %s failed!\n", fileName);
+        return nullptr;
+    }
+
+    fseek(file, 0, SEEK_END);
+    size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    void *data = malloc(size);
+    fread(data, 1, size, file);
+    fclose(file);
+
+    return data;
+}
+
 void SIMDMemCopy( void* __restrict _Dest, const void* __restrict _Source, size_t NumQuadwords )
 {
     ASSERT_PRINT(IsAligned(_Dest, 16));

@@ -136,27 +136,10 @@ void AnExample::LoadAssets(void) {
     mRootSignature->Create();
 
     // shaders
-    ID3DBlob *error = nullptr;
-    ID3DBlob *vertexShader = nullptr;
-    ID3DBlob *pixelShader = nullptr;
-    uint32_t compileFlags = 0;
-#if defined(_DEBUG)
-    compileFlags |= (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION);
-#endif
-
-    result = D3DCompileFromFile(L"Shaders\\color3d.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error);
-    if (error) {
-        OutputDebugStringA( (char*)error->GetBufferPointer() );
-        error->Release();
-    }
-    assert(SUCCEEDED(result));
-
-    result = D3DCompileFromFile(L"Shaders\\color3d.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error);
-    if (error) {
-        OutputDebugStringA( (char*)error->GetBufferPointer() );
-        error->Release();
-    }
-    assert(SUCCEEDED(result));
+    D3D12_SHADER_BYTECODE vsShader;
+    D3D12_SHADER_BYTECODE psShader;
+    vsShader.pShaderBytecode = ReadFileData("color.vs.cso", vsShader.BytecodeLength);
+    psShader.pShaderBytecode = ReadFileData("color.ps.cso", psShader.BytecodeLength);
 
     // input layout
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -170,12 +153,9 @@ void AnExample::LoadAssets(void) {
     mGraphicsState = new Render::GraphicsState();
     mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
     mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
-    mGraphicsState->GetVertexShader() = CD3DX12_SHADER_BYTECODE(vertexShader);
-    mGraphicsState->GetPixelShader() = CD3DX12_SHADER_BYTECODE(pixelShader);
+    mGraphicsState->GetVertexShader() = vsShader;
+    mGraphicsState->GetPixelShader() = psShader;
     mGraphicsState->Create(mRootSignature->Get());
-
-    vertexShader->Release();
-    pixelShader->Release();
 
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
