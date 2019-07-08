@@ -30,17 +30,10 @@ public:
     void OnKeyUp(uint8_t /*key*/)     {}
 
 private:
-    void PopulateCommandList(void);
-    uint8_t * GenerateTextureData(void);
-
-    void MoveToNextFrame(void);
-
     void LoadPipeline(void);
     void LoadAssets(void);
-
-    static const uint32_t TEXTURE_WIDTH = 256;
-    static const uint32_t TEXTURE_HEIGHT = 256;
-    static const uint32_t TEXTURE_PIXEL_SIZE = 4;
+    void PopulateCommandList(void);
+    void MoveToNextFrame(void);
 
     HWND mHwnd;
 

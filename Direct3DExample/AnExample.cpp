@@ -247,32 +247,3 @@ void AnExample::PopulateCommandList(void) {
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 }
 
-uint8_t * AnExample::GenerateTextureData(void) {
-    const uint32_t rowPitch = TEXTURE_WIDTH * TEXTURE_PIXEL_SIZE;
-    const uint32_t cellPitch = rowPitch >> 3;		// The width of a cell in the checkboard texture.
-    const uint32_t cellHeight = TEXTURE_WIDTH >> 3;	// The height of a cell in the checkerboard texture.
-    const uint32_t textureSize = rowPitch * TEXTURE_HEIGHT;
-
-    uint8_t *pData = new uint8_t[textureSize];
-
-    for (uint32_t n = 0; n < textureSize; n += TEXTURE_PIXEL_SIZE) {
-        uint32_t x = n % rowPitch;
-        uint32_t y = n / rowPitch;
-        uint32_t i = x / cellPitch;
-        uint32_t j = y / cellHeight;
-
-        if (i % 2 == j % 2) {
-            pData[n] = 0x00;		// R
-            pData[n + 1] = 0x00;	// G
-            pData[n + 2] = 0x00;	// B
-            pData[n + 3] = 0xff;	// A
-        } else {
-            pData[n] = 0xff;		// R
-            pData[n + 1] = 0xff;	// G
-            pData[n + 2] = 0xff;	// B
-            pData[n + 3] = 0xff;	// A
-        }
-    }
-
-    return pData;
-}
