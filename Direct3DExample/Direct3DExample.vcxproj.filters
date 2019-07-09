@@ -91,7 +91,7 @@
     <ClCompile Include="Core\Render\RootSignature.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Example.cpp">
+    <ClCompile Include="D3DExample.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -176,6 +176,9 @@
     </ClInclude>
     <ClInclude Include="Core\Render\RootSignature.h">
       <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DExample.h">
+      <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="Example.h">
       <Filter>Sources</Filter>

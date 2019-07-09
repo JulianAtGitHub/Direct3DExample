@@ -180,7 +180,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="Example.cpp" />
+    <ClCompile Include="D3DExample.cpp" />
     <ClCompile Include="Common\Common.cpp" />
     <ClCompile Include="Core\Model\Loader.cpp" />
     <ClCompile Include="Core\Model\Scene.cpp" />
@@ -214,7 +214,7 @@
     <ClInclude Include="Common\CUtils.hpp" />
     <ClInclude Include="Common\CList.hpp" />
     <ClInclude Include="Common\CString.hpp" />
-    <ClInclude Include="Example.h" />
+    <ClInclude Include="D3DExample.h" />
     <ClInclude Include="Common\Common.h" />
     <ClInclude Include="Core\Model\Loader.h" />
     <ClInclude Include="Core\Model\Scene.h" />
@@ -235,6 +235,7 @@
     <ClInclude Include="Core\Render\RootSignature.h" />
     <ClInclude Include="Core\Render\Sampler.h" />
     <ClInclude Include="DirectX\d3dx12.h" />
+    <ClInclude Include="Example.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
