@@ -6,7 +6,7 @@ namespace Render {
 
 class GPUBuffer : public GPUResource {
 public:
-    GPUBuffer(uint32_t size);
+    GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage = D3D12_RESOURCE_STATE_COMMON);
     virtual ~GPUBuffer(void);
 
     INLINE size_t GetBufferSize(void) const { return mBufferSize; }

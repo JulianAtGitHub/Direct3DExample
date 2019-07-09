@@ -4,10 +4,11 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(uint32_t size)
+GPUBuffer::GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage)
 : GPUResource()
 , mBufferSize(size)
 {
+    SetUsageState(usage);
     Initialize();
 }
 
@@ -28,8 +29,6 @@ void GPUBuffer::Initialize(void) {
     resourceDesc.SampleDesc.Count = 1;
     resourceDesc.SampleDesc.Quality = 0;
     resourceDesc.Width = mBufferSize;
-
-    mUsageState = D3D12_RESOURCE_STATE_COMMON;
 
     D3D12_HEAP_PROPERTIES heapProps;
     heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
