@@ -34,9 +34,6 @@
     <ClCompile Include="Application.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="AnExample.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -94,12 +91,12 @@
     <ClCompile Include="Core\Render\RootSignature.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Example.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="AnExample.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -179,6 +176,9 @@
     </ClInclude>
     <ClInclude Include="Core\Render\RootSignature.h">
       <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Example.h">
+      <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "AnExample.h"
+#include "Example.h"
 #include "Core/Model/Scene.h"
 #include "Core/Model/Loader.h"
 #include "Core/Render/CommandContext.h"
@@ -15,7 +15,7 @@ struct ConstBuffer {
     XMFLOAT4X4 mvp;
 };
 
-AnExample::AnExample(HWND hwnd)
+Example::Example(HWND hwnd)
 :mHwnd(hwnd)
 ,mBundleAllocator(nullptr)
 ,mRootSignature(nullptr)
@@ -41,18 +41,18 @@ AnExample::AnExample(HWND hwnd)
     mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
 }
 
-AnExample::~AnExample(void) {
+Example::~Example(void) {
     if (mScene) {
         delete mScene;
     }
 }
 
-void AnExample::Init(void) {
+void Example::Init(void) {
     LoadPipeline();
     LoadAssets();
 }
 
-void AnExample::Update(void) {
+void Example::Update(void) {
     static float y = 0.0f;
     y += 0.01f;
     XMVECTOR cameraPos = ::XMVectorSet(0.0f, 1.0f, 5.0f, 0.0f);
@@ -70,7 +70,7 @@ void AnExample::Update(void) {
     memcpy(mConstBuffer->GetMappedBuffer(0, mCurrentFrame), &constBuffer, sizeof(constBuffer));
 }
 
-void AnExample::Render(void) {
+void Example::Render(void) {
     Render::gCommand->Begin(mGraphicsState->GetPipelineState());
     PopulateCommandList();
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
@@ -78,7 +78,7 @@ void AnExample::Render(void) {
     MoveToNextFrame();
 }
 
-void AnExample::Destroy(void) {
+void Example::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
     for (uint32_t i = 0; i < mTextures.Count(); ++i) {
@@ -100,12 +100,12 @@ void AnExample::Destroy(void) {
     Render::Terminate();
 }
 
-void AnExample::MoveToNextFrame(void) {
+void Example::MoveToNextFrame(void) {
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
     Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
 }
 
-void AnExample::LoadPipeline(void) {
+void Example::LoadPipeline(void) {
     Render::Initialize(mHwnd);
     mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
@@ -113,7 +113,7 @@ void AnExample::LoadPipeline(void) {
     ASSERT_SUCCEEDED(Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&mBundleAllocator)));
 }
 
-void AnExample::LoadAssets(void) {
+void Example::LoadAssets(void) {
     mScene = Model::Loader::LoadFromBinaryFile("Models\\Arwing\\arwing.bsx");
     assert(mScene);
 
@@ -196,7 +196,7 @@ void AnExample::LoadAssets(void) {
     }
 }
 
-void AnExample::PopulateCommandList(void) {
+void Example::PopulateCommandList(void) {
     Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
     Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);

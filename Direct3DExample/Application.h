@@ -1,6 +1,6 @@
 #pragma once
 
-class AnExample;
+class Example;
 
 class Application {
 public:
@@ -18,5 +18,5 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
     CString mTitle;
-    AnExample *mExample;
+    Example *mExample;
 };

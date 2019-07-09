@@ -16,10 +16,10 @@ namespace Render {
     class RootSignature;
 }
 
-class AnExample {
+class Example {
 public:
-    AnExample(HWND hwnd);
-    ~AnExample(void);
+    Example(HWND hwnd);
+    ~Example(void);
 
     void Init(void);
     void Update(void);

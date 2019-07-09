@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "AnExample.h"
+#include "Example.h"
 #include "Application.h"
 
 Application::Application(uint32_t width, uint32_t height, const char *title)
@@ -55,7 +55,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
         hInstance,
         this);
 
-    mExample = new AnExample(mHwnd);
+    mExample = new Example(mHwnd);
     mExample->Init();
 
     ShowWindow(mHwnd, nCmdShow);
@@ -78,7 +78,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
 
 LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
-    AnExample *example = nullptr;
+    Example *example = nullptr;
     Application *app = reinterpret_cast<Application*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
     if (app) {
         example = app->mExample;
