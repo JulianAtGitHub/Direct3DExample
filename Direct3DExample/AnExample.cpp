@@ -74,9 +74,7 @@ void AnExample::Render(void) {
     Render::gCommand->Begin(mGraphicsState->GetPipelineState());
     PopulateCommandList();
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
-
-    HRESULT result = Render::gSwapChain->Present(1, 0);
-
+    ASSERT_SUCCEEDED(Render::gSwapChain->Present(1, 0));
     MoveToNextFrame();
 }
 
@@ -108,25 +106,16 @@ void AnExample::MoveToNextFrame(void) {
 }
 
 void AnExample::LoadPipeline(void) {
-    HRESULT result = S_OK;
-
     Render::Initialize(mHwnd);
     mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
-
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
-
-    result = Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&mBundleAllocator));
-    assert(SUCCEEDED(result));
+    ASSERT_SUCCEEDED(Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&mBundleAllocator)));
 }
 
 void AnExample::LoadAssets(void) {
     mScene = Model::Loader::LoadFromBinaryFile("Models\\Arwing\\arwing.bsx");
     assert(mScene);
-
-    //Model::Loader::SaveToBinaryFile(mScene, "Models\\Arwing\\arwing.bsx");
-
-    HRESULT result = S_OK;
 
     // root signature
     mRootSignature = new Render::RootSignature(3);
@@ -134,12 +123,6 @@ void AnExample::LoadAssets(void) {
     mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
     mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0);
     mRootSignature->Create();
-
-    // shaders
-    D3D12_SHADER_BYTECODE vsShader;
-    D3D12_SHADER_BYTECODE psShader;
-    vsShader.pShaderBytecode = ReadFileData("color.vs.cso", vsShader.BytecodeLength);
-    psShader.pShaderBytecode = ReadFileData("color.ps.cso", psShader.BytecodeLength);
 
     // input layout
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -153,8 +136,8 @@ void AnExample::LoadAssets(void) {
     mGraphicsState = new Render::GraphicsState();
     mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
     mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
-    mGraphicsState->GetVertexShader() = vsShader;
-    mGraphicsState->GetPixelShader() = psShader;
+    mGraphicsState->LoadVertexShader("color.vs.cso");
+    mGraphicsState->LoadPixelShader("color.ps.cso");
     mGraphicsState->Create(mRootSignature->Get());
 
     mSampler = new Render::Sampler();
@@ -193,8 +176,7 @@ void AnExample::LoadAssets(void) {
 
     // bundle
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
-        result = Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mGraphicsState->GetPipelineState(), IID_PPV_ARGS(&(mBundles[i])));
-        assert(SUCCEEDED(result));
+        ASSERT_SUCCEEDED(Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mGraphicsState->GetPipelineState(), IID_PPV_ARGS(mBundles + i)));
 
         // record command to bundle
         mBundles[i]->SetGraphicsRootSignature(mRootSignature->Get());

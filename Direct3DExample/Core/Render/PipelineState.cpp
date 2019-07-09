@@ -43,6 +43,13 @@ void GraphicsState::Initialize(void) {
     mDesc.NodeMask = 1;
 }
 
+void GraphicsState::LoadShaderByteCode(const char *fileName, D3D12_SHADER_BYTECODE &byteCode) {
+    if (byteCode.pShaderBytecode) {
+        free(const_cast<void *>(byteCode.pShaderBytecode));
+    }
+    byteCode.pShaderBytecode = ReadFileData(fileName, byteCode.BytecodeLength);
+}
+
 void GraphicsState::Create(ID3D12RootSignature *rootSignature) {
     ASSERT_PRINT((rootSignature != nullptr));
     ReleaseAndSetNull(mPipelineState);

@@ -33,6 +33,12 @@ public:
     INLINE DXGI_SAMPLE_DESC & GetSampleDesc(void) { return mDesc.SampleDesc; }
     INLINE D3D12_CACHED_PIPELINE_STATE & GetCachedPSO(void) { return mDesc.CachedPSO; }
 
+    INLINE void LoadVertexShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.VS); }
+    INLINE void LoadPixelShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.PS); }
+    INLINE void LoadGeometryShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.GS); }
+    INLINE void LoadHullShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.HS); }
+    INLINE void LoadDomainShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.DS); }
+
     INLINE D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveType(void) const { return mDesc.PrimitiveTopologyType; };
     INLINE void SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY_TYPE type) { mDesc.PrimitiveTopologyType = type; };
     INLINE DXGI_FORMAT GetDepthStencilFormat(void) const { return mDesc.DSVFormat; }
@@ -42,6 +48,7 @@ public:
 
 private:
     void Initialize(void);
+    void LoadShaderByteCode(const char *fileName, D3D12_SHADER_BYTECODE &byteCode);
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC  mDesc;
 };
