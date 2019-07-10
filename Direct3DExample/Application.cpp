@@ -3,11 +3,11 @@
 #include "Application.h"
 
 Application::Application(uint32_t width, uint32_t height, const char *title)
-:mHwnd(NULL)
-,mWidth(width)
-,mHeight(height)
-,mTitle(title)
-,mExample(nullptr)
+: mHwnd(NULL)
+, mWidth(width)
+, mHeight(height)
+, mTitle(title)
+, mExample(nullptr)
 {
     ParseCmds();
 }

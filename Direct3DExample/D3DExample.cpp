@@ -16,17 +16,17 @@ struct ConstBuffer {
 };
 
 D3DExample::D3DExample(HWND hwnd)
-:Example(hwnd)
-,mBundleAllocator(nullptr)
-,mRootSignature(nullptr)
-,mGraphicsState(nullptr)
-,mVertexIndexBuffer(nullptr)
-,mConstBuffer(nullptr)
-,mShaderResourceHeap(nullptr)
-,mSamplerHeap(nullptr)
-,mSampler(nullptr)
-,mCurrentFrame(0)
-,mScene(nullptr)
+: Example(hwnd)
+, mBundleAllocator(nullptr)
+, mRootSignature(nullptr)
+, mGraphicsState(nullptr)
+, mVertexIndexBuffer(nullptr)
+, mConstBuffer(nullptr)
+, mShaderResourceHeap(nullptr)
+, mSamplerHeap(nullptr)
+, mSampler(nullptr)
+, mCurrentFrame(0)
+, mScene(nullptr)
 {
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
         mBundles[i] = nullptr;
