@@ -97,6 +97,9 @@
     <ClCompile Include="DXRExample.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\UploadBuffer.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -188,6 +191,9 @@
     </ClInclude>
     <ClInclude Include="DXRExample.h">
       <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\UploadBuffer.h">
+      <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

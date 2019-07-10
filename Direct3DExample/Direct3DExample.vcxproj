@@ -180,6 +180,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Core\Render\UploadBuffer.cpp" />
     <ClCompile Include="D3DExample.cpp" />
     <ClCompile Include="Common\Common.cpp" />
     <ClCompile Include="Core\Model\Loader.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="Common\CUtils.hpp" />
     <ClInclude Include="Common\CList.hpp" />
     <ClInclude Include="Common\CString.hpp" />
+    <ClInclude Include="Core\Render\UploadBuffer.h" />
     <ClInclude Include="D3DExample.h" />
     <ClInclude Include="Common\Common.h" />
     <ClInclude Include="Core\Model\Loader.h" />
