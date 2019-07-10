@@ -17,6 +17,7 @@ CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
 , mQueue(nullptr)
 , mCommandList(nullptr)
+, mCommandList4(nullptr)
 , mCommandAlloctor(nullptr)
 , mFenceValue(0)
 , mCpuAllocator(nullptr)
@@ -42,6 +43,7 @@ void CommandContext::Destroy(void) {
     DeleteAndSetNull(mQueue);
 
     ReleaseAndSetNull(mCommandList);
+    ReleaseAndSetNull(mCommandList4);
 
     DeleteAndSetNull(mCpuAllocator);
     DeleteAndSetNull(mGpuAllocator);
@@ -53,6 +55,9 @@ void CommandContext::Begin(ID3D12PipelineState *pipeline) {
         mCommandList->Reset(mCommandAlloctor, pipeline);
     } else {
         ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
+        if (gRayTracingSupport && gDevice5) {
+            ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mCommandList4)));
+        }
     }
 }
 
@@ -87,23 +92,32 @@ void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATE
         ASSERT_PRINT((newState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == newState);
     }
 
-    D3D12_RESOURCE_BARRIER BarrierDesc = {};
     if (oldState != newState) {
-        BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        BarrierDesc.Transition.pResource = resource->Get();
-        BarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        BarrierDesc.Transition.StateBefore = oldState;
-        BarrierDesc.Transition.StateAfter = newState;
-        BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        mCommandList->ResourceBarrier(1, &BarrierDesc);
+        D3D12_RESOURCE_BARRIER barrierDesc = {};
+        barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrierDesc.Transition.pResource = resource->Get();
+        barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barrierDesc.Transition.StateBefore = oldState;
+        barrierDesc.Transition.StateAfter = newState;
+        barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        mCommandList->ResourceBarrier(1, &barrierDesc);
         resource->SetUsageState(newState);
 
     } else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-        BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-        BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        BarrierDesc.UAV.pResource = resource->Get();
-        mCommandList->ResourceBarrier(1, &BarrierDesc);
+        InsertUAVBarrier(resource);
     }
+}
+
+void CommandContext::InsertUAVBarrier(GPUResource *resource) {
+    if (!resource) {
+        return;
+    }
+
+    D3D12_RESOURCE_BARRIER barrierDesc = {};
+    barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrierDesc.UAV.pResource = resource->Get();
+    mCommandList->ResourceBarrier(1, &barrierDesc);
 }
 
 void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size) {
