@@ -6,7 +6,7 @@ namespace Render {
 
 class GPUBuffer : public GPUResource {
 public:
-    GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage = D3D12_RESOURCE_STATE_COMMON);
+    GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE);
     virtual ~GPUBuffer(void);
 
     INLINE size_t GetBufferSize(void) const { return mBufferSize; }
@@ -17,7 +17,8 @@ public:
 private:
     void Initialize(void);
 
-    size_t      mBufferSize;
+    size_t                  mBufferSize;
+    D3D12_RESOURCE_FLAGS    mFlags;
 };
 
 INLINE D3D12_VERTEX_BUFFER_VIEW GPUBuffer::FillVertexBufferView(size_t offset, uint32_t size, uint32_t stride) {

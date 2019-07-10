@@ -4,9 +4,10 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage)
+GPUBuffer::GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
 : GPUResource()
 , mBufferSize(size)
+, mFlags(flag)
 {
     SetUsageState(usage);
     Initialize();
@@ -21,7 +22,7 @@ void GPUBuffer::Initialize(void) {
     resourceDesc.Alignment = 0;
     resourceDesc.DepthOrArraySize = 1;
     resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    resourceDesc.Flags = mFlags;
     resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
     resourceDesc.Height = 1;
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
