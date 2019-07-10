@@ -14,7 +14,9 @@ ConstantBuffer::ConstantBuffer(uint32_t size, uint32_t count)
 }
 
 ConstantBuffer::~ConstantBuffer(void) {
-    mResource->Unmap(0, nullptr);
+    if (mResource) {
+        mResource->Unmap(0, nullptr);
+    }
 }
 
 void ConstantBuffer::Initialize(void) {
