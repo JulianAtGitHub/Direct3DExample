@@ -94,6 +94,9 @@
     <ClCompile Include="D3DExample.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="DXRExample.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -181,6 +184,9 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="Example.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="DXRExample.h">
       <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>

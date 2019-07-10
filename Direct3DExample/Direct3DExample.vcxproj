@@ -199,6 +199,7 @@
     <ClCompile Include="Core\Render\PixelBuffer.cpp" />
     <ClCompile Include="Core\Render\RootSignature.cpp" />
     <ClCompile Include="Core\Render\Sampler.cpp" />
+    <ClCompile Include="DXRExample.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -235,6 +236,7 @@
     <ClInclude Include="Core\Render\RootSignature.h" />
     <ClInclude Include="Core\Render\Sampler.h" />
     <ClInclude Include="DirectX\d3dx12.h" />
+    <ClInclude Include="DXRExample.h" />
     <ClInclude Include="Example.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
