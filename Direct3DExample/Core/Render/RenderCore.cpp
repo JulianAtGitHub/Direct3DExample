@@ -22,6 +22,7 @@ bool                gRootSignatureSupport_Version_1_1 = false;
 bool                gTypedUAVLoadSupport_R11G11B10_FLOAT = false;
 bool                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = false;
 bool                gHDROutputSupport = false;
+bool                gRayTracingSupport = false;
 
 void Initialize(HWND hwnd) {
     // fill view port
@@ -42,30 +43,34 @@ void Initialize(HWND hwnd) {
 
     // create device
     UINT dxgiFlag = 0;
-    WRL::ComPtr<IDXGIFactory4> dxgiFactory;
-    ASSERT_SUCCEEDED(CreateDXGIFactory2(dxgiFlag, IID_PPV_ARGS(&dxgiFactory)));
+    SIZE_T maxMemSize = 0;
+    D3D_FEATURE_LEVEL deviceLevels[] = {D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_0 };
 
+    WRL::ComPtr<IDXGIFactory4> dxgiFactory;
     WRL::ComPtr<IDXGIAdapter1> dxgiAdapter;
     WRL::ComPtr<ID3D12Device> d3dDevice;
-    SIZE_T maxMemSize = 0;
-    for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != dxgiFactory->EnumAdapters1(i, &dxgiAdapter); ++i) {
-        DXGI_ADAPTER_DESC1 desc;
-        dxgiAdapter->GetDesc1(&desc);
-        if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
-            continue;
-        }
-
-        if (desc.DedicatedVideoMemory > maxMemSize && SUCCEEDED(D3D12CreateDevice(dxgiAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3dDevice)))) {
+    ASSERT_SUCCEEDED(CreateDXGIFactory2(dxgiFlag, IID_PPV_ARGS(&dxgiFactory)));
+    for (uint32_t i = 0; i < _countof(deviceLevels); ++i) {
+        for (uint32_t j = 0; DXGI_ERROR_NOT_FOUND != dxgiFactory->EnumAdapters1(j, &dxgiAdapter); ++j) {
+            DXGI_ADAPTER_DESC1 desc;
             dxgiAdapter->GetDesc1(&desc);
-            char *description = WStr2Str(desc.Description);
-            Print("D3D12-capable hardware found:  %s (%u MB)\n", description, desc.DedicatedVideoMemory >> 20);
-            free(description);
-            maxMemSize = desc.DedicatedVideoMemory;
-        }
-    }
+            if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
+                continue;
+            }
 
-    if (maxMemSize > 0) {
-        gDevice = d3dDevice.Detach();
+            if (desc.DedicatedVideoMemory > maxMemSize && SUCCEEDED(D3D12CreateDevice(dxgiAdapter.Get(), deviceLevels[i], IID_PPV_ARGS(&d3dDevice)))) {
+                char *description = WStr2Str(desc.Description);
+                Print("D3D12-capable hardware found: %s (%u MB)\n", description, desc.DedicatedVideoMemory >> 20);
+                free(description);
+                maxMemSize = desc.DedicatedVideoMemory;
+            }
+        }
+
+        if (maxMemSize > 0) {
+            Print("Device feature level: 0x%x\n", deviceLevels[i]);
+            gDevice = d3dDevice.Detach();
+            break;
+        }
     }
 
     // using software instead
@@ -121,6 +126,7 @@ void Initialize(HWND hwnd) {
 #endif
 
     {
+        // Root signature 1.1 support check
         D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
         featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
         if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)))) {
@@ -152,6 +158,15 @@ void Initialize(HWND hwnd) {
                     gTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
                 }
             }
+        }
+    }
+
+    {
+        // check if support ray tracing
+        D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureData = {};
+        if(SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureData, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5)))
+            && featureData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED) {
+            gRayTracingSupport = true;
         }
     }
 
