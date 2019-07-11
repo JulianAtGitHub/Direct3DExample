@@ -63,6 +63,7 @@ void DXRExample::InitAccelerationStructures(void) {
     {
         D3D12_RAYTRACING_GEOMETRY_DESC geomDesc = {};
         geomDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+        geomDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
         geomDesc.Triangles.VertexBuffer.StartAddress = mVertexBuffer->GetGPUAddress();
         geomDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(XMFLOAT3);
         geomDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
