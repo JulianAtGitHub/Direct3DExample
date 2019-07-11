@@ -2,8 +2,8 @@
 #include "DXRExample.h"
 #include "Core/Render/RenderCore.h"
 #include "Core/Render/CommandContext.h"
-#include "Core/Render/GPUBuffer.h"
-#include "Core/Render/UploadBuffer.h"
+#include "Core/Render/Resource/GPUBuffer.h"
+#include "Core/Render/Resource/UploadBuffer.h"
 
 const static XMFLOAT3 vertices[] = {
     XMFLOAT3(0,          1,  0),

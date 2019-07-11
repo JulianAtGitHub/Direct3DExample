@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "DepthStencilBuffer.h"
-#include "RenderCore.h"
+#include "Core/Render/RenderCore.h"
 
 namespace Render {
 

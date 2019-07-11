@@ -2,8 +2,8 @@
 #include "RenderCore.h"
 #include "CommandContext.h"
 #include "DescriptorHeap.h"
-#include "RenderTargetBuffer.h"
-#include "DepthStencilBuffer.h"
+#include "Resource/RenderTargetBuffer.h"
+#include "Resource/DepthStencilBuffer.h"
 
 namespace Render {
 

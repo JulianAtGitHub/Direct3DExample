@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GPUResource.h"
-#include "DescriptorHeap.h"
+#include "Core/Render/DescriptorHeap.h"
 
 namespace Render {
 

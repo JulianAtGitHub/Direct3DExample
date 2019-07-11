@@ -26,6 +26,9 @@
     <Filter Include="Sources\DirectX">
       <UniqueIdentifier>{ea1204fc-3ba2-42d4-88d7-5789fc27da29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\Core\Render\Resource">
+      <UniqueIdentifier>{42ef034c-9f8a-42d3-babd-0795a55b60d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -43,53 +46,8 @@
     <ClCompile Include="Core\Model\Scene.cpp">
       <Filter>Sources\Core\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\DescriptorHeap.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\GPUResource.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\DepthStencilBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\PixelBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\RenderTargetBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\CommandQueue.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\CommandContext.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\LinerAllocator.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\RenderCore.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\GPUBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Common\Common.cpp">
       <Filter>Sources\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\ConstantBuffer.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\DescriptorHeapPool.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\Sampler.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\PipelineState.cpp">
-      <Filter>Sources\Core\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Render\RootSignature.cpp">
-      <Filter>Sources\Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="D3DExample.cpp">
       <Filter>Sources</Filter>
@@ -97,7 +55,52 @@
     <ClCompile Include="DXRExample.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\UploadBuffer.cpp">
+    <ClCompile Include="Core\Render\Resource\ConstantBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\DepthStencilBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\GPUBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\GPUResource.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\PixelBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\RenderTargetBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Resource\UploadBuffer.cpp">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\CommandContext.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\CommandQueue.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\DescriptorHeap.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\DescriptorHeapPool.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\LinerAllocator.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\PipelineState.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\RenderCore.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\RootSignature.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\Sampler.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -132,56 +135,11 @@
     <ClInclude Include="DirectX\d3dx12.h">
       <Filter>Sources\DirectX</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\DescriptorHeap.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\GPUResource.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\DepthStencilBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\PixelBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\RenderTargetBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\CommandQueue.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Common\CQueue.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\CommandContext.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\LinerAllocator.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\RenderCore.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\GPUBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Common\Common.h">
       <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\ConstantBuffer.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\DescriptorHeapPool.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\Sampler.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\PipelineState.h">
-      <Filter>Sources\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Render\RootSignature.h">
-      <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="D3DExample.h">
       <Filter>Sources</Filter>
@@ -192,7 +150,52 @@
     <ClInclude Include="DXRExample.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\UploadBuffer.h">
+    <ClInclude Include="Core\Render\Resource\ConstantBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\DepthStencilBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\GPUBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\GPUResource.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\PixelBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\RenderTargetBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Resource\UploadBuffer.h">
+      <Filter>Sources\Core\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\CommandContext.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\CommandQueue.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\DescriptorHeap.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\DescriptorHeapPool.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\LinerAllocator.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\PipelineState.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\RenderCore.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\RootSignature.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\Sampler.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>

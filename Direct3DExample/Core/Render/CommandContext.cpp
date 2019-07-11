@@ -3,9 +3,9 @@
 #include "CommandQueue.h"
 #include "RenderCore.h"
 #include "LinerAllocator.h"
-#include "PixelBuffer.h"
-#include "RenderTargetBuffer.h"
-#include "DepthStencilBuffer.h"
+#include "Resource/PixelBuffer.h"
+#include "Resource/RenderTargetBuffer.h"
+#include "Resource/DepthStencilBuffer.h"
 #include "RootSignature.h"
 #include "DescriptorHeap.h"
 

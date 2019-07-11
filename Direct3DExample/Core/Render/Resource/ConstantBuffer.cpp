@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "ConstantBuffer.h"
-#include "RenderCore.h"
+#include "Core/Render/RenderCore.h"
 
 namespace Render {
 

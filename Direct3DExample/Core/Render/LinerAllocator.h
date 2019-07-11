@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GPUResource.h"
+#include "Resource/GPUResource.h"
 
 namespace Render {
 

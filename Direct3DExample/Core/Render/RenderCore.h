@@ -1,9 +1,5 @@
 #pragma once
 
-#include "DescriptorHeap.h"
-#include "RenderTargetBuffer.h"
-#include "DepthStencilBuffer.h"
-
 namespace Render {
 
 class CommandContext;
