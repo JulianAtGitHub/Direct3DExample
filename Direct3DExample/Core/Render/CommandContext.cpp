@@ -54,7 +54,7 @@ void CommandContext::Begin(ID3D12PipelineState *pipeline) {
     if (mCommandList) {
         mCommandList->Reset(mCommandAlloctor, pipeline);
     } else {
-        ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
+        ASSERT_SUCCEEDED(gDevice->CreateCommandList(1, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
         if (gRayTracingSupport && gDXRDevice) {
             ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mDXRCommandList)));
         }
