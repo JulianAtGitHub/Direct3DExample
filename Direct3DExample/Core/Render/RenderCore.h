@@ -10,7 +10,7 @@ class DepthStencilBuffer;
 constexpr uint32_t          FRAME_COUNT = 3;
 
 extern ID3D12Device        *gDevice;
-extern ID3D12Device5       *gDevice5;
+extern ID3D12Device5       *gDXRDevice;
 extern IDXGISwapChain3     *gSwapChain;
 extern CommandContext      *gCommand;
 

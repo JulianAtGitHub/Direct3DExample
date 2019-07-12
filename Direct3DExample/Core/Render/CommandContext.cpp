@@ -17,7 +17,7 @@ CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 : mType(type)
 , mQueue(nullptr)
 , mCommandList(nullptr)
-, mCommandList4(nullptr)
+, mDXRCommandList(nullptr)
 , mCommandAlloctor(nullptr)
 , mFenceValue(0)
 , mCpuAllocator(nullptr)
@@ -43,7 +43,7 @@ void CommandContext::Destroy(void) {
     DeleteAndSetNull(mQueue);
 
     ReleaseAndSetNull(mCommandList);
-    ReleaseAndSetNull(mCommandList4);
+    ReleaseAndSetNull(mDXRCommandList);
 
     DeleteAndSetNull(mCpuAllocator);
     DeleteAndSetNull(mGpuAllocator);
@@ -55,8 +55,8 @@ void CommandContext::Begin(ID3D12PipelineState *pipeline) {
         mCommandList->Reset(mCommandAlloctor, pipeline);
     } else {
         ASSERT_SUCCEEDED(gDevice->CreateCommandList(0, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
-        if (gRayTracingSupport && gDevice5) {
-            ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mCommandList4)));
+        if (gRayTracingSupport && gDXRDevice) {
+            ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mDXRCommandList)));
         }
     }
 }

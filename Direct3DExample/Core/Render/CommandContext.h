@@ -19,7 +19,7 @@ public:
 
     INLINE CommandQueue * GetQueue(void) const { return mQueue; }
     INLINE ID3D12GraphicsCommandList * GetCommandList(void) const { return mCommandList; }
-    INLINE ID3D12GraphicsCommandList4 * GetCommandList4(void) const { return mCommandList4; }
+    INLINE ID3D12GraphicsCommandList4 * GetDXRCommandList(void) const { return mDXRCommandList; }
 
     void Begin(ID3D12PipelineState *pipeline = nullptr);
     uint64_t End(bool waitUtilComplete = false);
@@ -62,7 +62,7 @@ private:
     const D3D12_COMMAND_LIST_TYPE   mType;
     CommandQueue                   *mQueue;
     ID3D12GraphicsCommandList      *mCommandList;
-    ID3D12GraphicsCommandList4     *mCommandList4;
+    ID3D12GraphicsCommandList4     *mDXRCommandList;
     ID3D12CommandAllocator         *mCommandAlloctor;
     uint64_t                        mFenceValue;
     LinerAllocator                 *mCpuAllocator;

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "D3DExample.h"
+#include "DXRExample.h"
 #include "Application.h"
 
 Application::Application(uint32_t width, uint32_t height, const char *title)
@@ -55,7 +56,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
         hInstance,
         this);
 
-    mExample = new D3DExample(mHwnd);
+    mExample = new DXRExample(mHwnd);
     mExample->Init();
 
     ShowWindow(mHwnd, nCmdShow);

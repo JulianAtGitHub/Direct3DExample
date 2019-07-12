@@ -77,7 +77,7 @@ void DXRExample::InitAccelerationStructures(void) {
         inputs.pGeometryDescs = &geomDesc;
 
         D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuild = {};
-        Render::gDevice5->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &prebuild);
+        Render::gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &prebuild);
 
         scratchBLAS = new Render::GPUBuffer((uint32_t)prebuild.ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         resultBLAS = new Render::GPUBuffer((uint32_t)prebuild.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
@@ -87,7 +87,7 @@ void DXRExample::InitAccelerationStructures(void) {
         desc.DestAccelerationStructureData = resultBLAS->GetGPUAddress();
         desc.ScratchAccelerationStructureData = scratchBLAS->GetGPUAddress();
 
-        Render::gCommand->GetCommandList4()->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
+        Render::gCommand->GetDXRCommandList()->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 
         Render::gCommand->InsertUAVBarrier(resultBLAS);
     }
@@ -104,7 +104,7 @@ void DXRExample::InitAccelerationStructures(void) {
         inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 
         D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuild = {};
-        Render::gDevice5->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &prebuild);
+        Render::gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &prebuild);
 
         scratchTLAS = new Render::GPUBuffer((uint32_t)prebuild.ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         resultTLAS = new Render::GPUBuffer((uint32_t)prebuild.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
@@ -128,7 +128,7 @@ void DXRExample::InitAccelerationStructures(void) {
         desc.DestAccelerationStructureData = resultTLAS->GetGPUAddress();
         desc.ScratchAccelerationStructureData = scratchTLAS->GetGPUAddress();
 
-        Render::gCommand->GetCommandList4()->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
+        Render::gCommand->GetDXRCommandList()->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 
         Render::gCommand->InsertUAVBarrier(resultTLAS);
     }

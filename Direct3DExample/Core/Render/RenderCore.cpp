@@ -8,7 +8,7 @@
 namespace Render {
 
 ID3D12Device       *gDevice                     = nullptr;
-ID3D12Device5      *gDevice5                    = nullptr;
+ID3D12Device5      *gDXRDevice                  = nullptr;
 IDXGISwapChain3    *gSwapChain                  = nullptr;
 CommandContext     *gCommand                    = nullptr;
 
@@ -168,7 +168,7 @@ void Initialize(HWND hwnd) {
         if(SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureData, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5)))
             && featureData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED) {
             gRayTracingSupport = true;
-            ASSERT_SUCCEEDED(gDevice->QueryInterface(IID_PPV_ARGS(&gDevice5)));
+            ASSERT_SUCCEEDED(gDevice->QueryInterface(IID_PPV_ARGS(&gDXRDevice)));
         }
     }
 
@@ -238,7 +238,7 @@ void Terminate(void) {
     DeleteAndSetNull(gCommand);
     ReleaseAndSetNull(gSwapChain);
     ReleaseAndSetNull(gDevice);
-    ReleaseAndSetNull(gDevice5);
+    ReleaseAndSetNull(gDXRDevice);
 }
 
 uint32_t BitsPerPixel(DXGI_FORMAT format) {
