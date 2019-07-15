@@ -166,7 +166,7 @@ void D3DExample::LoadAssets(void) {
         Model::Scene::Image &image = mScene->mImages.At(i);
         Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
         Render::gCommand->UploadTexture(texture, image.pixels);
-        texture->CreateSRView(mShaderResourceHeap->Allocate());
+        texture->CreateSRV(mShaderResourceHeap->Allocate());
         mTextures.PushBack(texture);
     }
 
