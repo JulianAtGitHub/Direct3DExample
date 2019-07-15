@@ -6,7 +6,7 @@ namespace Render {
 
 class ConstantBuffer : public GPUResource {
 public:
-    ConstantBuffer(uint32_t size, uint32_t count);
+    ConstantBuffer(uint32_t size, uint32_t count, size_t align = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     virtual ~ConstantBuffer(void);
 
     void * GetMappedBuffer(uint32_t index, uint32_t frameIndex);

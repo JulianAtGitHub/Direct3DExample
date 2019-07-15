@@ -4,9 +4,9 @@
 
 namespace Render {
 
-ConstantBuffer::ConstantBuffer(uint32_t size, uint32_t count)
+ConstantBuffer::ConstantBuffer(uint32_t size, uint32_t count, size_t align)
 : GPUResource()
-, mElementSize(AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT))
+, mElementSize(AlignUp(size, align))
 , mElementCount(count)
 , mMappedBuffer(nullptr)
 {
