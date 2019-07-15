@@ -6,16 +6,18 @@ namespace Render {
 
 class UploadBuffer : public GPUResource {
 public:
-    UploadBuffer(uint32_t size);
+    UploadBuffer(size_t size);
     virtual ~UploadBuffer(void);
 
-    void UploadData(const void *data, uint32_t size, uint32_t offset = 0);
+    INLINE size_t GetBufferSize(void) const { return mBufferSize; }
+
+    void UploadData(const void *data, size_t size, uint32_t offset = 0);
 
 private:
     void Initialize(void);
 
-    uint32_t    mBufferSize;
-    void       *mMappedBuffer;
+    size_t  mBufferSize;
+    void   *mMappedBuffer;
 };
 
 }
