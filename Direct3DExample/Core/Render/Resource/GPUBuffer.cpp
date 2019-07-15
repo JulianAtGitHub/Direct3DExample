@@ -4,10 +4,10 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(uint32_t size, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
+GPUBuffer::GPUBuffer(size_t size, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
 : GPUResource()
 , mBufferSize(size)
-, mFlags(flag)
+, mFlag(flag)
 {
     SetUsageState(usage);
     Initialize();
@@ -22,7 +22,7 @@ void GPUBuffer::Initialize(void) {
     resourceDesc.Alignment = 0;
     resourceDesc.DepthOrArraySize = 1;
     resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resourceDesc.Flags = mFlags;
+    resourceDesc.Flags = mFlag;
     resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
     resourceDesc.Height = 1;
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
@@ -42,7 +42,40 @@ void GPUBuffer::Initialize(void) {
     mResource->SetName(L"GPUBuffer");
 
     FillGPUAddress();
+}
 
+void GPUBuffer::CreateVertexBufferSRV(DescriptorHandle &handle, uint32_t count, uint32_t size) {
+    if (!mResource) {
+        return;
+    }
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    srvDesc.Buffer.NumElements = count;
+    srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+    srvDesc.Buffer.StructureByteStride = size;
+    gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
+
+    mHandle = handle;
+}
+
+void GPUBuffer::CreateIndexBufferSRV(DescriptorHandle &handle, uint32_t count) {
+    if (!mResource) {
+        return;
+    }
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    srvDesc.Buffer.NumElements = count;
+    srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+    srvDesc.Buffer.StructureByteStride = 0;
+    gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
+
+    mHandle = handle;
 }
 
 }
