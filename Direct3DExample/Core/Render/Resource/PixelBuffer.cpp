@@ -4,25 +4,27 @@
 
 namespace Render {
 
-PixelBuffer::PixelBuffer(void)
-: GPUResource()
-, mWidth(0)
-, mHeight(0)
-, mFormat(DXGI_FORMAT_UNKNOWN)
-{
-
-}
-
-PixelBuffer::PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, DXGI_FORMAT format)
+PixelBuffer::PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, DXGI_FORMAT format, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
 : GPUResource()
 , mPitch(pitch)
 , mWidth(width)
 , mHeight(height)
 , mFormat(format)
+, mFlag(flag)
 {
+    SetUsageState(usage);
     Initialize();
 }
 
+PixelBuffer::PixelBuffer(void)
+: GPUResource()
+, mWidth(0)
+, mHeight(0)
+, mFormat(DXGI_FORMAT_UNKNOWN)
+, mFlag(D3D12_RESOURCE_FLAG_NONE)
+{
+
+}
 
 PixelBuffer::~PixelBuffer(void) {
 
@@ -45,7 +47,7 @@ void PixelBuffer::Initialize(void) {
     texDesc.SampleDesc.Count = 1;
     texDesc.SampleDesc.Quality = 0;
     texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    texDesc.Flags = mFlag;
 
     D3D12_HEAP_PROPERTIES heapProps;
     heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -58,7 +60,7 @@ void PixelBuffer::Initialize(void) {
     mResource->SetName(L"Texture");
 }
 
-void PixelBuffer::CreateSRView(DescriptorHandle &handle) {
+void PixelBuffer::CreateSRV(DescriptorHandle &handle) {
     if (!mResource) {
         return;
     }
@@ -70,6 +72,20 @@ void PixelBuffer::CreateSRView(DescriptorHandle &handle) {
     srvDesc.Texture2D.MipLevels = 1;
     srvDesc.Texture2D.MostDetailedMip = 0;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
+
+    mHandle = handle;
+}
+
+void PixelBuffer::CreateUAV(DescriptorHandle &handle) {
+    if (!mResource) {
+        return;
+    }
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.Format = mFormat;
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+    gDevice->CreateUnorderedAccessView(mResource, nullptr, &uavDesc, handle.cpu);
 
     mHandle = handle;
 }
