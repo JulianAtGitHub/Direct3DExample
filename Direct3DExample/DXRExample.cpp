@@ -457,23 +457,23 @@ void DXRExample::CreateDescriptorHeap(void) {
 void DXRExample::BuildGeometry(void) {
     // Cube indices.
     uint16_t indices[] = {
-        3,1,0,
-        2,1,3,
+        0,1,3,
+        3,1,2,
 
-        6,4,5,
-        7,4,6,
+        5,4,6,
+        6,4,7,
 
-        11,9,8,
-        10,9,11,
+        8,9,11,
+        11,9,10,
 
-        14,12,13,
-        15,12,14,
+        13,12,14,
+        14,12,15,
 
-        19,17,16,
-        18,17,19,
+        16,17,19,
+        19,17,18,
 
-        22,20,21,
-        23,20,22
+        21,20,22,
+        22,20,23
     };
 
     // Cube vertices positions and corresponding triangle normals.
@@ -584,6 +584,7 @@ void DXRExample::BuildAccelerationStructure(void) {
     D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
     instanceDesc.Transform[0][0] = instanceDesc.Transform[1][1] = instanceDesc.Transform[2][2] = 1;
     instanceDesc.InstanceMask = 1;
+    instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
     instanceDesc.AccelerationStructure = mBottomLevelAccelerationStructure->GetGPUAddress();
     Render::UploadBuffer *instanceDescs = new Render::UploadBuffer(sizeof(instanceDesc));
     instanceDescs->UploadData(&instanceDesc, sizeof(instanceDesc));
@@ -676,8 +677,8 @@ void DXRExample::UpdateCameraMatrices(void) {
     XMVECTOR up = XMVector3Normalize(XMVector3Cross(direction, right));
 
     float fovAngleY = 45.0f;
-    XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
-    XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(fovAngleY), static_cast<float>(mWidth) / static_cast<float>(mHeight), 1.0f, 125.0f);
+    XMMATRIX view = XMMatrixLookAtRH(eye, at, up);
+    XMMATRIX proj = XMMatrixPerspectiveFovRH(XMConvertToRadians(fovAngleY), static_cast<float>(mWidth) / static_cast<float>(mHeight), 1.0f, 125.0f);
     XMMATRIX viewProj = view * proj;
 
     for (auto &sceneConstBuf : mSceneConstBuf) {

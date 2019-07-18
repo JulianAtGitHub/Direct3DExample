@@ -56,7 +56,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
         hInstance,
         this);
 
-    mExample = new D3DExample(mHwnd);
+    mExample = new DXRExample(mHwnd);
     mExample->Init();
 
     ShowWindow(mHwnd, nCmdShow);
