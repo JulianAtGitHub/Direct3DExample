@@ -127,7 +127,11 @@ void CommandContext::UploadBuffer(GPUResource *resource, size_t offset, const vo
 
     LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(size);
 
-    SIMDMemCopy(uploadMem.cpuAddress, buffer, DivideByMultiple(size, 16));
+    if (IsAligned(uploadMem.cpuAddress, 16) && IsAligned(buffer, 16)) {
+        SIMDMemCopy(uploadMem.cpuAddress, buffer, DivideByMultiple(size, 16));
+    } else {
+        memcpy(uploadMem.cpuAddress, buffer, size);
+    }
 
     TransitResource(resource, D3D12_RESOURCE_STATE_COPY_DEST);
     mCommandList->CopyBufferRegion(resource->Get(), offset, uploadMem.buffer->Get(), uploadMem.offset, size);
