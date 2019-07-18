@@ -30,6 +30,8 @@ RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
 ByteAddressBuffer Indices : register(t1, space0);
 StructuredBuffer<Vertex> Vertices : register(t2, space0);
+ByteAddressBuffer Indices2 : register(t3, space0);
+StructuredBuffer<Vertex> Vertices2 : register(t4, space0);
 
 ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
 ConstantBuffer<CubeConstantBuffer> g_cubeCB : register(b1);
@@ -67,9 +69,13 @@ uint3 Load3x16BitIndices(uint offsetBytes)
 }
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
-struct RayPayload
-{
+
+struct RayPayload {
     float4 color;
+};
+
+struct ShadowRayPayload {
+    bool hit;
 };
 
 // Retrieve hit world position.
@@ -171,9 +177,42 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
     payload.color = color;
 }
 
+[shader("closesthit")]
+void MyClosestHitPlane(inout RayPayload payload, in MyAttributes attr)
+{
+    float3 hitPosition = HitWorldPosition();
+
+    // Set the ray's extents.
+    RayDesc ray;
+    ray.Origin = hitPosition;
+    ray.Direction = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
+    // Set TMin to a zero value to avoid aliasing artifcats along contact areas.
+    // Note: make sure to enable back-face culling so as to avoid surface face fighting.
+    ray.TMin = 0.001;
+    ray.TMax = 10000;
+
+    ShadowRayPayload shadowPayload = { true };
+    TraceRay(Scene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, ~0, 2, 1, 1, ray, shadowPayload);
+
+    float factor = shadowPayload.hit ? 0.5 : 1.0;
+    payload.color = float4(0.6f, 0.6f, 0.6f, 1.0f) * factor;
+}
+
+[shader("closesthit")]
+void MyClosestHitShadow(inout ShadowRayPayload payload, in MyAttributes attr)
+{
+    payload.hit = true;
+}
+
 [shader("miss")]
 void MyMissShader(inout RayPayload payload)
 {
-    payload.color = float4(0.0f, 0.2f, 0.4f, 1.0);
+    payload.color = float4(0.0f, 0.2f, 0.4f, 1.0f);
+}
+
+[shader("miss")]
+void MyMissShadow(inout ShadowRayPayload payload)
+{
+    payload.hit = false;
 }
 

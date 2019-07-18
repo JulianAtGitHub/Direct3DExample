@@ -60,12 +60,16 @@ private:
 
     ID3D12RootSignature    *mGlobalRootSignature;
     ID3D12RootSignature    *mLocalRootSignature;
+    ID3D12RootSignature    *mEmptyRootSignature;
     ID3D12StateObject      *mStateObject;
     Render::DescriptorHeap *mDescriptorHeap;
-    Render::GPUBuffer      *mVertexBuffer;
-    Render::GPUBuffer      *mIndexBuffer;
-    Render::GPUBuffer      *mBottomLevelAccelerationStructure;
+    Render::GPUBuffer      *mCubeVertices;
+    Render::GPUBuffer      *mCubeIndices;
+    Render::GPUBuffer      *mPlaneVertices;
+    Render::GPUBuffer      *mPlaneIndices;
     Render::GPUBuffer      *mTopLevelAccelerationStructure;
+    Render::GPUBuffer      *mBottomLevelAccelerationStructure;
+    Render::GPUBuffer      *mBottomLevelAccelerationStructure2;
     Render::ConstantBuffer *mSceneConstantBuffer;
     Render::UploadBuffer   *mRayGenShaderTable;
     Render::UploadBuffer   *mMissShaderTable;
