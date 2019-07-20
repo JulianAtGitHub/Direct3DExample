@@ -37,7 +37,7 @@ private:
     struct SceneConstantBuffer {
         XMMATRIX projectionToWorld;
         XMVECTOR cameraPosition;
-        XMVECTOR lightPosition;
+        XMVECTOR lightDirection;
         XMVECTOR lightAmbientColor;
         XMVECTOR lightDiffuseColor;
     };

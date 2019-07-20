@@ -133,9 +133,13 @@ const static wchar_t *HitShadowGroupName = L"MyHitShadowGroup";
 const static wchar_t *RaygenShaderName = L"MyRaygenShader";
 const static wchar_t *ClosestHitShaderName = L"MyClosestHitShader";
 const static wchar_t *ClosestHitPlaneName = L"MyClosestHitPlane";
-const static wchar_t *ClosestHitShadowName = L"MyClosestHitShadow";
 const static wchar_t *MissShaderName = L"MyMissShader";
 const static wchar_t *MissShadowName = L"MyMissShadow";
+
+static XMFLOAT4 cameraPosition(0.0f, 10.0f, 10.0f, 1.0f);
+static XMFLOAT4 lightDirection(0.0f, -1.0f, 0.0f, 0.0f);
+static XMFLOAT4 lightAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
+static XMFLOAT4 lightDiffuseColor(0.7f, 0.7f, 0.7f, 1.0f);
 
 namespace GlobalRootSignatureParams {
     enum Value {
@@ -208,16 +212,19 @@ void DXRExample::Init(void) {
 
 void DXRExample::Update(void) {
     static float elapse = 0.0f;
-    //elapse += 1.0f;
-    //if (elapse > 360.0f) {
-    //    elapse -= 360.0f;
-    //}
+    static float factor = 0.2f;
+    static float maxAngle = 45.0f;
+    elapse += factor;
+    if (elapse > maxAngle) {
+        elapse = maxAngle;
+        factor = -factor;
+    } else if (elapse < -maxAngle) {
+        elapse = -maxAngle;
+        factor = -factor;
+    }
 
-    float secondsToRotateAround = 8.0f;
-    float angleToRotateBy = -elapse;
-    XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
-    XMVECTOR lightPosition = { 0.0f, 9.0f, -1.0f, 0.0f };
-    mSceneConstBuf[mCurrentFrame].lightPosition = XMVector3Transform(lightPosition, rotate);
+    XMMATRIX rotate = XMMatrixRotationZ(XMConvertToRadians(elapse));
+    mSceneConstBuf[mCurrentFrame].lightDirection = XMVector4Transform(XMLoadFloat4(&lightDirection), rotate);
 }
 
 void DXRExample::Render(void) {
@@ -300,14 +307,9 @@ void DXRExample::Destroy(void) {
 
 void DXRExample::InitScene(void) {
     mCubeConstBuf.albedo = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
-
-    XMFLOAT4 cameraPosition(0.0f, 10.0f, 10.0f, 1.0f);
-    XMFLOAT4 lightPosition(0.0f, 9.0f, -1.0f, 0.0f);
-    XMFLOAT4 lightAmbientColor(0.5f, 0.5f, 0.5f, 1.0f);
-    XMFLOAT4 lightDiffuseColor(0.5f, 0.0f, 0.0f, 1.0f);
     for (auto &sceneConstBuf : mSceneConstBuf) {
         sceneConstBuf.cameraPosition = XMLoadFloat4(&cameraPosition);
-        sceneConstBuf.lightPosition = XMLoadFloat4(&lightPosition);
+        sceneConstBuf.lightDirection = XMLoadFloat4(&lightDirection);
         sceneConstBuf.lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
         sceneConstBuf.lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
     }
@@ -376,7 +378,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // 1 - Global root signature
     // 1 - Pipeline config
     CList<D3D12_STATE_SUBOBJECT> subObjects;
-    subObjects.Resize(13);
+    subObjects.Resize(11);
 
     // DXIL library
     // This contains the shaders and their entrypoints for the state object.
@@ -386,12 +388,11 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // Define which shader exports to surface from the library.
     // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
     // In this sample, this could be ommited for convenience since the sample uses all shaders in the library. 
-    constexpr uint32_t shaderCount = 6;
+    constexpr uint32_t shaderCount = 5;
     D3D12_EXPORT_DESC libExports[shaderCount] = {
         { RaygenShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { ClosestHitShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { ClosestHitPlaneName, nullptr, D3D12_EXPORT_FLAG_NONE },
-        { ClosestHitShadowName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { MissShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { MissShadowName, nullptr, D3D12_EXPORT_FLAG_NONE },
     };
@@ -453,53 +454,37 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     hitGroup2.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
     hitGroup2.pDesc = &hitGroupDesc2;
 
+    // Shadow
+    D3D12_HIT_GROUP_DESC hitGroupDesc3 = {};
+    hitGroupDesc3.HitGroupExport = HitShadowGroupName;
+    hitGroupDesc3.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
+    //
+    auto &hitGroup3 = subObjects.At(6);
+    hitGroup3.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+    hitGroup3.pDesc = &hitGroupDesc3;
+
     //
     D3D12_LOCAL_ROOT_SIGNATURE lrsDesc2 = { mEmptyRootSignature };
     //
-    auto &lrs2 = subObjects.At(6);
+    auto &lrs2 = subObjects.At(7);
     lrs2.Type = D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
     lrs2.pDesc = &lrsDesc2;
     //
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION exportAssociationDesc2 = {};
     exportAssociationDesc2.pSubobjectToAssociate = &lrs2;
-    exportAssociationDesc2.NumExports = 1;
-    exportAssociationDesc2.pExports = &HitPlaneGroupName;
+    exportAssociationDesc2.NumExports = 2;
+    LPCWSTR hitGroupPlaneShadow[2] = { HitPlaneGroupName , HitShadowGroupName };
+    exportAssociationDesc2.pExports = hitGroupPlaneShadow;
     //
-    auto &exportAssociation2 = subObjects.At(7);
+    auto &exportAssociation2 = subObjects.At(8);
     exportAssociation2.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     exportAssociation2.pDesc = &exportAssociationDesc2;
-
-    // Shadow
-    D3D12_HIT_GROUP_DESC hitGroupDesc3 = {};
-    hitGroupDesc3.ClosestHitShaderImport = ClosestHitShadowName;
-    hitGroupDesc3.HitGroupExport = HitShadowGroupName;
-    hitGroupDesc3.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
-    //
-    auto &hitGroup3 = subObjects.At(8);
-    hitGroup3.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-    hitGroup3.pDesc = &hitGroupDesc3;
-
-    //
-    D3D12_LOCAL_ROOT_SIGNATURE lrsDesc3 = { mEmptyRootSignature };
-    //
-    auto &lrs3 = subObjects.At(9);
-    lrs3.Type = D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
-    lrs3.pDesc = &lrsDesc3;
-    //
-    D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION exportAssociationDesc3 = {};
-    exportAssociationDesc3.pSubobjectToAssociate = &lrs3;
-    exportAssociationDesc3.NumExports = 1;
-    exportAssociationDesc3.pExports = &HitShadowGroupName;
-    //
-    auto &exportAssociation3 = subObjects.At(10);
-    exportAssociation3.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
-    exportAssociation3.pDesc = &exportAssociationDesc3;
 
     // Global root signature
     // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
     D3D12_GLOBAL_ROOT_SIGNATURE grsDesc = { mGlobalRootSignature };
     //
-    auto &grs = subObjects.At(11);
+    auto &grs = subObjects.At(9);
     grs.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
     grs.pDesc = &grsDesc;
 
@@ -510,7 +495,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // as drivers may apply optimization strategies for low recursion depths.
     pipelineConfigDesc.MaxTraceRecursionDepth = 2; // ~ primary rays only.
     //
-    auto &pipelineConfig = subObjects.At(12);
+    auto &pipelineConfig = subObjects.At(10);
     pipelineConfig.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
     pipelineConfig.pDesc = &pipelineConfigDesc;
 
@@ -716,7 +701,7 @@ void DXRExample::BuildAccelerationStructure(void) {
     D3D12_RAYTRACING_INSTANCE_DESC instanceDesc[2] = { {}, {} };
 
     {
-        XMVECTOR vMove = { 0.0f, 2.0f, 0.0f, 0.0f };
+        XMVECTOR vMove = { 0.0f, 1.0f, 0.0f, 0.0f };
         XMVECTOR yAxis = { 0.0f, 1.0f, 0.0f, 0.0f };
         XMMATRIX mRotate = XMMatrixRotationAxis(yAxis, XM_PIDIV4);
         XMMATRIX transform = mRotate * XMMatrixTranslationFromVector(vMove);
@@ -724,7 +709,7 @@ void DXRExample::BuildAccelerationStructure(void) {
     }
     instanceDesc[0].InstanceID = 0;
     instanceDesc[0].InstanceMask = 1;
-    instanceDesc[0].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+    instanceDesc[0].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
     instanceDesc[0].InstanceContributionToHitGroupIndex = 0;
     instanceDesc[0].AccelerationStructure = mBottomLevelAccelerationStructure->GetGPUAddress();
 
@@ -736,7 +721,7 @@ void DXRExample::BuildAccelerationStructure(void) {
     }
     instanceDesc[1].InstanceID = 1;
     instanceDesc[1].InstanceMask = 1;
-    instanceDesc[1].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+    instanceDesc[1].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
     instanceDesc[1].InstanceContributionToHitGroupIndex = 1;
     instanceDesc[1].AccelerationStructure = mBottomLevelAccelerationStructure2->GetGPUAddress();
 

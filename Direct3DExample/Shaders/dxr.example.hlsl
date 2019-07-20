@@ -2,7 +2,7 @@
 struct SceneConstantBuffer {
     float4x4 projectionToWorld;
     float4 cameraPosition;
-    float4 lightPosition;
+    float4 lightDirection;
     float4 lightAmbientColor;
     float4 lightDiffuseColor;
 };
@@ -112,10 +112,10 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
 // Diffuse lighting calculation.
 float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal)
 {
-    float3 pixelToLight = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
+    //float3 pixelToLight = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
 
     // Diffuse contribution.
-    float fNDotL = max(0.0f, dot(pixelToLight, normal));
+    float fNDotL = max(0.0f, dot(-g_sceneCB.lightDirection.xyz, normal));
 
     return g_cubeCB.albedo * g_sceneCB.lightDiffuseColor * fNDotL;
 }
@@ -139,7 +139,7 @@ void MyRaygenShader()
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
     RayPayload payload = { float4(0, 0, 0, 0) };
-    TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);
+    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
 
     // Write the raytraced color to the output texture.
     RenderTarget[DispatchRaysIndex().xy] = payload.color;
@@ -170,6 +170,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
     // This is redundant and done for illustration purposes 
     // as all the per-vertex normals are the same and match triangle's normal in this sample. 
     float3 triangleNormal = HitAttribute(vertexNormals, attr);
+    triangleNormal = normalize(mul((float3x3) ObjectToWorld3x4(), triangleNormal));
 
     float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
     float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
@@ -185,23 +186,17 @@ void MyClosestHitPlane(inout RayPayload payload, in MyAttributes attr)
     // Set the ray's extents.
     RayDesc ray;
     ray.Origin = hitPosition;
-    ray.Direction = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
+    ray.Direction = -g_sceneCB.lightDirection.xyz;
     // Set TMin to a zero value to avoid aliasing artifcats along contact areas.
     // Note: make sure to enable back-face culling so as to avoid surface face fighting.
     ray.TMin = 0.001;
     ray.TMax = 10000;
 
     ShadowRayPayload shadowPayload = { true };
-    TraceRay(Scene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, ~0, 2, 1, 1, ray, shadowPayload);
+    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, ~0, 2, 1, 1, ray, shadowPayload);
 
-    float factor = shadowPayload.hit ? 0.5 : 1.0;
-    payload.color = float4(0.6f, 0.6f, 0.6f, 1.0f) * factor;
-}
-
-[shader("closesthit")]
-void MyClosestHitShadow(inout ShadowRayPayload payload, in MyAttributes attr)
-{
-    payload.hit = true;
+    float factor = shadowPayload.hit ? 0.3 : 1.0;
+    payload.color = float4(0.7f, 0.5f, 0.1f, 1.0f) * factor;
 }
 
 [shader("miss")]
