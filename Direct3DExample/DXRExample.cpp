@@ -128,11 +128,9 @@ inline void PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC* desc)
 }
 
 const static wchar_t *HitCubeGroupName = L"MyHitGroup";
-const static wchar_t *HitPlaneGroupName = L"MyHitPlaneGroup";
 const static wchar_t *HitShadowGroupName = L"MyHitShadowGroup";
 const static wchar_t *RaygenShaderName = L"MyRaygenShader";
 const static wchar_t *ClosestHitShaderName = L"MyClosestHitShader";
-const static wchar_t *ClosestHitPlaneName = L"MyClosestHitPlane";
 const static wchar_t *MissShaderName = L"MyMissShader";
 const static wchar_t *MissShadowName = L"MyMissShadow";
 
@@ -153,7 +151,7 @@ namespace GlobalRootSignatureParams {
 
 namespace LocalRootSignatureParams {
     enum Value {
-        CubeConstantSlot = 0,
+        MeshConstantSlot = 0,
         Count
     };
 }
@@ -166,10 +164,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mEmptyRootSignature(nullptr)
 , mStateObject(nullptr)
 , mDescriptorHeap(nullptr)
-, mCubeVertices(nullptr)
-, mCubeIndices(nullptr)
-, mPlaneVertices(nullptr)
-, mPlaneIndices(nullptr)
+, mVertices(nullptr)
+, mIndices(nullptr)
 , mTopLevelAccelerationStructure(nullptr)
 , mBottomLevelAccelerationStructure(nullptr)
 , mBottomLevelAccelerationStructure2(nullptr)
@@ -244,7 +240,7 @@ void DXRExample::Render(void) {
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, 1);
     // Set index and successive vertex buffer decriptor tables
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mCubeIndices->GetHandle().gpu);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle().gpu);
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle().gpu);
     commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTopLevelAccelerationStructure->GetGPUAddress());
 
@@ -252,7 +248,7 @@ void DXRExample::Render(void) {
     // Since each shader table has only one shader record, the stride is same as the size.
     dispatchDesc.HitGroupTable.StartAddress = mHitGroupShaderTable->GetGPUAddress();
     dispatchDesc.HitGroupTable.SizeInBytes = mHitGroupShaderTable->GetBufferSize();
-    dispatchDesc.HitGroupTable.StrideInBytes = mHitGroupShaderTable->GetBufferSize() / 3;
+    dispatchDesc.HitGroupTable.StrideInBytes = mHitGroupShaderTable->GetBufferSize() / 2;
     dispatchDesc.MissShaderTable.StartAddress = mMissShaderTable->GetGPUAddress();
     dispatchDesc.MissShaderTable.SizeInBytes = mMissShaderTable->GetBufferSize();
     dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes / 2;
@@ -291,10 +287,8 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mBottomLevelAccelerationStructure);
     DeleteAndSetNull(mBottomLevelAccelerationStructure2);
     DeleteAndSetNull(mTopLevelAccelerationStructure);
-    DeleteAndSetNull(mCubeIndices);
-    DeleteAndSetNull(mCubeVertices);
-    DeleteAndSetNull(mPlaneIndices);
-    DeleteAndSetNull(mPlaneVertices);
+    DeleteAndSetNull(mIndices);
+    DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mDescriptorHeap);
 
     ReleaseAndSetNull(mStateObject);
@@ -306,7 +300,10 @@ void DXRExample::Destroy(void) {
 }
 
 void DXRExample::InitScene(void) {
-    mCubeConstBuf.albedo = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
+    mMeshConstBuf.albedo[0] = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
+    mMeshConstBuf.albedo[1] = XMFLOAT4(0.7f, 0.5f, 0.1f, 1.0f);
+    mMeshConstBuf.offset[0] = 0;
+    mMeshConstBuf.offset[1] = 12;
     for (auto &sceneConstBuf : mSceneConstBuf) {
         sceneConstBuf.cameraPosition = XMLoadFloat4(&cameraPosition);
         sceneConstBuf.lightDirection = XMLoadFloat4(&lightDirection);
@@ -321,7 +318,7 @@ void DXRExample::CreateRootSignature(void) {
     {
         CD3DX12_DESCRIPTOR_RANGE ranges[2]; // Perfomance TIP: Order from most frequent to least frequent.
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // 1 output texture / RenderTarget
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);  // 2 static index and vertex buffers.
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);  // 2 static index and vertex buffers.
 
         CD3DX12_ROOT_PARAMETER rootParameters[GlobalRootSignatureParams::Count];
         rootParameters[GlobalRootSignatureParams::OutputViewSlot].InitAsDescriptorTable(1, &ranges[0]);
@@ -340,7 +337,7 @@ void DXRExample::CreateRootSignature(void) {
     // This is a root signature that enables a shader to have unique arguments that come from shader tables.
     {
         CD3DX12_ROOT_PARAMETER rootParameters[LocalRootSignatureParams::Count];
-        rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(mCubeConstBuf), 1);
+        rootParameters[LocalRootSignatureParams::MeshConstantSlot].InitAsConstants(SizeOfInUint32(mMeshConstBuf), 1);
         CD3DX12_ROOT_SIGNATURE_DESC localRootSignatureDesc(LocalRootSignatureParams::Count, rootParameters);
         localRootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 
@@ -378,7 +375,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // 1 - Global root signature
     // 1 - Pipeline config
     CList<D3D12_STATE_SUBOBJECT> subObjects;
-    subObjects.Resize(11);
+    subObjects.Resize(10);
 
     // DXIL library
     // This contains the shaders and their entrypoints for the state object.
@@ -388,11 +385,10 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // Define which shader exports to surface from the library.
     // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
     // In this sample, this could be ommited for convenience since the sample uses all shaders in the library. 
-    constexpr uint32_t shaderCount = 5;
+    constexpr uint32_t shaderCount = 4;
     D3D12_EXPORT_DESC libExports[shaderCount] = {
         { RaygenShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { ClosestHitShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
-        { ClosestHitPlaneName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { MissShaderName, nullptr, D3D12_EXPORT_FLAG_NONE },
         { MissShadowName, nullptr, D3D12_EXPORT_FLAG_NONE },
     };
@@ -417,7 +413,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
     // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
 
-    // Cube
+    // Cube & Plane
     D3D12_HIT_GROUP_DESC hitGroupDesc = {};
     hitGroupDesc.ClosestHitShaderImport = ClosestHitShaderName;
     hitGroupDesc.HitGroupExport = HitCubeGroupName;
@@ -444,39 +440,28 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     exportAssociation.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     exportAssociation.pDesc = &exportAssociationDesc;
 
-    // Plane
+    // Shadow
     D3D12_HIT_GROUP_DESC hitGroupDesc2 = {};
-    hitGroupDesc2.ClosestHitShaderImport = ClosestHitPlaneName;
-    hitGroupDesc2.HitGroupExport = HitPlaneGroupName;
+    hitGroupDesc2.HitGroupExport = HitShadowGroupName;
     hitGroupDesc2.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
     //
     auto &hitGroup2 = subObjects.At(5);
     hitGroup2.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
     hitGroup2.pDesc = &hitGroupDesc2;
 
-    // Shadow
-    D3D12_HIT_GROUP_DESC hitGroupDesc3 = {};
-    hitGroupDesc3.HitGroupExport = HitShadowGroupName;
-    hitGroupDesc3.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
-    //
-    auto &hitGroup3 = subObjects.At(6);
-    hitGroup3.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-    hitGroup3.pDesc = &hitGroupDesc3;
-
     //
     D3D12_LOCAL_ROOT_SIGNATURE lrsDesc2 = { mEmptyRootSignature };
     //
-    auto &lrs2 = subObjects.At(7);
+    auto &lrs2 = subObjects.At(6);
     lrs2.Type = D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
     lrs2.pDesc = &lrsDesc2;
     //
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION exportAssociationDesc2 = {};
     exportAssociationDesc2.pSubobjectToAssociate = &lrs2;
-    exportAssociationDesc2.NumExports = 2;
-    LPCWSTR hitGroupPlaneShadow[2] = { HitPlaneGroupName , HitShadowGroupName };
-    exportAssociationDesc2.pExports = hitGroupPlaneShadow;
+    exportAssociationDesc2.NumExports = 1;
+    exportAssociationDesc2.pExports = &HitShadowGroupName;
     //
-    auto &exportAssociation2 = subObjects.At(8);
+    auto &exportAssociation2 = subObjects.At(7);
     exportAssociation2.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     exportAssociation2.pDesc = &exportAssociationDesc2;
 
@@ -484,7 +469,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
     D3D12_GLOBAL_ROOT_SIGNATURE grsDesc = { mGlobalRootSignature };
     //
-    auto &grs = subObjects.At(9);
+    auto &grs = subObjects.At(8);
     grs.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
     grs.pDesc = &grsDesc;
 
@@ -495,7 +480,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // as drivers may apply optimization strategies for low recursion depths.
     pipelineConfigDesc.MaxTraceRecursionDepth = 2; // ~ primary rays only.
     //
-    auto &pipelineConfig = subObjects.At(10);
+    auto &pipelineConfig = subObjects.At(9);
     pipelineConfig.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
     pipelineConfig.pDesc = &pipelineConfigDesc;
 
@@ -524,109 +509,97 @@ void DXRExample::CreateDescriptorHeap(void) {
 void DXRExample::BuildGeometry(void) {
     Render::gCommand->Begin();
 
-    // Cube
-    {
-        uint16_t indices[] = {
-            0,1,3,
-            3,1,2,
+    uint32_t indices[] = {
+        // Cube
+        0,1,3,
+        3,1,2,
 
-            5,4,6,
-            6,4,7,
+        5,4,6,
+        6,4,7,
 
-            8,9,11,
-            11,9,10,
+        8,9,11,
+        11,9,10,
 
-            13,12,14,
-            14,12,15,
+        13,12,14,
+        14,12,15,
 
-            16,17,19,
-            19,17,18,
+        16,17,19,
+        19,17,18,
 
-            21,20,22,
-            22,20,23
-        };
+        21,20,22,
+        22,20,23,
 
-        // Cube vertices positions and corresponding triangle normals.
-        Vertex vertices[] = {
-            { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        // Plane
+        24,25,27,
+        27,25,26,
+    };
 
-            { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-            { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+    // Vertices positions and corresponding triangle normals.
+    Vertex vertices[] = {
+        // Cube
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 0 },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 0 },
 
-            { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 0 },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 0 },
 
-            { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), 0 },
 
-            { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-            { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-            { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), 0 },
 
-            { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        };
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), 0 },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), 0 },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), 0 },
 
-        mCubeIndices = new Render::GPUBuffer(sizeof(indices));
-        mCubeVertices = new Render::GPUBuffer(sizeof(vertices));
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), 0 },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), 0 },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), 0 },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), 0 },
 
-        Render::gCommand->UploadBuffer(mCubeIndices, 0, indices, sizeof(indices));
-        Render::gCommand->UploadBuffer(mCubeVertices, 0, vertices, sizeof(vertices));
+        // Plane
+        { XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 1 },
+        { XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 1 },
+        { XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 1 },
+        { XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), 1 },
+    };
 
-        mCubeIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), sizeof(indices) / 4);
-        mCubeVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(vertices), sizeof(Vertex));
-    }
+    mIndices = new Render::GPUBuffer(sizeof(indices));
+    mVertices = new Render::GPUBuffer(sizeof(vertices));
 
-    // Plane
-    {
-        uint16_t indices[] = {
-            0,1,3,
-            3,1,2,
-        };
+    Render::gCommand->UploadBuffer(mIndices, 0, indices, sizeof(indices));
+    Render::gCommand->UploadBuffer(mVertices, 0, vertices, sizeof(vertices));
 
-        // Cube vertices positions and corresponding triangle normals.
-        Vertex vertices[] = {
-            { XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        };
-
-        mPlaneIndices = new Render::GPUBuffer(sizeof(indices));
-        mPlaneVertices = new Render::GPUBuffer(sizeof(vertices));
-
-        Render::gCommand->UploadBuffer(mPlaneVertices, 0, vertices, sizeof(vertices));
-        Render::gCommand->UploadBuffer(mPlaneIndices, 0, indices, sizeof(indices));
-
-        mPlaneIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), sizeof(indices) / 4);
-        mPlaneVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(vertices), sizeof(Vertex));
-    }
+    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(indices));
+    mVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(vertices), sizeof(Vertex));
 
     Render::gCommand->End(true);
 }
 
 void DXRExample::BuildAccelerationStructure(void) {
+    constexpr uint32_t cubeIndexCount = 3 * 12;
+    constexpr uint32_t planeIndexCount = 3 * 2;
+    constexpr uint32_t vertexCount = 4 * 6 + 4 * 1;
+
     D3D12_RAYTRACING_GEOMETRY_DESC geometryDescs[2] = { {}, {} };
     geometryDescs[0].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-    geometryDescs[0].Triangles.IndexBuffer = mCubeIndices->GetGPUAddress();
-    geometryDescs[0].Triangles.IndexCount = (UINT)mCubeIndices->GetBufferSize() / sizeof(uint16_t);
-    geometryDescs[0].Triangles.IndexFormat = DXGI_FORMAT_R16_UINT;
+    geometryDescs[0].Triangles.IndexBuffer = mIndices->GetGPUAddress();
+    geometryDescs[0].Triangles.IndexCount = cubeIndexCount;
+    geometryDescs[0].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
     geometryDescs[0].Triangles.Transform3x4 = 0;
     geometryDescs[0].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDescs[0].Triangles.VertexCount = (UINT)mCubeVertices->GetBufferSize() / sizeof(Vertex);
-    geometryDescs[0].Triangles.VertexBuffer.StartAddress = mCubeVertices->GetGPUAddress();
+    geometryDescs[0].Triangles.VertexCount = vertexCount;
+    geometryDescs[0].Triangles.VertexBuffer.StartAddress = mVertices->GetGPUAddress();
     geometryDescs[0].Triangles.VertexBuffer.StrideInBytes = sizeof(Vertex);
 
     // Mark the geometry as opaque. 
@@ -635,13 +608,13 @@ void DXRExample::BuildAccelerationStructure(void) {
     geometryDescs[0].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
     geometryDescs[1].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-    geometryDescs[1].Triangles.IndexBuffer = mPlaneIndices->GetGPUAddress();
-    geometryDescs[1].Triangles.IndexCount = (UINT)mPlaneIndices->GetBufferSize() / sizeof(uint16_t);
-    geometryDescs[1].Triangles.IndexFormat = DXGI_FORMAT_R16_UINT;
+    geometryDescs[1].Triangles.IndexBuffer = mIndices->GetGPUAddress() + cubeIndexCount * sizeof(uint32_t);
+    geometryDescs[1].Triangles.IndexCount = planeIndexCount;
+    geometryDescs[1].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
     geometryDescs[1].Triangles.Transform3x4 = 0;
     geometryDescs[1].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDescs[1].Triangles.VertexCount = (UINT)mPlaneVertices->GetBufferSize() / sizeof(Vertex);
-    geometryDescs[1].Triangles.VertexBuffer.StartAddress = mPlaneVertices->GetGPUAddress();
+    geometryDescs[1].Triangles.VertexCount = vertexCount;
+    geometryDescs[1].Triangles.VertexBuffer.StartAddress = mVertices->GetGPUAddress();
     geometryDescs[1].Triangles.VertexBuffer.StrideInBytes = sizeof(Vertex);
 
     geometryDescs[1].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
@@ -701,14 +674,14 @@ void DXRExample::BuildAccelerationStructure(void) {
     D3D12_RAYTRACING_INSTANCE_DESC instanceDesc[2] = { {}, {} };
 
     {
-        XMVECTOR vMove = { 0.0f, 1.0f, 0.0f, 0.0f };
+        XMVECTOR vMove = { 0.0f, 3.0f, 0.0f, 0.0f };
         XMVECTOR yAxis = { 0.0f, 1.0f, 0.0f, 0.0f };
         XMMATRIX mRotate = XMMatrixRotationAxis(yAxis, XM_PIDIV4);
         XMMATRIX transform = mRotate * XMMatrixTranslationFromVector(vMove);
         XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc[0].Transform), transform);
     }
     instanceDesc[0].InstanceID = 0;
-    instanceDesc[0].InstanceMask = 1;
+    instanceDesc[0].InstanceMask = 0xff;
     instanceDesc[0].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
     instanceDesc[0].InstanceContributionToHitGroupIndex = 0;
     instanceDesc[0].AccelerationStructure = mBottomLevelAccelerationStructure->GetGPUAddress();
@@ -716,13 +689,13 @@ void DXRExample::BuildAccelerationStructure(void) {
     {
         XMMATRIX mMove = XMMatrixTranslation(-0.5f, 0.0f, -0.5f);
         XMMATRIX mScale = XMMatrixScaling(16.0f, 1.0f, 16.0f);
-        XMMATRIX transform2 = mMove * mScale * XMMatrixIdentity();
-        XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc[1].Transform), transform2);
+        XMMATRIX transform = mMove * mScale * XMMatrixIdentity();
+        XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc[1].Transform), transform);
     }
     instanceDesc[1].InstanceID = 1;
-    instanceDesc[1].InstanceMask = 1;
+    instanceDesc[1].InstanceMask = 0xff;
     instanceDesc[1].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-    instanceDesc[1].InstanceContributionToHitGroupIndex = 1;
+    instanceDesc[1].InstanceContributionToHitGroupIndex = 0;
     instanceDesc[1].AccelerationStructure = mBottomLevelAccelerationStructure2->GetGPUAddress();
 
     //D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT
@@ -774,7 +747,6 @@ void DXRExample::BuildShaderTables(void) {
     void* missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(MissShaderName);
     void* missShadowIdentifier = stateObjectProperties->GetShaderIdentifier(MissShadowName);
     void* hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(HitCubeGroupName);
-    void* hitGroupPlaneIdentifier = stateObjectProperties->GetShaderIdentifier(HitPlaneGroupName);
     void* hitGroupShadowIdentifier = stateObjectProperties->GetShaderIdentifier(HitShadowGroupName);
     uint32_t shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
@@ -797,14 +769,13 @@ void DXRExample::BuildShaderTables(void) {
 
     // Hit group shader table
     {
-        uint32_t hitGroupShaderSize = AlignUp(shaderIdentifierSize + (uint32_t)(sizeof(mCubeConstBuf)), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        uint32_t hitPlaneShaderSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        uint32_t elementSize = MAX(hitGroupShaderSize, hitPlaneShaderSize);
-        mHitGroupShaderTable = new Render::UploadBuffer(3 * elementSize);
+        uint32_t hitGroupShaderSize = AlignUp(shaderIdentifierSize + (uint32_t)(sizeof(mMeshConstBuf)), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+        uint32_t hitGroupShadowSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+        uint32_t elementSize = MAX(hitGroupShaderSize, hitGroupShadowSize);
+        mHitGroupShaderTable = new Render::UploadBuffer(2 * elementSize);
         mHitGroupShaderTable->UploadData(hitGroupShaderIdentifier, shaderIdentifierSize);
-        mHitGroupShaderTable->UploadData(&mCubeConstBuf, sizeof(mCubeConstBuf), shaderIdentifierSize);
-        mHitGroupShaderTable->UploadData(hitGroupPlaneIdentifier, shaderIdentifierSize, elementSize);
-        mHitGroupShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, 2 * elementSize);
+        mHitGroupShaderTable->UploadData(&mMeshConstBuf, sizeof(mMeshConstBuf), shaderIdentifierSize);
+        mHitGroupShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, elementSize);
         
     }
 

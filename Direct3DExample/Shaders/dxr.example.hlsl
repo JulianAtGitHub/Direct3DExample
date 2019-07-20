@@ -7,66 +7,24 @@ struct SceneConstantBuffer {
     float4 lightDiffuseColor;
 };
 
-struct CubeConstantBuffer {
-    float4 albedo;
+struct MeshConstantBuffer {
+    float4 albedo[2];
+    uint2 offset;
 };
 
 struct Vertex {
     float3 position;
     float3 normal;
+    uint value;
 };
-
-// Based on http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
-float3 LinearToSRGB(float3 c)
-{
-    float3 sq1 = sqrt(c);
-    float3 sq2 = sqrt(sq1);
-    float3 sq3 = sqrt(sq2);
-    float3 srgb = 0.662002687 * sq1 + 0.684122060 * sq2 - 0.323583601 * sq3 - 0.0225411470 * c;
-    return srgb;
-}
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
 ByteAddressBuffer Indices : register(t1, space0);
 StructuredBuffer<Vertex> Vertices : register(t2, space0);
-ByteAddressBuffer Indices2 : register(t3, space0);
-StructuredBuffer<Vertex> Vertices2 : register(t4, space0);
 
 ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
-ConstantBuffer<CubeConstantBuffer> g_cubeCB : register(b1);
-
-// Load three 16 bit indices from a byte addressed buffer.
-uint3 Load3x16BitIndices(uint offsetBytes)
-{
-    uint3 indices;
-
-    // ByteAdressBuffer loads must be aligned at a 4 byte boundary.
-    // Since we need to read three 16 bit indices: { 0, 1, 2 } 
-    // aligned at a 4 byte boundary as: { 0 1 } { 2 0 } { 1 2 } { 0 1 } ...
-    // we will load 8 bytes (~ 4 indices { a b | c d }) to handle two possible index triplet layouts,
-    // based on first index's offsetBytes being aligned at the 4 byte boundary or not:
-    //  Aligned:     { 0 1 | 2 - }
-    //  Not aligned: { - 0 | 1 2 }
-    const uint dwordAlignedOffset = offsetBytes & ~3;
-    const uint2 four16BitIndices = Indices.Load2(dwordAlignedOffset);
-
-    // Aligned: { 0 1 | 2 - } => retrieve first three 16bit indices
-    if (dwordAlignedOffset == offsetBytes)
-    {
-        indices.x = four16BitIndices.x & 0xffff;
-        indices.y = (four16BitIndices.x >> 16) & 0xffff;
-        indices.z = four16BitIndices.y & 0xffff;
-    }
-    else // Not aligned: { - 0 | 1 2 } => retrieve last three 16bit indices
-    {
-        indices.x = (four16BitIndices.x >> 16) & 0xffff;
-        indices.y = four16BitIndices.y & 0xffff;
-        indices.z = (four16BitIndices.y >> 16) & 0xffff;
-    }
-
-    return indices;
-}
+ConstantBuffer<MeshConstantBuffer> g_meshCB : register(b1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 
@@ -79,22 +37,19 @@ struct ShadowRayPayload {
 };
 
 // Retrieve hit world position.
-float3 HitWorldPosition()
-{
+float3 HitWorldPosition() {
     return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
-float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttributes attr)
-{
+float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttributes attr) {
     return vertexAttribute[0] +
         attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
-inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
-{
+inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction) {
     float2 xy = index + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
@@ -110,19 +65,14 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
 }
 
 // Diffuse lighting calculation.
-float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal)
-{
-    //float3 pixelToLight = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
-
+float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal, uint value) {
     // Diffuse contribution.
     float fNDotL = max(0.0f, dot(-g_sceneCB.lightDirection.xyz, normal));
-
-    return g_cubeCB.albedo * g_sceneCB.lightDiffuseColor * fNDotL;
+    return g_meshCB.albedo[value] * g_sceneCB.lightDiffuseColor * fNDotL;
 }
 
 [shader("raygeneration")]
-void MyRaygenShader()
-{
+void MyRaygenShader() {
     float3 rayDir;
     float3 origin;
 
@@ -146,41 +96,7 @@ void MyRaygenShader()
 }
 
 [shader("closesthit")]
-void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
-{
-    float3 hitPosition = HitWorldPosition();
-
-    // Get the base index of the triangle's first 16 bit index.
-    uint indexSizeInBytes = 2;
-    uint indicesPerTriangle = 3;
-    uint triangleIndexStride = indicesPerTriangle * indexSizeInBytes;
-    uint baseIndex = PrimitiveIndex() * triangleIndexStride;
-
-    // Load up 3 16 bit indices for the triangle.
-    const uint3 indices = Load3x16BitIndices(baseIndex);
-
-    // Retrieve corresponding vertex normals for the triangle vertices.
-    float3 vertexNormals[3] = {
-        Vertices[indices[0]].normal,
-        Vertices[indices[1]].normal,
-        Vertices[indices[2]].normal
-    };
-
-    // Compute the triangle's normal.
-    // This is redundant and done for illustration purposes 
-    // as all the per-vertex normals are the same and match triangle's normal in this sample. 
-    float3 triangleNormal = HitAttribute(vertexNormals, attr);
-    triangleNormal = normalize(mul((float3x3) ObjectToWorld3x4(), triangleNormal));
-
-    float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
-    float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
-
-    payload.color = color;
-}
-
-[shader("closesthit")]
-void MyClosestHitPlane(inout RayPayload payload, in MyAttributes attr)
-{
+void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr) {
     float3 hitPosition = HitWorldPosition();
 
     // Set the ray's extents.
@@ -191,23 +107,47 @@ void MyClosestHitPlane(inout RayPayload payload, in MyAttributes attr)
     // Note: make sure to enable back-face culling so as to avoid surface face fighting.
     ray.TMin = 0.001;
     ray.TMax = 10000;
+    uint rayFlags = RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
     ShadowRayPayload shadowPayload = { true };
-    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, ~0, 2, 1, 1, ray, shadowPayload);
+    TraceRay(Scene, rayFlags, ~0, 1, 1, 1, ray, shadowPayload);
 
-    float factor = shadowPayload.hit ? 0.3 : 1.0;
-    payload.color = float4(0.7f, 0.5f, 0.1f, 1.0f) * factor;
+    const uint triangleIndexStride = 12; // indicesPerTriangle(3) * indexSizeInBytes(4)
+    const uint primitiveOffset = g_meshCB.offset[InstanceID()] + PrimitiveIndex();
+    const uint3 indices = Indices.Load3(primitiveOffset * triangleIndexStride);
+    const uint value = Vertices[indices.x].value;
+
+    if (!shadowPayload.hit) {
+
+        // Retrieve corresponding vertex normals for the triangle vertices.
+        float3 vertexNormals[3] = {
+            Vertices[indices.x].normal,
+            Vertices[indices.y].normal,
+            Vertices[indices.z].normal
+        };
+
+        // Compute the triangle's normal.
+        // This is redundant and done for illustration purposes 
+        // as all the per-vertex normals are the same and match triangle's normal in this sample. 
+        float3 triangleNormal = HitAttribute(vertexNormals, attr);
+        triangleNormal = normalize(mul((float3x3) ObjectToWorld3x4(), triangleNormal));
+
+        float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal, value);
+        float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
+
+        payload.color = color;
+    } else {
+        payload.color = float4(g_meshCB.albedo[value].xyz * g_sceneCB.lightAmbientColor.xyz, 1.0);
+    }
 }
 
 [shader("miss")]
-void MyMissShader(inout RayPayload payload)
-{
+void MyMissShader(inout RayPayload payload) {
     payload.color = float4(0.0f, 0.2f, 0.4f, 1.0f);
 }
 
 [shader("miss")]
-void MyMissShadow(inout ShadowRayPayload payload)
-{
+void MyMissShadow(inout ShadowRayPayload payload) {
     payload.hit = false;
 }
 

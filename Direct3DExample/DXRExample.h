@@ -42,13 +42,15 @@ private:
         XMVECTOR lightDiffuseColor;
     };
 
-    struct CubeConstantBuffer {
-        XMFLOAT4 albedo;
+    struct MeshConstantBuffer {
+        XMFLOAT4 albedo[2];
+        uint32_t offset[2];
     };
 
     struct Vertex {
         XMFLOAT3 position;
         XMFLOAT3 normal;
+        uint32_t value;
     };
 
     uint32_t                mWidth;
@@ -56,17 +58,15 @@ private:
     uint32_t                mCurrentFrame;
     uint64_t                mFenceValues[Render::FRAME_COUNT];
     SceneConstantBuffer     mSceneConstBuf[Render::FRAME_COUNT];
-    CubeConstantBuffer      mCubeConstBuf;
+    MeshConstantBuffer      mMeshConstBuf;
 
     ID3D12RootSignature    *mGlobalRootSignature;
     ID3D12RootSignature    *mLocalRootSignature;
     ID3D12RootSignature    *mEmptyRootSignature;
     ID3D12StateObject      *mStateObject;
     Render::DescriptorHeap *mDescriptorHeap;
-    Render::GPUBuffer      *mCubeVertices;
-    Render::GPUBuffer      *mCubeIndices;
-    Render::GPUBuffer      *mPlaneVertices;
-    Render::GPUBuffer      *mPlaneIndices;
+    Render::GPUBuffer      *mVertices;
+    Render::GPUBuffer      *mIndices;
     Render::GPUBuffer      *mTopLevelAccelerationStructure;
     Render::GPUBuffer      *mBottomLevelAccelerationStructure;
     Render::GPUBuffer      *mBottomLevelAccelerationStructure2;
