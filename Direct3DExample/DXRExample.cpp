@@ -170,10 +170,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mBottomLevelAccelerationStructure(nullptr)
 , mBottomLevelAccelerationStructure2(nullptr)
 , mSceneConstantBuffer(nullptr)
-, mRayGenShaderTable(nullptr)
-, mMissShaderTable(nullptr)
-, mHitGroupShaderTable(nullptr)
 , mRaytracingOutput(nullptr)
+, mShaderTable(nullptr)
 {
     for (auto &fence : mFenceValues) {
         fence = 1;
@@ -244,21 +242,8 @@ void DXRExample::Render(void) {
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle().gpu);
     commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTopLevelAccelerationStructure->GetGPUAddress());
 
-    D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
-    // Since each shader table has only one shader record, the stride is same as the size.
-    dispatchDesc.HitGroupTable.StartAddress = mHitGroupShaderTable->GetGPUAddress();
-    dispatchDesc.HitGroupTable.SizeInBytes = mHitGroupShaderTable->GetBufferSize();
-    dispatchDesc.HitGroupTable.StrideInBytes = mHitGroupShaderTable->GetBufferSize() / 2;
-    dispatchDesc.MissShaderTable.StartAddress = mMissShaderTable->GetGPUAddress();
-    dispatchDesc.MissShaderTable.SizeInBytes = mMissShaderTable->GetBufferSize();
-    dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes / 2;
-    dispatchDesc.RayGenerationShaderRecord.StartAddress = mRayGenShaderTable->GetGPUAddress();
-    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = mRayGenShaderTable->GetBufferSize();
-    dispatchDesc.Width = mWidth;
-    dispatchDesc.Height = mHeight;
-    dispatchDesc.Depth = 1;
     commandList->SetPipelineState1(mStateObject);
-    commandList->DispatchRays(&dispatchDesc);
+    commandList->DispatchRays(&mRaysDesc);
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_COPY_DEST);
     Render::gCommand->TransitResource(mRaytracingOutput, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -280,9 +265,7 @@ void DXRExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
     DeleteAndSetNull(mRaytracingOutput);
-    DeleteAndSetNull(mHitGroupShaderTable);
-    DeleteAndSetNull(mMissShaderTable);
-    DeleteAndSetNull(mRayGenShaderTable);
+    DeleteAndSetNull(mShaderTable);
     DeleteAndSetNull(mSceneConstantBuffer);
     DeleteAndSetNull(mBottomLevelAccelerationStructure);
     DeleteAndSetNull(mBottomLevelAccelerationStructure2);
@@ -750,34 +733,41 @@ void DXRExample::BuildShaderTables(void) {
     void* hitGroupShadowIdentifier = stateObjectProperties->GetShaderIdentifier(HitShadowGroupName);
     uint32_t shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
-    // Ray gen shader table
-    {
-        uint32_t numShaderRecords = 1;
-        uint32_t shaderRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        mRayGenShaderTable = new Render::UploadBuffer(numShaderRecords * shaderRecordSize);
-        mRayGenShaderTable->UploadData(rayGenShaderIdentifier, shaderIdentifierSize);
-    }
+    // calculate buffer size
+    uint32_t rayGenRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t rayGenTableSize = AlignUp(rayGenRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
+    uint32_t missRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t missTableSize = AlignUp(2 * missRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 
-    // Miss shader table
-    {
-        uint32_t numShaderRecords = 2;
-        uint32_t shaderRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        mMissShaderTable = new Render::UploadBuffer(numShaderRecords * shaderRecordSize);
-        mMissShaderTable->UploadData(missShaderIdentifier, shaderIdentifierSize);
-        mMissShaderTable->UploadData(missShadowIdentifier, shaderIdentifierSize, shaderRecordSize);
-    }
+    uint32_t hitGroupShaderSize = AlignUp(shaderIdentifierSize + (uint32_t)(sizeof(mMeshConstBuf)), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t hitGroupShadowSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t hitGroupeRecordSize = MAX(hitGroupShaderSize, hitGroupShadowSize);
+    uint32_t hitGroupeTableSize = AlignUp(2 * hitGroupeRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 
-    // Hit group shader table
-    {
-        uint32_t hitGroupShaderSize = AlignUp(shaderIdentifierSize + (uint32_t)(sizeof(mMeshConstBuf)), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        uint32_t hitGroupShadowSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-        uint32_t elementSize = MAX(hitGroupShaderSize, hitGroupShadowSize);
-        mHitGroupShaderTable = new Render::UploadBuffer(2 * elementSize);
-        mHitGroupShaderTable->UploadData(hitGroupShaderIdentifier, shaderIdentifierSize);
-        mHitGroupShaderTable->UploadData(&mMeshConstBuf, sizeof(mMeshConstBuf), shaderIdentifierSize);
-        mHitGroupShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, elementSize);
-        
-    }
+    mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
+    uint32_t offset = 0;
+    mShaderTable->UploadData(rayGenShaderIdentifier, shaderIdentifierSize, offset);
+    offset += rayGenTableSize;
+    mShaderTable->UploadData(missShaderIdentifier, shaderIdentifierSize, offset);
+    mShaderTable->UploadData(missShadowIdentifier, shaderIdentifierSize, offset + missRecordSize);
+    offset += missTableSize;
+    mShaderTable->UploadData(hitGroupShaderIdentifier, shaderIdentifierSize, offset);
+    mShaderTable->UploadData(&mMeshConstBuf, sizeof(mMeshConstBuf), offset + shaderIdentifierSize);
+    mShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, offset + hitGroupeRecordSize);
+
+    mRaysDesc = {};
+    // Since each shader table has only one shader record, the stride is same as the size.
+    mRaysDesc.HitGroupTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize + missTableSize;
+    mRaysDesc.HitGroupTable.SizeInBytes = hitGroupeTableSize;
+    mRaysDesc.HitGroupTable.StrideInBytes = hitGroupeRecordSize;
+    mRaysDesc.MissShaderTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize;
+    mRaysDesc.MissShaderTable.SizeInBytes = missTableSize;
+    mRaysDesc.MissShaderTable.StrideInBytes = missRecordSize;
+    mRaysDesc.RayGenerationShaderRecord.StartAddress = mShaderTable->GetGPUAddress();
+    mRaysDesc.RayGenerationShaderRecord.SizeInBytes = rayGenTableSize;
+    mRaysDesc.Width = mWidth;
+    mRaysDesc.Height = mHeight;
+    mRaysDesc.Depth = 1;
 
     stateObjectProperties->Release();
 }
