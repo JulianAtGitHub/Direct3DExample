@@ -9,122 +9,105 @@
 #include "Core/Render/Resource/PixelBuffer.h"
 #include "Core/Render/Resource/RenderTargetBuffer.h"
 
-#include <iomanip>
-#include <sstream>
-#include <iostream>
-
 #define SizeOfInUint32(obj) ((sizeof(obj) - 1) / sizeof(UINT32) + 1)
 
 // Pretty-print a state object tree.
-inline void PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC* desc)
+static void PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC* desc)
 {
-    std::wstringstream wstr;
-    wstr << L"\n";
-    wstr << L"--------------------------------------------------------------------\n";
-    wstr << L"| D3D12 State Object 0x" << static_cast<const void*>(desc) << L": ";
-    if (desc->Type == D3D12_STATE_OBJECT_TYPE_COLLECTION) wstr << L"Collection\n";
-    if (desc->Type == D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE) wstr << L"Raytracing Pipeline\n";
+    Printf("\n");
+    Printf("--------------------------------------------------------------------\n");
+    Print("| D3D12 State Object 0x%llx: ", desc);
+    if (desc->Type == D3D12_STATE_OBJECT_TYPE_COLLECTION) {
+        Printf("Collection\n");
+    }
+    if (desc->Type == D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE) {
+        Printf("Raytracing Pipeline\n");
+    }
 
-    auto ExportTree = [](UINT depth, UINT numExports, const D3D12_EXPORT_DESC* exports)
-    {
-        std::wostringstream woss;
-        for (UINT i = 0; i < numExports; i++)
-        {
-            woss << L"|";
-            if (depth > 0)
-            {
-                for (UINT j = 0; j < 2 * depth - 1; j++) woss << L" ";
+    auto ExportTree = [](UINT depth, UINT numExports, const D3D12_EXPORT_DESC* exports) {
+        for (UINT i = 0; i < numExports; i++) {
+            Printf("|");
+            if (depth > 0) {
+                for (UINT j = 0; j < 2 * depth - 1; j++) {
+                    Printf(" ");
+                }
             }
-            woss << L" [" << i << L"]: ";
-            if (exports[i].ExportToRename) woss << exports[i].ExportToRename << L" --> ";
-            woss << exports[i].Name << L"\n";
+            Print(" [%d]: ", i);
+            if (exports[i].ExportToRename) {
+                WPrintf(exports[i].ExportToRename);
+                Printf(" --> ");
+            }
+            WPrintf(exports[i].Name);
+            Printf("\n");
         }
-        return woss.str();
     };
 
-    for (UINT i = 0; i < desc->NumSubobjects; i++)
-    {
-        wstr << L"| [" << i << L"]: ";
-        switch (desc->pSubobjects[i].Type)
-        {
+    for (UINT i = 0; i < desc->NumSubobjects; i++) {
+        Print("| [%d]: ", i);
+        switch (desc->pSubobjects[i].Type) {
         case D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE:
-            wstr << L"Global Root Signature 0x" << desc->pSubobjects[i].pDesc << L"\n";
+            Print("Global Root Signature 0x%llx\n", desc->pSubobjects[i].pDesc);
             break;
         case D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE:
-            wstr << L"Local Root Signature 0x" << desc->pSubobjects[i].pDesc << L"\n";
+            Print("Local Root Signature 0x%llx\n", desc->pSubobjects[i].pDesc);
             break;
         case D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK:
-            wstr << L"Node Mask: 0x" << std::hex << std::setfill(L'0') << std::setw(8) << *static_cast<const UINT*>(desc->pSubobjects[i].pDesc) << std::setw(0) << std::dec << L"\n";
+            Print("Node Mask: 0x%llx\n", *static_cast<const UINT*>(desc->pSubobjects[i].pDesc));
             break;
-        case D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY:
-        {
-            wstr << L"DXIL Library 0x";
+        case D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY: {
             auto lib = static_cast<const D3D12_DXIL_LIBRARY_DESC*>(desc->pSubobjects[i].pDesc);
-            wstr << lib->DXILLibrary.pShaderBytecode << L", " << lib->DXILLibrary.BytecodeLength << L" bytes\n";
-            wstr << ExportTree(1, lib->NumExports, lib->pExports);
+            Print("DXIL Library 0x%llx, %llu bytes\n", lib->DXILLibrary.pShaderBytecode, lib->DXILLibrary.BytecodeLength);
+            ExportTree(1, lib->NumExports, lib->pExports);
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_EXISTING_COLLECTION:
-        {
-            wstr << L"Existing Library 0x";
+        case D3D12_STATE_SUBOBJECT_TYPE_EXISTING_COLLECTION: {
             auto collection = static_cast<const D3D12_EXISTING_COLLECTION_DESC*>(desc->pSubobjects[i].pDesc);
-            wstr << collection->pExistingCollection << L"\n";
-            wstr << ExportTree(1, collection->NumExports, collection->pExports);
+            Print("Existing Library 0x%llx\n", collection->pExistingCollection);
+            ExportTree(1, collection->NumExports, collection->pExports);
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION:
-        {
-            wstr << L"Subobject to Exports Association (Subobject [";
+        case D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
             auto association = static_cast<const D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION*>(desc->pSubobjects[i].pDesc);
             UINT index = static_cast<UINT>(association->pSubobjectToAssociate - desc->pSubobjects);
-            wstr << index << L"])\n";
-            for (UINT j = 0; j < association->NumExports; j++)
-            {
-                wstr << L"|  [" << j << L"]: " << association->pExports[j] << L"\n";
+            Print("Subobject to Exports Association (Subobject [%d])\n", index);
+            for (UINT j = 0; j < association->NumExports; j++) {
+                Print("|  [%d]: ", j); WPrintf(association->pExports[j]); Printf("\n");
             }
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION:
-        {
-            wstr << L"DXIL Subobjects to Exports Association (";
+        case D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
             auto association = static_cast<const D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION*>(desc->pSubobjects[i].pDesc);
-            wstr << association->SubobjectToAssociate << L")\n";
-            for (UINT j = 0; j < association->NumExports; j++)
-            {
-                wstr << L"|  [" << j << L"]: " << association->pExports[j] << L"\n";
+            Printf("DXIL Subobjects to Exports Association (");  WPrintf(association->SubobjectToAssociate); Printf(")\n");
+            for (UINT j = 0; j < association->NumExports; j++) {
+                Print("|  [%d]: ", j); WPrintf(association->pExports[j]); Printf("\n");
             }
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG:
-        {
-            wstr << L"Raytracing Shader Config\n";
+        case D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG: {
+            Printf("Raytracing Shader Config\n");
             auto config = static_cast<const D3D12_RAYTRACING_SHADER_CONFIG*>(desc->pSubobjects[i].pDesc);
-            wstr << L"|  [0]: Max Payload Size: " << config->MaxPayloadSizeInBytes << L" bytes\n";
-            wstr << L"|  [1]: Max Attribute Size: " << config->MaxAttributeSizeInBytes << L" bytes\n";
+            Print("|  [0]: Max Payload Size: %d bytes\n", config->MaxPayloadSizeInBytes);
+            Print("|  [1]: Max Attribute Size: %d bytes\n", config->MaxAttributeSizeInBytes);
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG:
-        {
-            wstr << L"Raytracing Pipeline Config\n";
+        case D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG: {
+            Printf("Raytracing Pipeline Config\n");
             auto config = static_cast<const D3D12_RAYTRACING_PIPELINE_CONFIG*>(desc->pSubobjects[i].pDesc);
-            wstr << L"|  [0]: Max Recursion Depth: " << config->MaxTraceRecursionDepth << L"\n";
+            Print("|  [0]: Max Recursion Depth: %d\n", config->MaxTraceRecursionDepth);
             break;
         }
-        case D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP:
-        {
-            wstr << L"Hit Group (";
+        case D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP: {
             auto hitGroup = static_cast<const D3D12_HIT_GROUP_DESC*>(desc->pSubobjects[i].pDesc);
-            wstr << (hitGroup->HitGroupExport ? hitGroup->HitGroupExport : L"[none]") << L")\n";
-            wstr << L"|  [0]: Any Hit Import: " << (hitGroup->AnyHitShaderImport ? hitGroup->AnyHitShaderImport : L"[none]") << L"\n";
-            wstr << L"|  [1]: Closest Hit Import: " << (hitGroup->ClosestHitShaderImport ? hitGroup->ClosestHitShaderImport : L"[none]") << L"\n";
-            wstr << L"|  [2]: Intersection Import: " << (hitGroup->IntersectionShaderImport ? hitGroup->IntersectionShaderImport : L"[none]") << L"\n";
+            Printf("Hit Group (");  WPrintf(hitGroup->HitGroupExport ? hitGroup->HitGroupExport : L"[none]"); Printf(")\n");
+            Printf("|  [0]: Any Hit Import: "); WPrintf(hitGroup->AnyHitShaderImport ? hitGroup->AnyHitShaderImport : L"[none]"); Printf("\n");
+            Printf("|  [1]: Closest Hit Import: "); WPrintf(hitGroup->ClosestHitShaderImport ? hitGroup->ClosestHitShaderImport : L"[none]"); Printf("\n");
+            Printf("|  [2]: Intersection Import: "); WPrintf(hitGroup->IntersectionShaderImport ? hitGroup->IntersectionShaderImport : L"[none]"); Printf("\n");
             break;
         }
         }
-        wstr << L"|--------------------------------------------------------------------\n";
+        Printf("|--------------------------------------------------------------------\n");
     }
-    wstr << L"\n";
-    OutputDebugStringW(wstr.str().c_str());
+    Printf("\n");
 }
 
 const static wchar_t *HitCubeGroupName = L"MyHitGroup";

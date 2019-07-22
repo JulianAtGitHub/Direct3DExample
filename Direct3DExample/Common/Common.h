@@ -31,9 +31,17 @@ INLINE void ThrowIfFailed(HRESULT hr) {
 
 INLINE void Printf(const char *str) {
 #ifdef _DEBUG
-    OutputDebugString(str);
+    OutputDebugStringA(str);
 #else
     printf("%s", str);
+#endif
+}
+
+INLINE void WPrintf(const wchar_t *str) {
+#ifdef _DEBUG
+    OutputDebugStringW(str);
+#else
+    wprintf("%s", str);
 #endif
 }
 
