@@ -103,6 +103,9 @@
     <ClCompile Include="Core\Render\Sampler.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\RayTracingState.cpp">
+      <Filter>Sources\Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -196,6 +199,9 @@
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\Sampler.h">
+      <Filter>Sources\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\RayTracingState.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
