@@ -4,7 +4,9 @@
 #include "Core/Render/RenderCore.h"
 
 namespace Render {
+    class RootSignature;
     class DescriptorHeap;
+    class RayTracingState;
     class GPUBuffer;
     class UploadBuffer;
     class ConstantBuffer;
@@ -60,10 +62,10 @@ private:
     SceneConstantBuffer         mSceneConstBuf[Render::FRAME_COUNT];
     MeshConstantBuffer          mMeshConstBuf;
 
-    ID3D12RootSignature        *mGlobalRootSignature;
-    ID3D12RootSignature        *mLocalRootSignature;
-    ID3D12RootSignature        *mEmptyRootSignature;
-    ID3D12StateObject          *mStateObject;
+    Render::RootSignature      *mGlobalRootSignature;
+    Render::RootSignature      *mLocalRootSignature;
+    Render::RootSignature      *mEmptyRootSignature;
+    Render::RayTracingState    *mRayTracingState;
     Render::DescriptorHeap     *mDescriptorHeap;
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
