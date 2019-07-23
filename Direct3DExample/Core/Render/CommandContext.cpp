@@ -159,6 +159,17 @@ void CommandContext::UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
+void CommandContext::CopyResource(GPUResource *dest, GPUResource *src) {
+    if (!dest || !dest->Get() || !src || !src->Get()) {
+        return;
+    }
+
+    TransitResource(dest, D3D12_RESOURCE_STATE_COPY_DEST);
+    TransitResource(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+    mCommandList->CopyResource(dest->Get(), src->Get());
+}
+
 void CommandContext::ClearColor(RenderTargetBuffer *resource) {
     mCommandList->ClearRenderTargetView(resource->GetHandle().cpu, resource->GetClearedColorData(), 0, nullptr);
 }
@@ -197,10 +208,6 @@ void CommandContext::SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count) 
         msDescriptorHeaps[i] = heaps[i]->Get();
     }
     mCommandList->SetDescriptorHeaps(count, msDescriptorHeaps);
-}
-
-void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {
-    mCommandList->ExecuteBundle(bundle);
 }
 
 }

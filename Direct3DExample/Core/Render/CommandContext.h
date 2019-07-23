@@ -29,6 +29,7 @@ public:
     void UploadBuffer(GPUResource *resource, size_t offset, const void *buffer, size_t size);
     void UploadTexture(PixelBuffer *resource, const void *data);
     void UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count);
+    void CopyResource(GPUResource *dest, GPUResource *src);
 
     void ClearColor(RenderTargetBuffer *resource);
     void ClearDepth(DepthStencilBuffer *resource);
@@ -46,7 +47,12 @@ public:
 
     void SetGraphicsRootSignature(RootSignature *rootSignature);
     void SetComputeRootSignature(RootSignature *rootSignature);
+
     void SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count);
+
+    void SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
+    void SetComputeRootShaderResourceView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
+    void SetComputeRootDescriptorTable(uint32_t index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
     void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
 
@@ -95,6 +101,23 @@ INLINE void CommandContext::SetViewportAndScissor(const D3D12_VIEWPORT& viewport
 INLINE void CommandContext::SetViewportAndScissor(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
     SetViewport((float)x, (float)y, (float)w, (float)h);
     SetScissor(x, y, x + w, y + h);
+}
+
+INLINE void CommandContext::SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
+    mCommandList->SetComputeRootConstantBufferView(index, address);
+}
+
+INLINE void CommandContext::SetComputeRootShaderResourceView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
+    mCommandList->SetComputeRootShaderResourceView(index, address);
+}
+
+INLINE void CommandContext::SetComputeRootDescriptorTable(uint32_t index, D3D12_GPU_DESCRIPTOR_HANDLE handle) {
+    mCommandList->SetComputeRootDescriptorTable(index, handle);
+}
+
+INLINE void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {
+    ASSERT_PRINT(bundle != nullptr);
+    mCommandList->ExecuteBundle(bundle);
 }
 
 }
