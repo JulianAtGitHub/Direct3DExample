@@ -11,8 +11,6 @@
 #include "Core/Render/Resource/PixelBuffer.h"
 #include "Core/Render/Resource/RenderTargetBuffer.h"
 
-#define SizeOfInUint32(obj) ((sizeof(obj) - 1) / sizeof(UINT32) + 1)
-
 const static wchar_t *HitCubeGroupName = L"MyHitGroup";
 const static wchar_t *HitShadowGroupName = L"MyHitShadowGroup";
 const static wchar_t *RaygenShaderName = L"MyRaygenShader";
@@ -184,7 +182,7 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->Create();
 
     mLocalRootSignature = new Render::RootSignature(LocalRootSignatureParams::Count, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
-    mLocalRootSignature->SetConstants(LocalRootSignatureParams::MeshConstantSlot, SizeOfInUint32(mMeshConstBuf), 1);
+    mLocalRootSignature->SetConstants(LocalRootSignatureParams::MeshConstantSlot, (uint32_t)(AlignUp(sizeof(mMeshConstBuf), 4) >> 2), 1);
     mLocalRootSignature->Create();
 
     mEmptyRootSignature = new Render::RootSignature(0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
@@ -201,8 +199,9 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // This simple sample utilizes default shader association except for local root signature subobject
     // which has an explicit association specified purely for demonstration purposes.
     // 1 - DXIL library
-    // 1 - Triangle hit group
     // 1 - Shader config
+    // 2 - Triangle hit group
+    // 2 - Export Association
     // 2 - Local root signature and association
     // 1 - Global root signature
     // 1 - Pipeline config
@@ -237,8 +236,6 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     // Shadow
     mRayTracingState->AddHitGroup(HitShadowGroupName);
-
-    //
     uint32_t lrsIdx2 = mRayTracingState->AddLocalRootSignature(mEmptyRootSignature);
     mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx2, &HitShadowGroupName, 1);
 
