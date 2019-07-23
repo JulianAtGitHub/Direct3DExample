@@ -4,8 +4,9 @@
 
 namespace Render {
 
-RootSignature::RootSignature(uint32_t paramCount)
-: mParameters(mParameters)
+RootSignature::RootSignature(uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS flags)
+: mParameters(paramCount)
+, mFlags(flags)
 , mRootSignature(nullptr)
 {
     ASSERT_PRINT(paramCount > 0);
@@ -26,18 +27,14 @@ RootSignature::~RootSignature(void) {
 void RootSignature::Create(void) {
     ReleaseAndSetNull(mRootSignature);
 
-    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Init_1_1(mParameters.Count(), mParameters.Data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    uint32_t paramCount = mParameters.Count();
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(paramCount, paramCount > 0 ? mParameters.Data() : nullptr);
+    rootSignatureDesc.Flags = mFlags;
 
-    ID3DBlob *signature = nullptr;
-    ID3DBlob *error = nullptr;
-    D3D_ROOT_SIGNATURE_VERSION version = gRootSignatureSupport_Version_1_1 ? D3D_ROOT_SIGNATURE_VERSION_1_1 : D3D_ROOT_SIGNATURE_VERSION_1_0;
-
-    ASSERT_SUCCEEDED(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, version, &signature, &error));
-    ASSERT_SUCCEEDED(gDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
-
-    ReleaseAndSetNull(signature);
-    ReleaseAndSetNull(error);
+    WRL::ComPtr<ID3DBlob> blob;
+    WRL::ComPtr<ID3DBlob> error;
+    ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error));
+    ASSERT_SUCCEEDED(gDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 }
 
 }
