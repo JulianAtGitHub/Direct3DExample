@@ -9,8 +9,6 @@ RootSignature::RootSignature(uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS fla
 , mFlags(flags)
 , mRootSignature(nullptr)
 {
-    ASSERT_PRINT(paramCount > 0);
-
     mParameters.Resize(paramCount);
     for (uint32_t i = 0; i < paramCount; ++i) {
         mParameters.At(i).ParameterType = (D3D12_ROOT_PARAMETER_TYPE)0xFFFFFFFF;
@@ -27,7 +25,7 @@ RootSignature::~RootSignature(void) {
 void RootSignature::Create(void) {
     ReleaseAndSetNull(mRootSignature);
 
-    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(D3D12_DEFAULT);
     if (mParameters.Count()) {
         rootSignatureDesc.Init(mParameters.Count(), mParameters.Data());
     }
