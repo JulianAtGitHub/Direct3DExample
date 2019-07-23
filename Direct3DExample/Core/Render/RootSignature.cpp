@@ -27,8 +27,10 @@ RootSignature::~RootSignature(void) {
 void RootSignature::Create(void) {
     ReleaseAndSetNull(mRootSignature);
 
-    uint32_t paramCount = mParameters.Count();
-    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(paramCount, paramCount > 0 ? mParameters.Data() : nullptr);
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    if (mParameters.Count()) {
+        rootSignatureDesc.Init(mParameters.Count(), mParameters.Data());
+    }
     rootSignatureDesc.Flags = mFlags;
 
     WRL::ComPtr<ID3DBlob> blob;
