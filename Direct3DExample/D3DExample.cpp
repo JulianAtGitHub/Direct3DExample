@@ -203,7 +203,7 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);
     Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
     Render::gCommand->ClearDepth(Render::gDepthStencil);
-    Render::gCommand->SetRootSignature(mRootSignature);
+    Render::gCommand->SetGraphicsRootSignature(mRootSignature);
     Render::DescriptorHeap *heaps[] = { mShaderResourceHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->ExecuteBundle(mBundles[mCurrentFrame]);

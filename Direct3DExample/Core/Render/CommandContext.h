@@ -44,7 +44,8 @@ public:
     void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissor);
     void SetViewportAndScissor(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 
-    void SetRootSignature(RootSignature *rootSignature);
+    void SetGraphicsRootSignature(RootSignature *rootSignature);
+    void SetComputeRootSignature(RootSignature *rootSignature);
     void SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count);
 
     void ExecuteBundle(ID3D12GraphicsCommandList *bundle);

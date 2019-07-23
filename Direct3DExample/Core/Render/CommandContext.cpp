@@ -181,9 +181,14 @@ void CommandContext::SetRenderTarget(RenderTargetBuffer *renderTarget, DepthSten
     mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 }
 
-void CommandContext::SetRootSignature(RootSignature *rootSignature) {
+void CommandContext::SetGraphicsRootSignature(RootSignature *rootSignature) {
     ASSERT_PRINT(rootSignature->Get() != nullptr);
     mCommandList->SetGraphicsRootSignature(rootSignature->Get());
+}
+
+void CommandContext::SetComputeRootSignature(RootSignature *rootSignature) {
+    ASSERT_PRINT(rootSignature->Get() != nullptr);
+    mCommandList->SetComputeRootSignature(rootSignature->Get());
 }
 
 void CommandContext::SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count) {
