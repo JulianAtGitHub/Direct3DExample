@@ -36,7 +36,6 @@ DXRExample::DXRExample(HWND hwnd)
 , mSceneConstantBuffer(nullptr)
 , mMeshConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
-, mShaderTable(nullptr)
 , mBLASCube(nullptr)
 , mBLASPlane(nullptr)
 , mTLAS(nullptr)
@@ -110,7 +109,7 @@ void DXRExample::Render(void) {
     Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
     Render::gCommand->SetRayTracingState(mRayTracingState);
-    Render::gCommand->GetDXRCommandList()->DispatchRays(&mRaysDesc);
+    Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
 
     Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mRaytracingOutput);
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
@@ -131,7 +130,6 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mBLASPlane);
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
-    DeleteAndSetNull(mShaderTable);
     DeleteAndSetNull(mMeshConstantBuffer);
     DeleteAndSetNull(mSceneConstantBuffer);
     DeleteAndSetNull(mIndices);
@@ -174,11 +172,6 @@ void DXRExample::CreateRootSignature(void) {
 // An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
 // with all configuration options resolved, such as local signatures and other state.
 void DXRExample::CreateRayTracingPipelineState(void) {
-    // Create 7 subobjects that combine into a RTPSO:
-    // Subobjects need to be associated with DXIL exports (i.e. shaders) either by way of default or explicit associations.
-    // Default association applies to every exported shader entrypoint that doesn't have any of the same type of subobject associated with it.
-    // This simple sample utilizes default shader association except for local root signature subobject
-    // which has an explicit association specified purely for demonstration purposes.
     // 1 - DXIL library
     // 1 - Shader config
     // 2 - Triangle hit group
@@ -188,16 +181,8 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // 1 - Pipeline config
     mRayTracingState = new Render::RayTracingState(10);
 
-    // DXIL library
-    // This contains the shaders and their entrypoints for the state object.
-    // Since shaders are not considered a subobject, they need to be passed in via DXIL library subobjects.
-
-    // Define which shader exports to surface from the library.
-    // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
-    // In this sample, this could be ommited for convenience since the sample uses all shaders in the library.
-    constexpr uint32_t shaderCount = 4;
-    const wchar_t *shaderFuncs[shaderCount] = { RaygenShaderName, ClosestHitShaderName, MissShaderName, MissShadowName };
-    mRayTracingState->AddDXILLibrary("raytracing.cso", shaderFuncs, shaderCount);
+    const wchar_t *shaderFuncs[] = { RaygenShaderName, ClosestHitShaderName, MissShaderName, MissShadowName };
+    mRayTracingState->AddDXILLibrary("raytracing.cso", shaderFuncs, _countof(shaderFuncs));
 
     // Shader config
     // Defines the maximum sizes in bytes for the ray payload and attribute structure.
@@ -205,9 +190,6 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     // Triangle hit group
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
-    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
-
-    // Cube & Plane
     mRayTracingState->AddHitGroup(HitCubeGroupName, ClosestHitShaderName);
 
     // Local root signature and shader association
@@ -314,8 +296,8 @@ void DXRExample::BuildGeometry(void) {
     Render::gCommand->UploadBuffer(mIndices, 0, indices, sizeof(indices));
     Render::gCommand->UploadBuffer(mVertices, 0, vertices, sizeof(vertices));
 
-    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(indices));
-    mVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), ARRAYSIZE(vertices), sizeof(Vertex));
+    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), _countof(indices));
+    mVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), _countof(vertices), sizeof(Vertex));
 
     Render::gCommand->End(true);
 }
@@ -371,50 +353,10 @@ void DXRExample::CreateConstantBuffer(void) {
 // Build shader tables.
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
-    ID3D12StateObjectProperties *stateObjectProperties = nullptr;
-    ASSERT_SUCCEEDED(mRayTracingState->Get()->QueryInterface(IID_PPV_ARGS(&stateObjectProperties)));
-
-    // Get shader identifiers.
-    void* rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(RaygenShaderName);
-    void* missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(MissShaderName);
-    void* missShadowIdentifier = stateObjectProperties->GetShaderIdentifier(MissShadowName);
-    void* hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(HitCubeGroupName);
-    void* hitGroupShadowIdentifier = stateObjectProperties->GetShaderIdentifier(HitShadowGroupName);
-    uint32_t shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
-
-    // calculate buffer size
-    uint32_t rayGenRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-    uint32_t rayGenTableSize = AlignUp(rayGenRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
-    uint32_t missRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-    uint32_t missTableSize = AlignUp(2 * missRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
-    uint32_t hitGroupRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-    uint32_t hitGroupeTableSize = AlignUp(2 * hitGroupRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
-
-    mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
-    uint32_t offset = 0;
-    mShaderTable->UploadData(rayGenShaderIdentifier, shaderIdentifierSize, offset);
-    offset += rayGenTableSize;
-    mShaderTable->UploadData(missShaderIdentifier, shaderIdentifierSize, offset);
-    mShaderTable->UploadData(missShadowIdentifier, shaderIdentifierSize, offset + missRecordSize);
-    offset += missTableSize;
-    mShaderTable->UploadData(hitGroupShaderIdentifier, shaderIdentifierSize, offset);
-    mShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, offset + hitGroupRecordSize);
-
-    mRaysDesc = {};
-    // Since each shader table has only one shader record, the stride is same as the size.
-    mRaysDesc.HitGroupTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize + missTableSize;
-    mRaysDesc.HitGroupTable.SizeInBytes = hitGroupeTableSize;
-    mRaysDesc.HitGroupTable.StrideInBytes = hitGroupRecordSize;
-    mRaysDesc.MissShaderTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize;
-    mRaysDesc.MissShaderTable.SizeInBytes = missTableSize;
-    mRaysDesc.MissShaderTable.StrideInBytes = missRecordSize;
-    mRaysDesc.RayGenerationShaderRecord.StartAddress = mShaderTable->GetGPUAddress();
-    mRaysDesc.RayGenerationShaderRecord.SizeInBytes = rayGenTableSize;
-    mRaysDesc.Width = mWidth;
-    mRaysDesc.Height = mHeight;
-    mRaysDesc.Depth = 1;
-
-    stateObjectProperties->Release();
+    const wchar_t *rayGens[] = { RaygenShaderName };
+    const wchar_t *misses[] = { MissShaderName, MissShadowName };
+    const wchar_t *hipGroups[] = { HitCubeGroupName, HitShadowGroupName };
+    mRayTracingState->BuildShaderTable(rayGens, _countof(rayGens), misses, _countof(misses), hipGroups, _countof(hipGroups));
 }
 
 // Create 2D output texture for raytracing.

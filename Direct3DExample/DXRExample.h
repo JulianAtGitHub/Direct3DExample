@@ -81,8 +81,6 @@ private:
     Render::ConstantBuffer     *mSceneConstantBuffer;
     Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
-    Render::UploadBuffer       *mShaderTable;
-    D3D12_DISPATCH_RAYS_DESC    mRaysDesc;
 
     Render::BottomLevelAccelerationStructure   *mBLASCube;
     Render::BottomLevelAccelerationStructure   *mBLASPlane;
