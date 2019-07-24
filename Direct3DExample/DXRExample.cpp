@@ -163,8 +163,8 @@ void DXRExample::Destroy(void) {
 void DXRExample::InitScene(void) {
     mMeshConstBuf.albedo[0] = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
     mMeshConstBuf.albedo[1] = XMFLOAT4(0.7f, 0.5f, 0.1f, 1.0f);
-    mMeshConstBuf.offset[0] = 0;
-    mMeshConstBuf.offset[1] = 12;
+    mMeshConstBuf.offset.x = 0;
+    mMeshConstBuf.offset.y = 12;
     for (auto &sceneConstBuf : mSceneConstBuf) {
         sceneConstBuf.cameraPosition = XMLoadFloat4(&cameraPosition);
         sceneConstBuf.lightDirection = XMLoadFloat4(&lightDirection);
@@ -216,7 +216,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     // In this sample, this could be ommited for convenience since the sample uses all shaders in the library.
     constexpr uint32_t shaderCount = 4;
     const wchar_t *shaderFuncs[shaderCount] = { RaygenShaderName, ClosestHitShaderName, MissShaderName, MissShadowName };
-    mRayTracingState->AddDXILLibrary("dxr.example.cso", shaderFuncs, shaderCount);
+    mRayTracingState->AddDXILLibrary("raytracing.cso", shaderFuncs, shaderCount);
 
     // Shader config
     // Defines the maximum sizes in bytes for the ray payload and attribute structure.

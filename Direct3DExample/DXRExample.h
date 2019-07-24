@@ -48,7 +48,7 @@ private:
 
     struct MeshConstantBuffer {
         XMFLOAT4 albedo[2];
-        uint32_t offset[2];
+        XMUINT2 offset;
     };
 
     struct Vertex {
