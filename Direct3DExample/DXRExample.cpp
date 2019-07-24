@@ -24,34 +24,17 @@ static XMFLOAT4 lightDirection(0.0f, -1.0f, 0.0f, 0.0f);
 static XMFLOAT4 lightAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
 static XMFLOAT4 lightDiffuseColor(0.7f, 0.7f, 0.7f, 1.0f);
 
-namespace GlobalRootSignatureParams {
-    enum Value {
-        OutputViewSlot = 0,
-        AccelerationStructureSlot,
-        SceneConstantSlot,
-        VertexBuffersSlot,
-        Count
-    };
-}
-
-namespace LocalRootSignatureParams {
-    enum Value {
-        MeshConstantSlot = 0,
-        Count
-    };
-}
-
 DXRExample::DXRExample(HWND hwnd)
 : Example(hwnd)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
-, mEmptyRootSignature(nullptr)
 , mRayTracingState(nullptr)
 , mDescriptorHeap(nullptr)
 , mVertices(nullptr)
 , mIndices(nullptr)
 , mSceneConstantBuffer(nullptr)
+, mMeshConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
 , mShaderTable(nullptr)
 , mBLASCube(nullptr)
@@ -116,6 +99,7 @@ void DXRExample::Render(void) {
     void *mappedConstantData = mSceneConstantBuffer->GetMappedBuffer(0, mCurrentFrame);
     memcpy(mappedConstantData, mSceneConstBuf + mCurrentFrame, sizeof(SceneConstantBuffer));
     Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, mSceneConstantBuffer->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::MeshConstantSlot, mMeshConstantBuffer->GetGPUAddress());
 
     // Bind the heaps, acceleration structure and dispatch rays.
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap };
@@ -148,12 +132,12 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mShaderTable);
+    DeleteAndSetNull(mMeshConstantBuffer);
     DeleteAndSetNull(mSceneConstantBuffer);
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mDescriptorHeap);
     DeleteAndSetNull(mRayTracingState);
-    DeleteAndSetNull(mEmptyRootSignature);
     DeleteAndSetNull(mLocalRootSignature);
     DeleteAndSetNull(mGlobalRootSignature);
 
@@ -178,15 +162,12 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::MeshConstantSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);
     mGlobalRootSignature->Create();
 
-    mLocalRootSignature = new Render::RootSignature(LocalRootSignatureParams::Count, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
-    mLocalRootSignature->SetConstants(LocalRootSignatureParams::MeshConstantSlot, (uint32_t)(AlignUp(sizeof(mMeshConstBuf), 4) >> 2), 1);
+    mLocalRootSignature = new Render::RootSignature(0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
     mLocalRootSignature->Create();
-
-    mEmptyRootSignature = new Render::RootSignature(0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
-    mEmptyRootSignature->Create();
 }
 
 // Create a raytracing pipeline state object (RTPSO).
@@ -236,7 +217,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     // Shadow
     mRayTracingState->AddHitGroup(HitShadowGroupName);
-    uint32_t lrsIdx2 = mRayTracingState->AddLocalRootSignature(mEmptyRootSignature);
+    uint32_t lrsIdx2 = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
     mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx2, &HitShadowGroupName, 1);
 
     // Global root signature
@@ -383,6 +364,8 @@ void DXRExample::BuildAccelerationStructure(void) {
 
 void DXRExample::CreateConstantBuffer(void) {
     mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstantBuffer), 1);
+    mMeshConstantBuffer = new Render::UploadBuffer(sizeof(MeshConstantBuffer));
+    mMeshConstantBuffer->UploadData(&mMeshConstBuf, sizeof(MeshConstantBuffer));
 }
 
 // Build shader tables.
@@ -404,11 +387,8 @@ void DXRExample::BuildShaderTables(void) {
     uint32_t rayGenTableSize = AlignUp(rayGenRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
     uint32_t missRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
     uint32_t missTableSize = AlignUp(2 * missRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
-
-    uint32_t hitGroupShaderSize = AlignUp(shaderIdentifierSize + (uint32_t)(sizeof(mMeshConstBuf)), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-    uint32_t hitGroupShadowSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-    uint32_t hitGroupeRecordSize = MAX(hitGroupShaderSize, hitGroupShadowSize);
-    uint32_t hitGroupeTableSize = AlignUp(2 * hitGroupeRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
+    uint32_t hitGroupRecordSize = AlignUp(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t hitGroupeTableSize = AlignUp(2 * hitGroupRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 
     mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
     uint32_t offset = 0;
@@ -418,14 +398,13 @@ void DXRExample::BuildShaderTables(void) {
     mShaderTable->UploadData(missShadowIdentifier, shaderIdentifierSize, offset + missRecordSize);
     offset += missTableSize;
     mShaderTable->UploadData(hitGroupShaderIdentifier, shaderIdentifierSize, offset);
-    mShaderTable->UploadData(&mMeshConstBuf, sizeof(mMeshConstBuf), offset + shaderIdentifierSize);
-    mShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, offset + hitGroupeRecordSize);
+    mShaderTable->UploadData(hitGroupShadowIdentifier, shaderIdentifierSize, offset + hitGroupRecordSize);
 
     mRaysDesc = {};
     // Since each shader table has only one shader record, the stride is same as the size.
     mRaysDesc.HitGroupTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize + missTableSize;
     mRaysDesc.HitGroupTable.SizeInBytes = hitGroupeTableSize;
-    mRaysDesc.HitGroupTable.StrideInBytes = hitGroupeRecordSize;
+    mRaysDesc.HitGroupTable.StrideInBytes = hitGroupRecordSize;
     mRaysDesc.MissShaderTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize;
     mRaysDesc.MissShaderTable.SizeInBytes = missTableSize;
     mRaysDesc.MissShaderTable.StrideInBytes = missRecordSize;

@@ -56,6 +56,15 @@ private:
         XMFLOAT3 normal;
     };
 
+    enum GlobalRootSignatureParams {
+        OutputViewSlot = 0,
+        AccelerationStructureSlot,
+        SceneConstantSlot,
+        MeshConstantSlot,
+        VertexBuffersSlot,
+        Count
+    };
+
     uint32_t                    mWidth;
     uint32_t                    mHeight;
     uint32_t                    mCurrentFrame;
@@ -65,12 +74,12 @@ private:
 
     Render::RootSignature      *mGlobalRootSignature;
     Render::RootSignature      *mLocalRootSignature;
-    Render::RootSignature      *mEmptyRootSignature;
     Render::RayTracingState    *mRayTracingState;
     Render::DescriptorHeap     *mDescriptorHeap;
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
     Render::ConstantBuffer     *mSceneConstantBuffer;
+    Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
     Render::UploadBuffer       *mShaderTable;
     D3D12_DISPATCH_RAYS_DESC    mRaysDesc;
