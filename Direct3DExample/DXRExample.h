@@ -11,6 +11,8 @@ namespace Render {
     class UploadBuffer;
     class ConstantBuffer;
     class PixelBuffer;
+    class BottomLevelAccelerationStructure;
+    class TopLevelAccelerationStructure;
 }
 
 class DXRExample : public Example {
@@ -69,11 +71,12 @@ private:
     Render::DescriptorHeap     *mDescriptorHeap;
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
-    Render::GPUBuffer          *mTopLevelAccelerationStructure;
-    Render::GPUBuffer          *mBottomLevelAccelerationStructure;
-    Render::GPUBuffer          *mBottomLevelAccelerationStructure2;
     Render::ConstantBuffer     *mSceneConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
     Render::UploadBuffer       *mShaderTable;
     D3D12_DISPATCH_RAYS_DESC    mRaysDesc;
+
+    Render::BottomLevelAccelerationStructure   *mBLASCube;
+    Render::BottomLevelAccelerationStructure   *mBLASPlane;
+    Render::TopLevelAccelerationStructure      *mTLAS;
 };

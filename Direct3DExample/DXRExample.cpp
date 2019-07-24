@@ -5,6 +5,7 @@
 #include "Core/Render/RootSignature.h"
 #include "Core/Render/DescriptorHeap.h"
 #include "Core/Render/RayTracingState.h"
+#include "Core/Render/AccelerationStructure.h"
 #include "Core/Render/Resource/GPUBuffer.h"
 #include "Core/Render/Resource/UploadBuffer.h"
 #include "Core/Render/Resource/ConstantBuffer.h"
@@ -50,12 +51,12 @@ DXRExample::DXRExample(HWND hwnd)
 , mDescriptorHeap(nullptr)
 , mVertices(nullptr)
 , mIndices(nullptr)
-, mTopLevelAccelerationStructure(nullptr)
-, mBottomLevelAccelerationStructure(nullptr)
-, mBottomLevelAccelerationStructure2(nullptr)
 , mSceneConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
 , mShaderTable(nullptr)
+, mBLASCube(nullptr)
+, mBLASPlane(nullptr)
+, mTLAS(nullptr)
 {
     for (auto &fence : mFenceValues) {
         fence = 1;
@@ -120,11 +121,11 @@ void DXRExample::Render(void) {
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, 1);
     // Set index and successive vertex buffer decriptor tables
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle().gpu);
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle().gpu);
-    Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTopLevelAccelerationStructure->GetGPUAddress());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
+    Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
-    Render::gCommand->GetDXRCommandList()->SetPipelineState1(mRayTracingState->Get());
+    Render::gCommand->SetRayTracingState(mRayTracingState);
     Render::gCommand->GetDXRCommandList()->DispatchRays(&mRaysDesc);
 
     Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mRaytracingOutput);
@@ -142,16 +143,15 @@ void DXRExample::Render(void) {
 void DXRExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
+    DeleteAndSetNull(mBLASCube);
+    DeleteAndSetNull(mBLASPlane);
+    DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mShaderTable);
     DeleteAndSetNull(mSceneConstantBuffer);
-    DeleteAndSetNull(mBottomLevelAccelerationStructure);
-    DeleteAndSetNull(mBottomLevelAccelerationStructure2);
-    DeleteAndSetNull(mTopLevelAccelerationStructure);
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mDescriptorHeap);
-
     DeleteAndSetNull(mRayTracingState);
     DeleteAndSetNull(mEmptyRootSignature);
     DeleteAndSetNull(mLocalRootSignature);
@@ -344,145 +344,41 @@ void DXRExample::BuildAccelerationStructure(void) {
     constexpr uint32_t planeIndexCount = 3 * 2;
     constexpr uint32_t vertexCount = 4 * 6 + 4 * 1;
 
-    D3D12_RAYTRACING_GEOMETRY_DESC geometryDescs[2] = { {}, {} };
-    geometryDescs[0].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-    geometryDescs[0].Triangles.IndexBuffer = mIndices->GetGPUAddress();
-    geometryDescs[0].Triangles.IndexCount = cubeIndexCount;
-    geometryDescs[0].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
-    geometryDescs[0].Triangles.Transform3x4 = 0;
-    geometryDescs[0].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDescs[0].Triangles.VertexCount = vertexCount;
-    geometryDescs[0].Triangles.VertexBuffer.StartAddress = mVertices->GetGPUAddress();
-    geometryDescs[0].Triangles.VertexBuffer.StrideInBytes = sizeof(Vertex);
+    mBLASCube = new Render::BottomLevelAccelerationStructure();
+    mBLASPlane = new Render::BottomLevelAccelerationStructure();
+    mTLAS = new Render::TopLevelAccelerationStructure();
 
     // Mark the geometry as opaque. 
     // PERFORMANCE TIP: mark geometry as opaque whenever applicable as it can enable important ray processing optimizations.
     // Note: When rays encounter opaque geometry an any hit shader will not be executed whether it is present or not.
-    geometryDescs[0].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+    mBLASCube->AddTriangles(mIndices, 0, cubeIndexCount, false, mVertices, 0, vertexCount, sizeof(Vertex), DXGI_FORMAT_R32G32B32_FLOAT, D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE);
+    mBLASCube->PreBuild();
 
-    geometryDescs[1].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-    geometryDescs[1].Triangles.IndexBuffer = mIndices->GetGPUAddress() + cubeIndexCount * sizeof(uint32_t);
-    geometryDescs[1].Triangles.IndexCount = planeIndexCount;
-    geometryDescs[1].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
-    geometryDescs[1].Triangles.Transform3x4 = 0;
-    geometryDescs[1].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDescs[1].Triangles.VertexCount = vertexCount;
-    geometryDescs[1].Triangles.VertexBuffer.StartAddress = mVertices->GetGPUAddress();
-    geometryDescs[1].Triangles.VertexBuffer.StrideInBytes = sizeof(Vertex);
+    mBLASPlane->AddTriangles(mIndices, cubeIndexCount, planeIndexCount, false, mVertices, 0, vertexCount, sizeof(Vertex), DXGI_FORMAT_R32G32B32_FLOAT, D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE);
+    mBLASPlane->PreBuild();
+   
+    XMVECTOR vMove = { 0.0f, 3.0f, 0.0f, 0.0f };
+    XMVECTOR yAxis = { 0.0f, 1.0f, 0.0f, 0.0f };
+    XMMATRIX mRotate = XMMatrixRotationAxis(yAxis, XM_PIDIV4);
+    XMMATRIX transformCube = mRotate * XMMatrixTranslationFromVector(vMove);
 
-    geometryDescs[1].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-
-    // Get required sizes for an acceleration structure.
-    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
-
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottomLevelBuildDescs[2] = { {}, {} };
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS &bottomLevelInputs0 = bottomLevelBuildDescs[0].Inputs;
-    bottomLevelInputs0.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-    bottomLevelInputs0.Flags = buildFlags;
-    bottomLevelInputs0.NumDescs = 1;
-    bottomLevelInputs0.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-    bottomLevelInputs0.pGeometryDescs = geometryDescs;
-
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS &bottomLevelInputs1 = bottomLevelBuildDescs[1].Inputs;
-    bottomLevelInputs1.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-    bottomLevelInputs1.Flags = buildFlags;
-    bottomLevelInputs1.NumDescs = 1;
-    bottomLevelInputs1.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-    bottomLevelInputs1.pGeometryDescs = geometryDescs + 1;
-
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC topLevelBuildDesc = {};
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS &topLevelInputs = topLevelBuildDesc.Inputs;
-    topLevelInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-    topLevelInputs.Flags = buildFlags;
-    topLevelInputs.NumDescs = 2;
-    topLevelInputs.pGeometryDescs = nullptr;
-    topLevelInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
-
-    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO topLevelPrebuildInfo = {};
-    Render::gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&topLevelInputs, &topLevelPrebuildInfo);
-    ASSERT_PRINT(topLevelPrebuildInfo.ResultDataMaxSizeInBytes > 0);
-
-    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO bottomLevelPrebuildInfos[2] = { {}, {} };
-    Render::gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&bottomLevelInputs0, bottomLevelPrebuildInfos);
-    ASSERT_PRINT(bottomLevelPrebuildInfos[0].ResultDataMaxSizeInBytes > 0);
-    Render::gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&bottomLevelInputs1, bottomLevelPrebuildInfos + 1);
-    ASSERT_PRINT(bottomLevelPrebuildInfos[1].ResultDataMaxSizeInBytes > 0);
-
-    Render::GPUBuffer *bottomLevelScratch0 = new Render::GPUBuffer(bottomLevelPrebuildInfos[0].ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    Render::GPUBuffer *bottomLevelScratch1 = new Render::GPUBuffer(bottomLevelPrebuildInfos[1].ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    Render::GPUBuffer *topLevelScratch = new Render::GPUBuffer(topLevelPrebuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-    // Allocate resources for acceleration structures.
-    // Acceleration structures can only be placed in resources that are created in the default heap (or custom heap equivalent). 
-    // Default heap is OK since the application doesn’t need CPU read/write access to them. 
-    // The resources that will contain acceleration structures must be created in the state D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, 
-    // and must have resource flag D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS. The ALLOW_UNORDERED_ACCESS requirement simply acknowledges both: 
-    //  - the system will be doing this type of access in its implementation of acceleration structure builds behind the scenes.
-    //  - from the app point of view, synchronization of writes/reads to acceleration structures is accomplished using UAV barriers.
-    mBottomLevelAccelerationStructure = new Render::GPUBuffer(bottomLevelPrebuildInfos[0].ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mBottomLevelAccelerationStructure2 = new Render::GPUBuffer(bottomLevelPrebuildInfos[1].ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mTopLevelAccelerationStructure = new Render::GPUBuffer(topLevelPrebuildInfo.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-    // Create an instance desc for the bottom-level acceleration structure.
-    D3D12_RAYTRACING_INSTANCE_DESC instanceDesc[2] = { {}, {} };
-
-    {
-        XMVECTOR vMove = { 0.0f, 3.0f, 0.0f, 0.0f };
-        XMVECTOR yAxis = { 0.0f, 1.0f, 0.0f, 0.0f };
-        XMMATRIX mRotate = XMMatrixRotationAxis(yAxis, XM_PIDIV4);
-        XMMATRIX transform = mRotate * XMMatrixTranslationFromVector(vMove);
-        XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc[0].Transform), transform);
-    }
-    instanceDesc[0].InstanceID = 0;
-    instanceDesc[0].InstanceMask = 0xff;
-    instanceDesc[0].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-    instanceDesc[0].InstanceContributionToHitGroupIndex = 0;
-    instanceDesc[0].AccelerationStructure = mBottomLevelAccelerationStructure->GetGPUAddress();
-
-    {
-        XMMATRIX mMove = XMMatrixTranslation(-0.5f, 0.0f, -0.5f);
-        XMMATRIX mScale = XMMatrixScaling(16.0f, 1.0f, 16.0f);
-        XMMATRIX transform = mMove * mScale * XMMatrixIdentity();
-        XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc[1].Transform), transform);
-    }
-    instanceDesc[1].InstanceID = 1;
-    instanceDesc[1].InstanceMask = 0xff;
-    instanceDesc[1].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-    instanceDesc[1].InstanceContributionToHitGroupIndex = 0;
-    instanceDesc[1].AccelerationStructure = mBottomLevelAccelerationStructure2->GetGPUAddress();
-
-    //D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT
-    size_t instanceBufferSize = 2 * sizeof(D3D12_RAYTRACING_INSTANCE_DESC);
-    Render::UploadBuffer *instanceDescs = new Render::UploadBuffer(instanceBufferSize);
-    instanceDescs->UploadData(instanceDesc, instanceBufferSize);
-
-    // Bottom Level Acceleration Structure desc
-    bottomLevelBuildDescs[0].ScratchAccelerationStructureData = bottomLevelScratch0->GetGPUAddress();
-    bottomLevelBuildDescs[0].DestAccelerationStructureData = mBottomLevelAccelerationStructure->GetGPUAddress();
-    bottomLevelBuildDescs[1].ScratchAccelerationStructureData = bottomLevelScratch1->GetGPUAddress();
-    bottomLevelBuildDescs[1].DestAccelerationStructureData = mBottomLevelAccelerationStructure2->GetGPUAddress();
-
-    // Top Level Acceleration Structure desc
-    topLevelBuildDesc.DestAccelerationStructureData = mTopLevelAccelerationStructure->GetGPUAddress();
-    topLevelBuildDesc.ScratchAccelerationStructureData = topLevelScratch->GetGPUAddress();
-    topLevelBuildDesc.Inputs.InstanceDescs = instanceDescs->GetGPUAddress();
+    XMMATRIX mMove = XMMatrixTranslation(-0.5f, 0.0f, -0.5f);
+    XMMATRIX mScale = XMMatrixScaling(16.0f, 1.0f, 16.0f);
+    XMMATRIX transformPlane = mMove * mScale * XMMatrixIdentity();
+    
+    mTLAS->AddInstance(mBLASCube, 0, 0, transformCube, 0xFF, D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE);
+    mTLAS->AddInstance(mBLASPlane, 1, 0, transformPlane, 0xFF, D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE);
+    mTLAS->PreBuild();
 
     Render::gCommand->Begin();
-
-    Render::gCommand->GetDXRCommandList()->BuildRaytracingAccelerationStructure(bottomLevelBuildDescs, 0, nullptr);
-    Render::gCommand->InsertUAVBarrier(mBottomLevelAccelerationStructure);
-    Render::gCommand->GetDXRCommandList()->BuildRaytracingAccelerationStructure(bottomLevelBuildDescs + 1, 0, nullptr);
-    Render::gCommand->InsertUAVBarrier(mBottomLevelAccelerationStructure2);
-
-    Render::gCommand->GetDXRCommandList()->BuildRaytracingAccelerationStructure(&topLevelBuildDesc, 0, nullptr);
-    Render::gCommand->InsertUAVBarrier(mTopLevelAccelerationStructure);
-
+    Render::gCommand->BuildAccelerationStructure(mBLASCube);
+    Render::gCommand->BuildAccelerationStructure(mBLASPlane);
+    Render::gCommand->BuildAccelerationStructure(mTLAS);
     Render::gCommand->End(true);
 
-    DeleteAndSetNull(bottomLevelScratch0);
-    DeleteAndSetNull(bottomLevelScratch1);
-    DeleteAndSetNull(topLevelScratch);
-    DeleteAndSetNull(instanceDescs);
+    mBLASCube->PostBuild();
+    mBLASPlane->PostBuild();
+    mTLAS->PostBuild();
 }
 
 void DXRExample::CreateConstantBuffer(void) {
