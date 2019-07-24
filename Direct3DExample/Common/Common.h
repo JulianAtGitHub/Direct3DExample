@@ -41,7 +41,7 @@ INLINE void WPrintf(const wchar_t *str) {
 #ifdef _DEBUG
     OutputDebugStringW(str);
 #else
-    wprintf("%s", str);
+    wprintf(L"%s", str);
 #endif
 }
 
