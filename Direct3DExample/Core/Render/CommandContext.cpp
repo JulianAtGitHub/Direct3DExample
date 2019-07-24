@@ -233,4 +233,13 @@ void CommandContext::SetRayTracingState(RayTracingState *state) {
     mDXRCommandList->SetPipelineState1(state->Get());
 }
 
+void CommandContext::DispatchRay(RayTracingState *state, uint32_t width, uint32_t height, uint32_t depth) {
+    ASSERT_PRINT(state->Get() != nullptr);
+    D3D12_DISPATCH_RAYS_DESC &rayDesc = state->GetRayDescriptor();
+    rayDesc.Width = width;
+    rayDesc.Height = height;
+    rayDesc.Depth = depth;
+    mDXRCommandList->DispatchRays(&rayDesc);
+}
+
 }

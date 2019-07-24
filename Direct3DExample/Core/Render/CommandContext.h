@@ -58,6 +58,7 @@ public:
 
     void BuildAccelerationStructure(AccelerationStructure *as);
     void SetRayTracingState(RayTracingState *state);
+    void DispatchRay(RayTracingState *state, uint32_t width, uint32_t height, uint32_t depth = 1);
 
     void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
 
