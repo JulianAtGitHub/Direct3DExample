@@ -3,11 +3,14 @@
 #include "CommandQueue.h"
 #include "RenderCore.h"
 #include "LinerAllocator.h"
+#include "RootSignature.h"
+#include "DescriptorHeap.h"
+#include "AccelerationStructure.h"
+#include "RayTracingState.h"
+#include "Resource/GPUBuffer.h"
 #include "Resource/PixelBuffer.h"
 #include "Resource/RenderTargetBuffer.h"
 #include "Resource/DepthStencilBuffer.h"
-#include "RootSignature.h"
-#include "DescriptorHeap.h"
 
 namespace Render {
 
@@ -202,12 +205,32 @@ void CommandContext::SetComputeRootSignature(RootSignature *rootSignature) {
     mCommandList->SetComputeRootSignature(rootSignature->Get());
 }
 
+void CommandContext::SetComputeRootShaderResourceView(uint32_t index, GPUResource *resource) {
+    ASSERT_PRINT(resource->Get() != nullptr);
+    mCommandList->SetComputeRootShaderResourceView(index, resource->GetGPUAddress());
+}
+
 void CommandContext::SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count) {
     ASSERT_PRINT((heaps != nullptr && count <= D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES));
     for (uint32_t i = 0; i < count; ++i) {
         msDescriptorHeaps[i] = heaps[i]->Get();
     }
     mCommandList->SetDescriptorHeaps(count, msDescriptorHeaps);
+}
+
+void CommandContext::BuildAccelerationStructure(AccelerationStructure *blas) {
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
+    desc.Inputs = blas->GetInputs();
+    desc.ScratchAccelerationStructureData = blas->GetScratch()->GetGPUAddress();
+    desc.DestAccelerationStructureData = blas->GetResult()->GetGPUAddress();
+
+    mDXRCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
+    InsertUAVBarrier(blas->GetResult());
+}
+
+void CommandContext::SetRayTracingState(RayTracingState *state) {
+    ASSERT_PRINT(state->Get() != nullptr);
+    mDXRCommandList->SetPipelineState1(state->Get());
 }
 
 }

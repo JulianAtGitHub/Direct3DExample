@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CommandQueue.h"
+#include "DescriptorHeap.h"
 
 namespace Render {
 
@@ -10,7 +11,8 @@ class PixelBuffer;
 class RenderTargetBuffer;
 class DepthStencilBuffer;
 class RootSignature;
-class DescriptorHeap;
+class AccelerationStructure;
+class RayTracingState;
 
 class CommandContext {
 public:
@@ -51,8 +53,11 @@ public:
     void SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count);
 
     void SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
-    void SetComputeRootShaderResourceView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
-    void SetComputeRootDescriptorTable(uint32_t index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+    void SetComputeRootShaderResourceView(uint32_t index, GPUResource *resource);
+    void SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
+
+    void BuildAccelerationStructure(AccelerationStructure *as);
+    void SetRayTracingState(RayTracingState *state);
 
     void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
 
@@ -107,12 +112,8 @@ INLINE void CommandContext::SetComputeRootConstantBufferView(uint32_t index, D3D
     mCommandList->SetComputeRootConstantBufferView(index, address);
 }
 
-INLINE void CommandContext::SetComputeRootShaderResourceView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
-    mCommandList->SetComputeRootShaderResourceView(index, address);
-}
-
-INLINE void CommandContext::SetComputeRootDescriptorTable(uint32_t index, D3D12_GPU_DESCRIPTOR_HANDLE handle) {
-    mCommandList->SetComputeRootDescriptorTable(index, handle);
+INLINE void CommandContext::SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle) {
+    mCommandList->SetComputeRootDescriptorTable(index, handle.gpu);
 }
 
 INLINE void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {
