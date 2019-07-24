@@ -3,13 +3,15 @@
 namespace Render {
 
 class RootSignature;
+class UploadBuffer;
 
 class RayTracingState {
 public:
-    RayTracingState(uint32_t count);
+    RayTracingState(uint32_t subCount);
     ~RayTracingState(void);
 
     INLINE ID3D12StateObject * Get(void) const { return mState; }
+    INLINE D3D12_DISPATCH_RAYS_DESC & GetRayDescriptor(void) { return mRaysDesc; }
 
     int32_t AddStateObjectConfig(D3D12_STATE_OBJECT_FLAGS flags);
     int32_t AddGlobalRootSignature(RootSignature *rs);
@@ -24,14 +26,20 @@ public:
 
     void Create(void);
 
+    void BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGenCount,
+                          const wchar_t *misses[], uint32_t missCount,
+                          const wchar_t *hitGroups[], uint32_t hitGroupCount);
+
 private:
     int32_t AddSubObject(D3D12_STATE_SUBOBJECT_TYPE type, const void *object);
     void CleanupSubObjects(void);
 
     void PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC &desc);
 
-    CList<D3D12_STATE_SUBOBJECT> mSubObjects;
-    ID3D12StateObject           *mState;
+    CList<D3D12_STATE_SUBOBJECT>    mSubObjects;
+    ID3D12StateObject              *mState;
+    D3D12_DISPATCH_RAYS_DESC        mRaysDesc;
+    UploadBuffer                   *mShaderTable;
 };
 
 }

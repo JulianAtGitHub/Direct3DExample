@@ -2,18 +2,21 @@
 #include "RayTracingState.h"
 #include "RootSignature.h"
 #include "RenderCore.h"
+#include "Resource/UploadBuffer.h"
 
 namespace Render {
 
-RayTracingState::RayTracingState(uint32_t count)
-: mSubObjects(count)
+RayTracingState::RayTracingState(uint32_t subCount)
+: mSubObjects(subCount)
 , mState(nullptr)
+, mShaderTable(nullptr)
 {
-
+    mRaysDesc = {};
 }
 
 RayTracingState::~RayTracingState(void) {
     CleanupSubObjects();
+    DeleteAndSetNull(mShaderTable);
     ReleaseAndSetNull(mState);
 }
 
@@ -163,6 +166,67 @@ void RayTracingState::CleanupSubObjects(void) {
         }
     }
     mSubObjects.Clear();
+}
+
+void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGenCount, const wchar_t *misses[], uint32_t missCount, const wchar_t *hitGroups[], uint32_t hitGroupCount) {
+    ID3D12StateObjectProperties *stateProperties = nullptr;
+    ASSERT_SUCCEEDED(mState->QueryInterface(IID_PPV_ARGS(&stateProperties)));
+
+    // Get shader identifiers.
+    CList<void *> rayGenIds(rayGenCount);
+    CList<void *> missIds(missCount);
+    CList<void *> hipGroupIds(hitGroupCount);
+    for (uint32_t i = 0; i < rayGenCount; ++i) {
+        void *id = stateProperties->GetShaderIdentifier(rayGens[i]);
+        ASSERT_PRINT(id != nullptr);
+        rayGenIds.PushBack(id);
+    }
+    for (uint32_t i = 0; i < missCount; ++i) {
+        void *id = stateProperties->GetShaderIdentifier(misses[i]);
+        ASSERT_PRINT(id != nullptr);
+        missIds.PushBack(id);
+    }
+    for (uint32_t i = 0; i < hitGroupCount; ++i) {
+        void *id = stateProperties->GetShaderIdentifier(hitGroups[i]);
+        ASSERT_PRINT(id != nullptr);
+        hipGroupIds.PushBack(id);
+    }
+
+    const uint32_t idSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+
+    // calculate buffer size
+    uint32_t rayGenRecordSize = AlignUp(idSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t rayGenTableSize = rayGenCount > 0 ? AlignUp(rayGenCount * rayGenRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT) : 0;
+    uint32_t missRecordSize = AlignUp(idSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t missTableSize = missCount > 0 ? AlignUp(missCount * missRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT) : 0;
+    uint32_t hitGroupRecordSize = AlignUp(idSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+    uint32_t hitGroupeTableSize = hitGroupCount > 0 ? AlignUp(hitGroupCount * hitGroupRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT) : 0;
+
+    mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < rayGenCount; ++i) {
+        mShaderTable->UploadData(rayGenIds.At(i), idSize, offset + i * rayGenRecordSize);
+    }
+    offset += rayGenTableSize;
+    for (uint32_t i = 0; i < missCount; ++i) {
+        mShaderTable->UploadData(missIds.At(i), idSize, offset + i * missRecordSize);
+    }
+    offset += missTableSize;
+    for (uint32_t i = 0; i < hitGroupCount; ++i) {
+        mShaderTable->UploadData(hipGroupIds.At(i), idSize, offset + i * hitGroupRecordSize);
+    }
+
+    mRaysDesc = {};
+    mRaysDesc.HitGroupTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize + missTableSize;
+    mRaysDesc.HitGroupTable.SizeInBytes = hitGroupeTableSize;
+    mRaysDesc.HitGroupTable.StrideInBytes = hitGroupRecordSize;
+    mRaysDesc.MissShaderTable.StartAddress = mShaderTable->GetGPUAddress() + rayGenTableSize;
+    mRaysDesc.MissShaderTable.SizeInBytes = missTableSize;
+    mRaysDesc.MissShaderTable.StrideInBytes = missRecordSize;
+    mRaysDesc.RayGenerationShaderRecord.StartAddress = mShaderTable->GetGPUAddress();
+    mRaysDesc.RayGenerationShaderRecord.SizeInBytes = rayGenTableSize;
+
+    stateProperties->Release();
 }
 
 INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC &desc)
