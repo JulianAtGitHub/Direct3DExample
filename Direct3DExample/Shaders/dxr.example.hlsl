@@ -15,7 +15,6 @@ struct MeshConstantBuffer {
 struct Vertex {
     float3 position;
     float3 normal;
-    uint value;
 };
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
@@ -65,10 +64,10 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
 }
 
 // Diffuse lighting calculation.
-float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal, uint value) {
+float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal, uint index) {
     // Diffuse contribution.
     float fNDotL = max(0.0f, dot(-g_sceneCB.lightDirection.xyz, normal));
-    return g_meshCB.albedo[value] * g_sceneCB.lightDiffuseColor * fNDotL;
+    return g_meshCB.albedo[index] * g_sceneCB.lightDiffuseColor * fNDotL;
 }
 
 [shader("raygeneration")]
@@ -113,9 +112,9 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr) {
     TraceRay(Scene, rayFlags, ~0, 1, 1, 1, ray, shadowPayload);
 
     const uint triangleIndexStride = 12; // indicesPerTriangle(3) * indexSizeInBytes(4)
-    const uint primitiveOffset = g_meshCB.offset[InstanceID()] + PrimitiveIndex();
+    const uint instanceId = InstanceID();
+    const uint primitiveOffset = g_meshCB.offset[instanceId] + PrimitiveIndex();
     const uint3 indices = Indices.Load3(primitiveOffset * triangleIndexStride);
-    const uint value = Vertices[indices.x].value;
 
     if (!shadowPayload.hit) {
 
@@ -132,12 +131,12 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr) {
         float3 triangleNormal = HitAttribute(vertexNormals, attr);
         triangleNormal = normalize(mul((float3x3) ObjectToWorld3x4(), triangleNormal));
 
-        float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal, value);
+        float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal, instanceId);
         float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
 
         payload.color = color;
     } else {
-        payload.color = float4(g_meshCB.albedo[value].xyz * g_sceneCB.lightAmbientColor.xyz, 1.0);
+        payload.color = float4(g_meshCB.albedo[instanceId].xyz * g_sceneCB.lightAmbientColor.xyz, 1.0);
     }
 }
 

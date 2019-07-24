@@ -54,7 +54,6 @@ private:
     struct Vertex {
         XMFLOAT3 position;
         XMFLOAT3 normal;
-        uint32_t value;
     };
 
     uint32_t                    mWidth;
