@@ -30,7 +30,7 @@ void UploadBuffer::Initialize(void) {
     FillGPUAddress();
 }
 
-void UploadBuffer::UploadData(const void *data, size_t size, uint32_t offset) {
+void UploadBuffer::UploadData(const void *data, size_t size, uint64_t offset) {
     if (!data) {
         return;
     }

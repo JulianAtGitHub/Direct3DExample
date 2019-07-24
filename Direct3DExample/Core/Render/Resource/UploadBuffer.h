@@ -11,7 +11,7 @@ public:
 
     INLINE size_t GetBufferSize(void) const { return mBufferSize; }
 
-    void UploadData(const void *data, size_t size, uint32_t offset = 0);
+    void UploadData(const void *data, size_t size, uint64_t offset = 0);
 
 private:
     void Initialize(void);
