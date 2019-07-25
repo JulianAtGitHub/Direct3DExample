@@ -374,7 +374,8 @@ void DXRExample::CreateRaytracingOutput(void) {
 void DXRExample::UpdateCameraMatrices(void) {
     XMVECTOR eye = { 0.0f, 10.0f, 10.0f, 1.0f };
     XMVECTOR at = { 0.0f, 0.0f, 0.0f, 1.0f };
-    XMVECTOR up = { 0.0f, 1.0f, 0.0f, 0.0f };
+    XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
+    XMVECTOR up = XMVector3Normalize(XMVector3Cross(right, XMVector4Normalize(at - eye)));
 
     XMMATRIX view = XMMatrixLookAtRH(eye, at, up);
     XMMATRIX proj = XMMatrixPerspectiveFovRH(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 1.0f, 125.0f);
