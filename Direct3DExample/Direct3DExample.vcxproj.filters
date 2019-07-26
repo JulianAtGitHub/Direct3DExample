@@ -17,9 +17,6 @@
     <Filter Include="Resource Files\Shaders">
       <UniqueIdentifier>{70602350-46b1-49c1-8e7a-797b0e4666a8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\Core\Model">
-      <UniqueIdentifier>{0c0dd4d8-cca1-49f6-8756-c420046a52f1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\Core\Render">
       <UniqueIdentifier>{a850b411-152c-42d9-bfc1-839375b37c46}</UniqueIdentifier>
     </Filter>
@@ -28,6 +25,9 @@
     </Filter>
     <Filter Include="Sources\Core\Render\Resource">
       <UniqueIdentifier>{42ef034c-9f8a-42d3-babd-0795a55b60d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Core\Utils">
+      <UniqueIdentifier>{63b236f3-46d8-4ed6-8d05-e0397f711e76}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -39,12 +39,6 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Model\Loader.cpp">
-      <Filter>Sources\Core\Model</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Model\Scene.cpp">
-      <Filter>Sources\Core\Model</Filter>
     </ClCompile>
     <ClCompile Include="Common\Common.cpp">
       <Filter>Sources\Common</Filter>
@@ -109,6 +103,9 @@
     <ClCompile Include="Core\Render\AccelerationStructure.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Utils\Loader.cpp">
+      <Filter>Sources\Core\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -128,15 +125,6 @@
     </ClInclude>
     <ClInclude Include="Common\CUtils.hpp">
       <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Model\Loader.h">
-      <Filter>Sources\Core\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Model\Scene.h">
-      <Filter>Sources\Core\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Model\stb_image.h">
-      <Filter>Sources\Core\Model</Filter>
     </ClInclude>
     <ClInclude Include="DirectX\d3dx12.h">
       <Filter>Sources\DirectX</Filter>
@@ -212,6 +200,15 @@
     </ClInclude>
     <ClInclude Include="Common\CTimer.hpp">
       <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\stb_image.h">
+      <Filter>Sources\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\Loader.h">
+      <Filter>Sources\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\Scene.h">
+      <Filter>Sources\Core\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

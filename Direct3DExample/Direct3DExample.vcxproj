@@ -189,10 +189,9 @@
     <ClCompile Include="Core\Render\Resource\PixelBuffer.cpp" />
     <ClCompile Include="Core\Render\Resource\RenderTargetBuffer.cpp" />
     <ClCompile Include="Core\Render\Resource\UploadBuffer.cpp" />
+    <ClCompile Include="Core\Utils\Loader.cpp" />
     <ClCompile Include="D3DExample.cpp" />
     <ClCompile Include="Common\Common.cpp" />
-    <ClCompile Include="Core\Model\Loader.cpp" />
-    <ClCompile Include="Core\Model\Scene.cpp" />
     <ClCompile Include="Core\Render\CommandContext.cpp" />
     <ClCompile Include="Core\Render\CommandQueue.cpp" />
     <ClCompile Include="Core\Render\DescriptorHeapPool.cpp" />
@@ -228,11 +227,11 @@
     <ClInclude Include="Core\Render\Resource\PixelBuffer.h" />
     <ClInclude Include="Core\Render\Resource\RenderTargetBuffer.h" />
     <ClInclude Include="Core\Render\Resource\UploadBuffer.h" />
+    <ClInclude Include="Core\Utils\Loader.h" />
+    <ClInclude Include="Core\Utils\Scene.h" />
+    <ClInclude Include="Core\Utils\stb_image.h" />
     <ClInclude Include="D3DExample.h" />
     <ClInclude Include="Common\Common.h" />
-    <ClInclude Include="Core\Model\Loader.h" />
-    <ClInclude Include="Core\Model\Scene.h" />
-    <ClInclude Include="Core\Model\stb_image.h" />
     <ClInclude Include="Core\Render\CommandContext.h" />
     <ClInclude Include="Core\Render\CommandQueue.h" />
     <ClInclude Include="Core\Render\DescriptorHeapPool.h" />
