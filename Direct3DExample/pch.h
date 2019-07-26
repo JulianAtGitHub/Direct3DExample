@@ -40,6 +40,7 @@
 #endif
 
 #include "Common/Common.h"
+#include "Common/CTimer.hpp"
 #include "Common/CUtils.hpp"
 #include "Common/CString.hpp"
 #include "Common/CList.hpp"

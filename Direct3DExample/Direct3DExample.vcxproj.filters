@@ -210,6 +210,9 @@
     <ClInclude Include="Core\Render\AccelerationStructure.h">
       <Filter>Sources\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Common\CTimer.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\color.vs.hlsl">
