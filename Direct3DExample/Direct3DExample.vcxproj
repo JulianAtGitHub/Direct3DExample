@@ -215,6 +215,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="Common\CQueue.hpp" />
     <ClInclude Include="Common\CStack.hpp" />
+    <ClInclude Include="Common\CTimer.hpp" />
     <ClInclude Include="Common\CUtils.hpp" />
     <ClInclude Include="Common\CList.hpp" />
     <ClInclude Include="Common\CString.hpp" />
