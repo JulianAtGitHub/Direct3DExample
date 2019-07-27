@@ -103,7 +103,7 @@
     <ClCompile Include="Core\Render\AccelerationStructure.cpp">
       <Filter>Sources\Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Utils\Loader.cpp">
+    <ClCompile Include="Core\Utils\Model.cpp">
       <Filter>Sources\Core\Utils</Filter>
     </ClCompile>
   </ItemGroup>
@@ -204,10 +204,10 @@
     <ClInclude Include="Core\Utils\stb_image.h">
       <Filter>Sources\Core\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Utils\Loader.h">
+    <ClInclude Include="Core\Utils\Camera.h">
       <Filter>Sources\Core\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Utils\Scene.h">
+    <ClInclude Include="Core\Utils\Model.h">
       <Filter>Sources\Core\Utils</Filter>
     </ClInclude>
   </ItemGroup>
