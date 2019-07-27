@@ -1,6 +1,5 @@
 #include "pch.h"
-#include "Loader.h"
-#include "Scene.h"
+#include "Model.h"
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
@@ -9,9 +8,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace Model {
+namespace Utils {
 
-Scene * Loader::LoadFromTextFile(const char *fileName) {
+Scene * Model::LoadFromTextFile(const char *fileName) {
     Assimp::Importer aiImporter;
 
     // remove unused data
@@ -184,7 +183,7 @@ Scene * Loader::LoadFromTextFile(const char *fileName) {
     return out;
 }
 
-Scene * Loader::LoadFromBinaryFile(const char *fileName) {
+Scene * Model::LoadFromBinaryFile(const char *fileName) {
     FILE *binFile = nullptr;
     if (fopen_s(&binFile, fileName, "rb")) {
         Print("Loader: open file %s failed!\n", fileName);
@@ -282,7 +281,7 @@ Scene * Loader::LoadFromBinaryFile(const char *fileName) {
     return out;
 }
 
-void Loader::SaveToBinaryFile(const Scene *scene, const char *fileName) {
+void Model::SaveToBinaryFile(const Scene *scene, const char *fileName) {
     if (!scene) {
         Print("Loader: empty scene object!\n");
         return;
