@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "D3DExample.h"
-#include "Core/Utils/Scene.h"
-#include "Core/Utils/Loader.h"
+#include "Core/Utils/Model.h"
 #include "Core/Render/CommandContext.h"
 #include "Core/Render/DescriptorHeap.h"
 #include "Core/Render/Resource/GPUBuffer.h"
@@ -115,7 +114,7 @@ void D3DExample::LoadPipeline(void) {
 }
 
 void D3DExample::LoadAssets(void) {
-    mScene = Model::Loader::LoadFromBinaryFile("Models\\Arwing\\arwing.bsx");
+    mScene = Utils::Model::LoadFromBinaryFile("Models\\Arwing\\arwing.bsx");
     assert(mScene);
 
     // root signature
@@ -148,7 +147,7 @@ void D3DExample::LoadAssets(void) {
 
     // vertex and index
     {
-        const uint32_t vertexSize = mScene->mVertices.Count() * sizeof(Model::Scene::Vertex);
+        const uint32_t vertexSize = mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex);
         const uint32_t vertexAlignSize = AlignUp(vertexSize, 256);
         const uint32_t indexSize = mScene->mIndices.Count() * sizeof(uint32_t);
         const uint32_t indexAlignSize = AlignUp(indexSize, 256);
@@ -157,13 +156,13 @@ void D3DExample::LoadAssets(void) {
         Render::gCommand->UploadBuffer(mVertexIndexBuffer, 0, mScene->mVertices.Data(), vertexSize);
         Render::gCommand->UploadBuffer(mVertexIndexBuffer, vertexAlignSize, mScene->mIndices.Data(), indexSize);
 
-        mVertexBufferView = mVertexIndexBuffer->FillVertexBufferView(0, vertexSize, sizeof(Model::Scene::Vertex));
+        mVertexBufferView = mVertexIndexBuffer->FillVertexBufferView(0, vertexSize, sizeof(Utils::Scene::Vertex));
         mIndexBufferView = mVertexIndexBuffer->FillIndexBufferView(vertexAlignSize, indexSize, false);
     }
 
     mTextures.Reserve(mScene->mImages.Count());
     for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
-        Model::Scene::Image &image = mScene->mImages.At(i);
+        Utils::Scene::Image &image = mScene->mImages.At(i);
         Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
         Render::gCommand->UploadTexture(texture, image.pixels);
         texture->CreateSRV(mShaderResourceHeap->Allocate());
@@ -189,7 +188,7 @@ void D3DExample::LoadAssets(void) {
         mBundles[i]->IASetVertexBuffers(0, 1, &mVertexBufferView);
         mBundles[i]->IASetIndexBuffer(&mIndexBufferView);
         for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
-            const Model::Scene::Shape &shape = mScene->mShapes.At(j);
+            const Utils::Scene::Shape &shape = mScene->mShapes.At(j);
             mBundles[i]->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.imageIndex)->GetHandle().gpu);
             mBundles[i]->DrawIndexedInstanced(shape.indexCount, 1, shape.fromIndex, 0, 0);
         }

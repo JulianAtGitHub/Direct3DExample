@@ -105,6 +105,24 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
         }
         return 0;
 
+    case WM_LBUTTONDOWN:
+        if (example) {
+            example->OnMouseLButtonDown(lParam);
+        }
+        return 0;
+
+    case WM_LBUTTONUP:
+        if (example) {
+            example->OnMouseLButtonUp(lParam);
+        }
+        return 0;
+
+    case WM_MOUSEMOVE:
+        if (example) {
+            example->OnMouseMove(lParam);
+        }
+        return 0;
+
     case WM_PAINT:
         if (example) {
             example->Update();

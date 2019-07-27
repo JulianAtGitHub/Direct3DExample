@@ -3,6 +3,10 @@
 #include "Example.h"
 #include "Core/Render/RenderCore.h"
 
+namespace Utils {
+    class Camera;
+}
+
 namespace Render {
     class RootSignature;
     class DescriptorHeap;
@@ -25,6 +29,12 @@ public:
     virtual void Render(void);
     virtual void Destroy(void);
 
+    virtual void OnKeyDown(uint8_t key);
+    virtual void OnKeyUp(uint8_t key);
+    virtual void OnMouseLButtonDown(int64_t pos);
+    virtual void OnMouseLButtonUp(int64_t pos);
+    virtual void OnMouseMove(int64_t pos);
+
 private:
     void InitScene(void);
     void CreateRootSignature(void);
@@ -35,8 +45,6 @@ private:
     void CreateConstantBuffer(void);
     void BuildShaderTables(void);
     void CreateRaytracingOutput(void);
-
-    void UpdateCameraMatrices();
 
     struct SceneConstantBuffer {
         XMMATRIX projectionToWorld;
@@ -64,6 +72,14 @@ private:
         VertexBuffersSlot,
         Count
     };
+
+    CTimer                      mTimer;
+    Utils::Camera              *mCamera;
+    float                       mSpeedX;
+    float                       mSpeedZ;
+    bool                        mIsRotating;
+    int64_t                     mLastMousePos;
+    int64_t                     mCurrentMousePos;
 
     uint32_t                    mWidth;
     uint32_t                    mHeight;

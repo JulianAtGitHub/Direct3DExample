@@ -3,7 +3,7 @@
 #include "Example.h"
 #include "Core/Render/RenderCore.h"
 
-namespace Model {
+namespace Utils {
     class Scene;
 }
 
@@ -55,5 +55,5 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
 
-    Model::Scene *mScene;
+    Utils::Scene *mScene;
 };

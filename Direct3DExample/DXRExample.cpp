@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DXRExample.h"
+#include "Core/Utils/Camera.h"
 #include "Core/Render/RenderCore.h"
 #include "Core/Render/CommandContext.h"
 #include "Core/Render/RootSignature.h"
@@ -19,13 +20,18 @@ const static wchar_t *ClosestHitShaderName = L"MyClosestHitShader";
 const static wchar_t *MissShaderName = L"MyMissShader";
 const static wchar_t *MissShadowName = L"MyMissShadow";
 
-static XMFLOAT4 cameraPosition(0.0f, 10.0f, 10.0f, 1.0f);
 static XMFLOAT4 lightDirection(0.0f, -1.0f, 0.0f, 0.0f);
 static XMFLOAT4 lightAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
 static XMFLOAT4 lightDiffuseColor(0.7f, 0.7f, 0.7f, 1.0f);
 
 DXRExample::DXRExample(HWND hwnd)
 : Example(hwnd)
+, mCamera(nullptr)
+, mSpeedX(0.0f)
+, mSpeedZ(0.0f)
+, mIsRotating(false)
+, mLastMousePos(0)
+, mCurrentMousePos(0)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
@@ -51,7 +57,7 @@ DXRExample::DXRExample(HWND hwnd)
 }
 
 DXRExample::~DXRExample(void) {
-
+    DeleteAndSetNull(mCamera);
 }
 
 void DXRExample::Init(void) {
@@ -68,14 +74,18 @@ void DXRExample::Init(void) {
     BuildShaderTables();
     CreateRaytracingOutput();
 
-    UpdateCameraMatrices();
+    mTimer.Reset();
 }
 
 void DXRExample::Update(void) {
     static float elapse = 0.0f;
-    static float factor = 0.2f;
     static float maxAngle = 45.0f;
-    elapse += factor;
+    static float factor = 10.0f;
+
+    mTimer.Tick();
+    float deltaSecond = static_cast<float>(mTimer.GetElapsedSeconds());
+
+    elapse += deltaSecond * factor;
     if (elapse > maxAngle) {
         elapse = maxAngle;
         factor = -factor;
@@ -84,8 +94,32 @@ void DXRExample::Update(void) {
         factor = -factor;
     }
 
+    if (mIsRotating) {
+        int32_t deltaX = GET_X_LPARAM(mCurrentMousePos) - GET_X_LPARAM(mLastMousePos);
+        int32_t deltaY = GET_Y_LPARAM(mCurrentMousePos) - GET_Y_LPARAM(mLastMousePos);
+        if (deltaX) {
+            mCamera->RotateY(XMConvertToRadians(-deltaX * 0.2f));
+        }
+        if (deltaY) {
+            mCamera->RotateX(XMConvertToRadians(-deltaY * 0.2f));
+        }
+
+        mLastMousePos = mCurrentMousePos;
+    }
+
+    if (mSpeedZ != 0.0f) {
+        mCamera->MoveForward(deltaSecond * mSpeedZ * 2);
+    }
+    if (mSpeedX != 0.0f) {
+        mCamera->MoveRight(deltaSecond * mSpeedX * 2);
+    }
+
+    mCamera->UpdateMatrixs();
+
     XMMATRIX rotate = XMMatrixRotationZ(XMConvertToRadians(elapse));
     mSceneConstBuf[mCurrentFrame].lightDirection = XMVector4Transform(XMLoadFloat4(&lightDirection), rotate);
+    mSceneConstBuf[mCurrentFrame].cameraPosition = mCamera->GetPosition();
+    mSceneConstBuf[mCurrentFrame].projectionToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
 }
 
 void DXRExample::Render(void) {
@@ -142,16 +176,65 @@ void DXRExample::Destroy(void) {
     Render::Terminate();
 }
 
+// Windows virtual key code: https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+void DXRExample::OnKeyDown(uint8_t key) {
+    switch (key) {
+        // W key
+        case 0x57: mSpeedZ = 1.0f; break;
+        // S key
+        case 0x53: mSpeedZ = -1.0f; break;
+        // A key
+        case 0x41: mSpeedX = -1.0f; break;
+        // D key
+        case 0x44: mSpeedX = 1.0f; break;
+        default: break;
+    }
+}
+
+void DXRExample::OnKeyUp(uint8_t key) {
+    switch (key) {
+        case 0x57: // W key
+        case 0x53: // S key
+            mSpeedZ = 0.0f; 
+            break;
+        case 0x41: // A key
+        case 0x44: // D key
+            mSpeedX = 0.0f; 
+            break;
+        default: break;
+    }
+}
+
+void DXRExample::OnMouseLButtonDown(int64_t pos) {
+    mIsRotating = true;
+    mLastMousePos = pos;
+    mCurrentMousePos = pos;
+}
+
+void DXRExample::OnMouseLButtonUp(int64_t pos) {
+    mIsRotating = false;
+}
+
+void DXRExample::OnMouseMove(int64_t pos) {
+    mCurrentMousePos = pos;
+}
+
 void DXRExample::InitScene(void) {
+    mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 100.0f, 
+                                XMFLOAT4(0.0f, 10.0f, 10.0f, 1.0f), 
+                                XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), 
+                                XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f));
+
     mMeshConstBuf.albedo[0] = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
     mMeshConstBuf.albedo[1] = XMFLOAT4(0.7f, 0.5f, 0.1f, 1.0f);
     mMeshConstBuf.offset.x = 0;
     mMeshConstBuf.offset.y = 12;
     for (auto &sceneConstBuf : mSceneConstBuf) {
-        sceneConstBuf.cameraPosition = XMLoadFloat4(&cameraPosition);
+        sceneConstBuf.cameraPosition = mCamera->GetPosition();
         sceneConstBuf.lightDirection = XMLoadFloat4(&lightDirection);
         sceneConstBuf.lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
         sceneConstBuf.lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
+        sceneConstBuf.projectionToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
     }
 }
 
@@ -368,21 +451,5 @@ void DXRExample::CreateRaytracingOutput(void) {
     // Create the output resource. The dimensions and format should match the swap-chain.
     mRaytracingOutput = new Render::PixelBuffer(width, width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
-}
-
-// Update camera matrices passed into the shader.
-void DXRExample::UpdateCameraMatrices(void) {
-    XMVECTOR eye = { 0.0f, 10.0f, 10.0f, 1.0f };
-    XMVECTOR at = { 0.0f, 0.0f, 0.0f, 1.0f };
-    XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
-    XMVECTOR up = XMVector3Normalize(XMVector3Cross(right, XMVector4Normalize(at - eye)));
-
-    XMMATRIX view = XMMatrixLookAtRH(eye, at, up);
-    XMMATRIX proj = XMMatrixPerspectiveFovRH(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 1.0f, 125.0f);
-    XMMATRIX viewProj = view * proj;
-
-    for (auto &sceneConstBuf : mSceneConstBuf) {
-        sceneConstBuf.projectionToWorld = XMMatrixInverse(nullptr, viewProj);
-    }
 }
 

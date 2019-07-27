@@ -8,6 +8,13 @@
 #endif
 
 #include <windows.h>
+#include <windowsx.h>
+
+#undef far
+#undef near
+#undef FAR
+#undef NEAR
+
 #include <shellapi.h>
 
 #include <stdio.h>
