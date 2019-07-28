@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{85629532-735d-4f33-8b55-ee105591a5a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Common">
+      <UniqueIdentifier>{e9199a9e-06ff-4c41-bfb1-6408b9757e2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\DirectX">
+      <UniqueIdentifier>{70cc05ce-761b-492b-bccd-fba6f7b330ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Utils">
+      <UniqueIdentifier>{e4281ac9-8f03-413b-aa84-265457c2a7f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Render">
+      <UniqueIdentifier>{c29bce41-49d6-4da8-a340-177ac9d3b828}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Render\Resource">
+      <UniqueIdentifier>{1f4ba534-88f9-4204-8d58-eaac3e2e3d5c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CUtils.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CTimer.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CString.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CStack.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CQueue.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Common.h">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CList.hpp">
+      <Filter>Sources\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\d3dx12.h">
+      <Filter>Sources\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\stb_image.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Model.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Camera.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\AccelerationStructure.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\CommandContext.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\CommandQueue.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\DescriptorHeap.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\DescriptorHeapPool.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\LinerAllocator.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\PipelineState.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\RayTracingState.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\RenderCore.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\RootSignature.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Sampler.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\UploadBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\RenderTargetBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\PixelBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\GPUResource.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\GPUBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\DepthStencilBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Resource\ConstantBuffer.h">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Framework.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Common.cpp">
+      <Filter>Sources\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Model.cpp">
+      <Filter>Sources\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\AccelerationStructure.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\CommandContext.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\CommandQueue.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\DescriptorHeap.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\DescriptorHeapPool.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\LinerAllocator.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\PipelineState.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\RayTracingState.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\RenderCore.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\RootSignature.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Sampler.cpp">
+      <Filter>Sources\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\UploadBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\RenderTargetBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\PixelBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\GPUResource.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\GPUBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\DepthStencilBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Resource\ConstantBuffer.cpp">
+      <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Camera.cpp">
+      <Filter>Sources\Utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

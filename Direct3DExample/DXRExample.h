@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Example.h"
-#include "Core/Render/RenderCore.h"
 
 namespace Utils {
     class Camera;
