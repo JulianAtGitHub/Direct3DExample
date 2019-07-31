@@ -125,7 +125,7 @@ void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
-    Render::gCommand->SetComputeRootSignature(mGlobalRootSignature);
+    Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
     // Copy the updated scene constant buffer to GPU.
     void *mappedConstantData = mSceneConstantBuffer->GetMappedBuffer(0, mCurrentFrame);
@@ -238,7 +238,7 @@ void DXRExample::InitScene(void) {
 }
 
 void DXRExample::CreateRootSignature(void) {
-    mGlobalRootSignature = new Render::RootSignature(GlobalRootSignatureParams::Count);
+    mGlobalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, GlobalRootSignatureParams::Count);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
@@ -246,7 +246,7 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);
     mGlobalRootSignature->Create();
 
-    mLocalRootSignature = new Render::RootSignature(0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
+    mLocalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, 0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
     mLocalRootSignature->Create();
 }
 

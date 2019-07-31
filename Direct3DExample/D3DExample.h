@@ -34,8 +34,6 @@ private:
 
     Render::RootSignature *mRootSignature;
     Render::GraphicsState *mGraphicsState;
-    ID3D12CommandAllocator *mBundleAllocator;
-    ID3D12GraphicsCommandList *mBundles[Render::FRAME_COUNT];
 
     Render::GPUBuffer *mVertexIndexBuffer;
     D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;

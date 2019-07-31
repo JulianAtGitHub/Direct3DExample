@@ -17,7 +17,6 @@ struct ConstBuffer {
 
 D3DExample::D3DExample(HWND hwnd)
 : Example(hwnd)
-, mBundleAllocator(nullptr)
 , mRootSignature(nullptr)
 , mGraphicsState(nullptr)
 , mVertexIndexBuffer(nullptr)
@@ -26,10 +25,8 @@ D3DExample::D3DExample(HWND hwnd)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
 , mCurrentFrame(0)
-, mScene(nullptr)
 {
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
-        mBundles[i] = nullptr;
         mFenceValues[i] = 1;
     }
     mVertexBufferView = {};
@@ -42,9 +39,7 @@ D3DExample::D3DExample(HWND hwnd)
 }
 
 D3DExample::~D3DExample(void) {
-    if (mScene) {
-        delete mScene;
-    }
+
 }
 
 void D3DExample::Init(void) {
@@ -55,14 +50,14 @@ void D3DExample::Init(void) {
 void D3DExample::Update(void) {
     static float y = 0.0f;
     y += 0.01f;
-    XMVECTOR cameraPos = ::XMVectorSet(0.0f, 1.0f, 5.0f, 0.0f);
-    XMVECTOR cameraFocus = ::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    XMVECTOR cameraUp = ::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    float cameraFOV = 60.0f * XM_PI / 180.0f;
+    XMVECTOR cameraPos = { -2.706775665283203f, 0.85294109582901f, -3.112438678741455f, 1.0f };//::XMVectorSet(0.0f, 1.0f, 5.0f, 0.0f);
+    XMVECTOR cameraFocus = {-2.347264528274536f, 0.7383297681808472f, -2.1863629817962648f, 1.0f};//::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    XMVECTOR cameraUp = { 0.038521841168403628f, 0.9933950304985046f, 0.1079813688993454f, 0.0f }; //::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    float cameraFOV = XM_PIDIV4;
     ConstBuffer constBuffer;
 
-    //XMMATRIX model = ::XMMatrixIdentity();
-    XMMATRIX model = ::XMMatrixRotationY(y);
+    XMMATRIX model = ::XMMatrixIdentity();
+    //XMMATRIX model = ::XMMatrixRotationY(y);
     XMMATRIX view = ::XMMatrixLookAtRH(cameraPos, cameraFocus, cameraUp);
     XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 100.0f);
     XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
@@ -81,6 +76,8 @@ void D3DExample::Render(void) {
 void D3DExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
+    DeleteAndSetNull(mScene);
+
     for (uint32_t i = 0; i < mTextures.Count(); ++i) {
         delete mTextures.At(i);
     };
@@ -90,12 +87,8 @@ void D3DExample::Destroy(void) {
     DeleteAndSetNull(mShaderResourceHeap);
     DeleteAndSetNull(mConstBuffer);
     DeleteAndSetNull(mVertexIndexBuffer);
-    for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
-        mBundles[i]->Release();
-    }
     DeleteAndSetNull(mGraphicsState);
     DeleteAndSetNull(mRootSignature);
-    mBundleAllocator->Release();
 
     Render::Terminate();
 }
@@ -107,18 +100,22 @@ void D3DExample::MoveToNextFrame(void) {
 
 void D3DExample::LoadPipeline(void) {
     Render::Initialize(mHwnd);
-    mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
-    mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
-    ASSERT_SUCCEEDED(Render::gDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_BUNDLE, IID_PPV_ARGS(&mBundleAllocator)));
 }
 
 void D3DExample::LoadAssets(void) {
-    mScene = Utils::Model::LoadFromBinaryFile("Models\\Arwing\\arwing.bsx");
+    mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
     assert(mScene);
 
+    //mScene = Utils::Model::LoadFromFile("Models\\pink_room\\pink_room.fbx");
+    //assert(mScene);
+    //Utils::Model::SaveToMMB(mScene, "Models\\pink_room\\pink_room.mmb");
+
+    mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mScene->mImages.Count());
+    mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
+
     // root signature
-    mRootSignature = new Render::RootSignature(3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
     mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
     mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
@@ -173,27 +170,6 @@ void D3DExample::LoadAssets(void) {
 
     // const buffer
     mConstBuffer = new Render::ConstantBuffer(sizeof(ConstBuffer), 1);
-
-    // bundle
-    for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
-        ASSERT_SUCCEEDED(Render::gDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, mBundleAllocator, mGraphicsState->GetPipelineState(), IID_PPV_ARGS(mBundles + i)));
-
-        // record command to bundle
-        mBundles[i]->SetGraphicsRootSignature(mRootSignature->Get());
-        ID3D12DescriptorHeap *heaps[] = { mShaderResourceHeap->Get(), mSamplerHeap->Get() };
-        mBundles[i]->SetDescriptorHeaps(_countof(heaps), heaps);
-        mBundles[i]->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, i));
-        mBundles[i]->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle().gpu);
-        mBundles[i]->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        mBundles[i]->IASetVertexBuffers(0, 1, &mVertexBufferView);
-        mBundles[i]->IASetIndexBuffer(&mIndexBufferView);
-        for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
-            const Utils::Scene::Shape &shape = mScene->mShapes.At(j);
-            mBundles[i]->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.imageIndex)->GetHandle().gpu);
-            mBundles[i]->DrawIndexedInstanced(shape.indexCount, 1, shape.indexOffset, 0, 0);
-        }
-        mBundles[i]->Close();
-    }
 }
 
 void D3DExample::PopulateCommandList(void) {
@@ -202,10 +178,20 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);
     Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
     Render::gCommand->ClearDepth(Render::gDepthStencil);
-    Render::gCommand->SetGraphicsRootSignature(mRootSignature);
+
+    Render::gCommand->SetRootSignature(mRootSignature);
     Render::DescriptorHeap *heaps[] = { mShaderResourceHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    Render::gCommand->ExecuteBundle(mBundles[mCurrentFrame]);
+    Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
+    Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
+    for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
+        const Utils::Scene::Shape &shape = mScene->mShapes.At(j);
+        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.diffuseTex)->GetHandle());
+        Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
+    }
+
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 }
 
