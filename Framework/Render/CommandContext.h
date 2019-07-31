@@ -47,14 +47,20 @@ public:
     void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissor);
     void SetViewportAndScissor(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 
-    void SetGraphicsRootSignature(RootSignature *rootSignature);
-    void SetComputeRootSignature(RootSignature *rootSignature);
-
     void SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count);
+    void SetRootSignature(RootSignature *rootSignature);
+
+    void SetGraphicsRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
+    void SetGraphicsRootShaderResourceView(uint32_t index, GPUResource *resource);
+    void SetGraphicsRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
 
     void SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
     void SetComputeRootShaderResourceView(uint32_t index, GPUResource *resource);
     void SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
+
+    void SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType);
+    void SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices);
+    void DrawIndexed(uint32_t indexCount, uint32_t indexOffset);
 
     void BuildAccelerationStructure(AccelerationStructure *as);
     void SetRayTracingState(RayTracingState *state);
@@ -109,12 +115,33 @@ INLINE void CommandContext::SetViewportAndScissor(uint32_t x, uint32_t y, uint32
     SetScissor(x, y, x + w, y + h);
 }
 
+INLINE void CommandContext::SetGraphicsRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
+    mCommandList->SetGraphicsRootConstantBufferView(index, address);
+}
+
+INLINE void CommandContext::SetGraphicsRootDescriptorTable(uint32_t index, const DescriptorHandle &handle) {
+    mCommandList->SetGraphicsRootDescriptorTable(index, handle.gpu);
+}
+
 INLINE void CommandContext::SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
     mCommandList->SetComputeRootConstantBufferView(index, address);
 }
 
 INLINE void CommandContext::SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle) {
     mCommandList->SetComputeRootDescriptorTable(index, handle.gpu);
+}
+
+INLINE void CommandContext::SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType) {
+    mCommandList->IASetPrimitiveTopology(primitiveType);
+}
+
+INLINE void CommandContext::SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices) {
+    mCommandList->IASetVertexBuffers(0, 1, &vertices);
+    mCommandList->IASetIndexBuffer(&indices);
+}
+
+INLINE void CommandContext::DrawIndexed(uint32_t indexCount, uint32_t indexOffset) {
+    mCommandList->DrawIndexedInstanced(indexCount, 1, indexOffset, 0, 0);
 }
 
 INLINE void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {

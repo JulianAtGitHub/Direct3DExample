@@ -195,14 +195,18 @@ void CommandContext::SetRenderTarget(RenderTargetBuffer *renderTarget, DepthSten
     mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 }
 
-void CommandContext::SetGraphicsRootSignature(RootSignature *rootSignature) {
+void CommandContext::SetRootSignature(RootSignature *rootSignature) {
     ASSERT_PRINT(rootSignature->Get() != nullptr);
-    mCommandList->SetGraphicsRootSignature(rootSignature->Get());
+    if (rootSignature->GetType() == RootSignature::Graphics) {
+        mCommandList->SetGraphicsRootSignature(rootSignature->Get());
+    } else {
+        mCommandList->SetComputeRootSignature(rootSignature->Get());
+    }
 }
 
-void CommandContext::SetComputeRootSignature(RootSignature *rootSignature) {
-    ASSERT_PRINT(rootSignature->Get() != nullptr);
-    mCommandList->SetComputeRootSignature(rootSignature->Get());
+void CommandContext::SetGraphicsRootShaderResourceView(uint32_t index, GPUResource *resource) {
+    ASSERT_PRINT(resource->Get() != nullptr);
+    mCommandList->SetGraphicsRootShaderResourceView(index, resource->GetGPUAddress());
 }
 
 void CommandContext::SetComputeRootShaderResourceView(uint32_t index, GPUResource *resource) {
