@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 
+#include "Render/Sampler.h"
 #include "Render/CommandContext.h"
 #include "Render/DescriptorHeap.h"
 #include "Render/DescriptorHeapPool.h"

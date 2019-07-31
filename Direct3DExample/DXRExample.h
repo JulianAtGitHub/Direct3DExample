@@ -2,22 +2,6 @@
 
 #include "Example.h"
 
-namespace Utils {
-    class Camera;
-}
-
-namespace Render {
-    class RootSignature;
-    class DescriptorHeap;
-    class RayTracingState;
-    class GPUBuffer;
-    class UploadBuffer;
-    class ConstantBuffer;
-    class PixelBuffer;
-    class BottomLevelAccelerationStructure;
-    class TopLevelAccelerationStructure;
-}
-
 class DXRExample : public Example {
 public:
     DXRExample(HWND hwnd);

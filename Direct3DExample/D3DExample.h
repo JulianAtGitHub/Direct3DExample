@@ -2,20 +2,6 @@
 
 #include "Example.h"
 
-namespace Utils {
-    class Scene;
-}
-
-namespace Render {
-    class GPUBuffer;
-    class ConstantBuffer;
-    class PixelBuffer;
-    class DescriptorHeap;
-    class Sampler;
-    class GraphicsState;
-    class RootSignature;
-}
-
 class D3DExample : public Example {
 public:
     D3DExample(HWND hwnd);
