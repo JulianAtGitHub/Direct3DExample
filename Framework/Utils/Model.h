@@ -5,9 +5,9 @@ namespace Utils {
 class Scene {
 public:
     struct Shape {
-        Shape(void): fromIndex(0), indexCount(0), imageIndex(0) { }
+        Shape(void): indexOffset(0), indexCount(0), imageIndex(0) { }
         CString  name;
-        uint32_t fromIndex;
+        uint32_t indexOffset;
         uint32_t indexCount;
         uint32_t imageIndex;
     };

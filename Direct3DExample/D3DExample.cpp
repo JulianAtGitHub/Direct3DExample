@@ -190,7 +190,7 @@ void D3DExample::LoadAssets(void) {
         for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
             const Utils::Scene::Shape &shape = mScene->mShapes.At(j);
             mBundles[i]->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.imageIndex)->GetHandle().gpu);
-            mBundles[i]->DrawIndexedInstanced(shape.indexCount, 1, shape.fromIndex, 0, 0);
+            mBundles[i]->DrawIndexedInstanced(shape.indexCount, 1, shape.indexOffset, 0, 0);
         }
         mBundles[i]->Close();
     }

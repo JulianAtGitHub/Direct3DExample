@@ -64,7 +64,7 @@ Scene * Model::LoadFromTextFile(const char *fileName) {
 
         Scene::Shape &shape = out->mShapes.At(i);
         shape.name = mesh->mName.C_Str();
-        shape.fromIndex = indexCount;
+        shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
 
         vertexCount += mesh->mNumVertices;
@@ -217,7 +217,7 @@ Scene * Model::LoadFromBinaryFile(const char *fileName) {
             fread(name, sizeof(char), nameLen, binFile);
             shape.name = name;
 
-            fread(&shape.fromIndex, sizeof(uint32_t), 1, binFile);
+            fread(&shape.indexOffset, sizeof(uint32_t), 1, binFile);
             fread(&shape.indexCount, sizeof(uint32_t), 1, binFile);
             fread(&shape.imageIndex, sizeof(uint32_t), 1, binFile);
         }
@@ -309,7 +309,7 @@ void Model::SaveToBinaryFile(const Scene *scene, const char *fileName) {
         uint32_t nameLen = (uint32_t)shape.name.Length() + 1;
         fwrite(&nameLen, sizeof(uint32_t), 1, binFile);
         fwrite(shape.name.Get(), sizeof(char), nameLen, binFile);
-        fwrite(&shape.fromIndex, sizeof(uint32_t), 1, binFile);
+        fwrite(&shape.indexOffset, sizeof(uint32_t), 1, binFile);
         fwrite(&shape.indexCount, sizeof(uint32_t), 1, binFile);
         fwrite(&shape.imageIndex, sizeof(uint32_t), 1, binFile);
     }
