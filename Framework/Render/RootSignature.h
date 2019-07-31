@@ -4,9 +4,15 @@ namespace Render {
 
 class RootSignature {
 public:
-    RootSignature(uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE);
+    enum Type {
+        Graphics,
+        Compute
+    };
+
+    RootSignature(Type type, uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE);
     ~RootSignature(void);
 
+    INLINE Type GetType(void) const { return mType; }
     INLINE ID3D12RootSignature * Get(void) const { return mRootSignature; }
 
     void Create(void);
@@ -33,6 +39,7 @@ public:
 private:
     void CleanupDescriptorRanges(D3D12_ROOT_PARAMETER &param);
 
+    Type                            mType;
     CList<D3D12_ROOT_PARAMETER>     mParameters;
     D3D12_ROOT_SIGNATURE_FLAGS      mFlags;
     ID3D12RootSignature            *mRootSignature;

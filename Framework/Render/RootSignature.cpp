@@ -4,8 +4,9 @@
 
 namespace Render {
 
-RootSignature::RootSignature(uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS flags)
-: mParameters(paramCount)
+RootSignature::RootSignature(Type type, uint32_t paramCount, D3D12_ROOT_SIGNATURE_FLAGS flags)
+: mType(type)
+, mParameters(paramCount)
 , mFlags(flags)
 , mRootSignature(nullptr)
 {
