@@ -10,7 +10,7 @@
 
 namespace Utils {
 
-Scene * Model::LoadFromTextFile(const char *fileName) {
+Scene * Model::LoadFromFile(const char *fileName) {
     Assimp::Importer aiImporter;
 
     // remove unused data
@@ -52,18 +52,31 @@ Scene * Model::LoadFromTextFile(const char *fileName) {
         resPath[size] = '\0';
     }
 
-    Scene *out = new Scene;
-
     uint32_t vertexCount = 0;
     uint32_t indexCount = 0;
-    CList<CString> images(scene->mNumTextures);
+
+    auto AddImage = [](CList<CString> &images, aiString &newImage)->uint32_t {
+        uint32_t idx = images.Count();
+        for (uint32_t i = 0; i < images.Count(); ++i) {
+            if (images.At(i) == newImage.C_Str()) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == images.Count()) {
+            images.PushBack(newImage.C_Str());
+        }
+        return idx;
+    };
+    CList<CString> images(scene->mNumMaterials * 3);
+
+    Scene *out = new Scene;
     out->mShapes.Resize(scene->mNumMeshes);
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[i];
         assert(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE);
 
         Scene::Shape &shape = out->mShapes.At(i);
-        shape.name = mesh->mName.C_Str();
         shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
 
@@ -71,22 +84,18 @@ Scene * Model::LoadFromTextFile(const char *fileName) {
         indexCount += shape.indexCount;
 
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-        aiString imagePath;
-        if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0 
-            && aiReturn_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &imagePath)) {
-            uint32_t findIdx = images.Count();
-            for (uint32_t i = 0; i < images.Count(); ++i) {
-                if (images.At(i) == imagePath.C_Str()) {
-                    findIdx = i;
-                    break;
-                }
-            }
-            if (findIdx == images.Count()) {
-                images.PushBack(imagePath.C_Str());
-            }
-            shape.imageIndex = findIdx;
-        } else {
-            shape.imageIndex = -1;
+
+        aiString diffuseTex;
+        aiString specularTex;
+        aiString normalTex;
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseTex)) {
+            shape.diffuseTex = AddImage(images, diffuseTex);
+        }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), specularTex)) {
+            shape.specularTex = AddImage(images, specularTex);
+        }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
+            shape.normalTex = AddImage(images, normalTex);
         }
     }
 
@@ -169,7 +178,6 @@ Scene * Model::LoadFromTextFile(const char *fileName) {
             continue;
         }
 
-        image.name = images.At(i);
         image.width = width;
         image.height = height;
         image.channels = 4;
@@ -183,105 +191,64 @@ Scene * Model::LoadFromTextFile(const char *fileName) {
     return out;
 }
 
-Scene * Model::LoadFromBinaryFile(const char *fileName) {
+Scene * Model::LoadFromMMB(const char *fileName) {
     FILE *binFile = nullptr;
     if (fopen_s(&binFile, fileName, "rb")) {
         Print("Loader: open file %s failed!\n", fileName);
         return nullptr;
     }
 
-    Scene *out = nullptr;
+    Scene *scene = nullptr;
 
     Header head;
     fread(&head, sizeof(Header), 1, binFile);
-    if (!strcmp(head.tag, "bsx")) {
-        char resPath[MAX_PATH] = {'\0'};
-        const char *lastSlash = strrchr(fileName, '\\');
-        if (lastSlash) {
-            size_t size = lastSlash - fileName + 1;
-            memcpy(resPath, fileName, size);
-            resPath[size] = '\0';
+    if (!strcmp(head.tag, "mmb")) {
+        Bytef *compressedData = (Bytef *)malloc(head.compressedSize);
+        fread(compressedData, sizeof(Bytef), head.compressedSize, binFile);
+        uint8_t *data = (uint8_t *)malloc(head.dataSize);
+        uLongf dataSize = head.dataSize;
+        uncompress(data, &dataSize, compressedData, head.compressedSize);
+        assert(dataSize == head.dataSize);
+
+        uint32_t vertexSize = head.vertexCount * sizeof(Scene::Vertex);
+        uint32_t indexSize = head.indexCount * sizeof(uint32_t);
+        uint32_t shapeSize = head.shapeCount * sizeof(Scene::Shape);
+        uint32_t imageSize = head.imageCount * sizeof(Scene::Image);
+
+        scene = new Scene;
+        scene->mVertices.Resize(head.vertexCount);
+        scene->mIndices.Resize(head.indexCount);
+        scene->mShapes.Resize(head.shapeCount);
+        scene->mImages.Resize(head.imageCount);
+        uint8_t *source = data;
+        memcpy(scene->mVertices.Data(), source, vertexSize);
+        source += vertexSize;
+        memcpy(scene->mIndices.Data(), source, indexSize);
+        source += indexSize;
+        memcpy(scene->mShapes.Data(), source, shapeSize);
+        source += shapeSize;
+        memcpy(scene->mImages.Data(), source, imageSize);
+        source += imageSize;
+        for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
+            Scene::Image &image = scene->mImages.At(i);
+            uint32_t copySize = image.width * image.height * image.channels;
+            image.pixels = (uint8_t *)malloc(copySize);
+            memcpy(image.pixels, source, copySize);
+            source += copySize;
         }
 
-        char name[MAX_PATH];
-        uint32_t nameLen;
-        char imagePath[MAX_PATH];
-
-        out = new Scene;
-
-        // read shapes
-        out->mShapes.Resize(head.shapeCount);
-        for (uint32_t i = 0; i < head.shapeCount; ++i) {
-            Scene::Shape &shape = out->mShapes.At(i);
-            fread(&nameLen, sizeof(uint32_t), 1, binFile);
-            fread(name, sizeof(char), nameLen, binFile);
-            shape.name = name;
-
-            fread(&shape.indexOffset, sizeof(uint32_t), 1, binFile);
-            fread(&shape.indexCount, sizeof(uint32_t), 1, binFile);
-            fread(&shape.imageIndex, sizeof(uint32_t), 1, binFile);
-        }
-
-        // read images
-        stbi_set_flip_vertically_on_load(1);
-        out->mImages.Resize(head.imageCount);
-        for (uint32_t i = 0; i < head.imageCount; ++i) {
-            Scene::Image &image = out->mImages.At(i);
-            fread(&nameLen, sizeof(uint32_t), 1, binFile);
-            fread(name, sizeof(char), nameLen, binFile);
-            image.name = name;
-
-            // load image
-            strcpy(imagePath, resPath);
-            strcat(imagePath, name);
-
-            int width, height, channels;
-            stbi_uc *pixels = stbi_load(imagePath, &width, &height, &channels, STBI_rgb_alpha);
-            if (!pixels) {
-                Print("Loader: load image file failed!\n");
-                continue;
-            }
-
-            image.width = width;
-            image.height = height;
-            image.channels = 4;
-            size_t dataSize = width * height * 4;
-            image.pixels = (uint8_t *)malloc(dataSize);
-            memcpy(image.pixels, pixels, dataSize);
-
-            stbi_image_free(pixels);
-        }
-
-        // read vertices
-        out->mVertices.Resize(head.vertexCount);
-        uLong vertexBufferSize = sizeof(Scene::Vertex) * head.vertexCount;
-        uLong vertSize = 0;
-        fread(&vertSize, sizeof(uLong), 1, binFile);
-        Bytef *vertices = (Bytef *)malloc(vertSize);
-        fread(vertices, sizeof(Bytef), vertSize, binFile);
-        uncompress((Bytef *)out->mVertices.Data(), &vertexBufferSize, vertices, vertSize);
-        assert(vertexBufferSize == sizeof(Scene::Vertex) * head.vertexCount);
-
-        // read indices
-        out->mIndices.Resize(head.indexCount);
-        uLong indexBufferSize = sizeof(uint32_t)* head.indexCount;
-        uLong idxSize = 0;
-        fread(&idxSize, sizeof(uLong), 1, binFile);
-        Bytef *indices = (Bytef *)malloc(idxSize);
-        fread(indices, sizeof(Bytef), idxSize, binFile);
-        uncompress((Bytef *)out->mIndices.Data(), &indexBufferSize, indices, idxSize);
-        assert(indexBufferSize == sizeof(uint32_t)* head.indexCount);
-
+        free(compressedData);
+        free(data);
     } else {
         Print("Loader: unknow format, open file %s failed!\n", fileName);
     }
 
     fclose(binFile);
 
-    return out;
+    return scene;
 }
 
-void Model::SaveToBinaryFile(const Scene *scene, const char *fileName) {
+void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     if (!scene) {
         Print("Loader: empty scene object!\n");
         return;
@@ -293,55 +260,55 @@ void Model::SaveToBinaryFile(const Scene *scene, const char *fileName) {
         return;
     }
 
+    // Copy data
+    uint32_t vertexSize = scene->mVertices.Count() * sizeof(Scene::Vertex);
+    uint32_t indexSize = scene->mIndices.Count() * sizeof(uint32_t);
+    uint32_t shapeSize = scene->mShapes.Count() * sizeof(Scene::Shape);
+    uint32_t imageSize = scene->mImages.Count() * sizeof(Scene::Image);
+    uint32_t pixelSize = 0;
+    for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
+        const Scene::Image &image = scene->mImages.At(i);
+        pixelSize += image.width * image.height * image.channels;
+    }
+    uint32_t dataSize = vertexSize + indexSize + shapeSize + imageSize + pixelSize;
+    uint8_t *data = (uint8_t *)malloc(dataSize);
+    uint8_t *dest = data;
+    memcpy(dest, scene->mVertices.Data(), vertexSize);
+    dest += vertexSize;
+    memcpy(dest, scene->mIndices.Data(), indexSize);
+    dest += indexSize;
+    memcpy(dest, scene->mShapes.Data(), shapeSize);
+    dest += shapeSize;
+    memcpy(dest, scene->mImages.Data(), imageSize);
+    dest += imageSize;
+    for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
+        const Scene::Image &image = scene->mImages.At(i);
+        uint32_t copySize = image.width * image.height * image.channels;
+        memcpy(dest, image.pixels, copySize);
+        dest += copySize;
+    }
+    // Compress data
+    uLong compressedSize = compressBound(dataSize);
+    Bytef *compressedData = (Bytef *)malloc(compressedSize);
+    compress(compressedData, &compressedSize, (const Bytef *)data, dataSize);
+
     Header head = {
-        {'b', 's', 'x', '\0'},
-        scene->mShapes.Count(),
+        {'m', 'm', 'b', '\0'},
         scene->mVertices.Count(),
         scene->mIndices.Count(),
-        scene->mImages.Count()
+        scene->mShapes.Count(),
+        scene->mImages.Count(),
+        dataSize,
+        compressedSize
     };
 
     fwrite(&head, sizeof(Header), 1, binFile);
-
-    // shapes
-    for (uint32_t i = 0; i < scene->mShapes.Count(); ++i) {
-        const Scene::Shape &shape = scene->mShapes.At(i);
-        uint32_t nameLen = (uint32_t)shape.name.Length() + 1;
-        fwrite(&nameLen, sizeof(uint32_t), 1, binFile);
-        fwrite(shape.name.Get(), sizeof(char), nameLen, binFile);
-        fwrite(&shape.indexOffset, sizeof(uint32_t), 1, binFile);
-        fwrite(&shape.indexCount, sizeof(uint32_t), 1, binFile);
-        fwrite(&shape.imageIndex, sizeof(uint32_t), 1, binFile);
-    }
-
-    // images
-    for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
-        const CString &name = scene->mImages.At(i).name;
-        uint32_t nameLen = (uint32_t)name.Length() + 1;
-        fwrite(&nameLen, sizeof(uint32_t), 1, binFile);
-        fwrite(name.Get(), sizeof(char), nameLen, binFile);
-    }
-
-    // write vertices
-    uLong vertexBufferSize = sizeof(Scene::Vertex) * head.vertexCount;
-    uLong vertSize = compressBound(vertexBufferSize);
-    Bytef *vertices = (Bytef *)malloc(vertSize);
-    compress(vertices, &vertSize, (const Bytef *)scene->mVertices.Data(), vertexBufferSize);
-    fwrite(&vertSize, sizeof(uLong), 1, binFile);
-    fwrite(vertices, sizeof(Bytef), vertSize, binFile);
-
-    // write indices
-    uLong indexBufferSize = sizeof(uint32_t)* head.indexCount;
-    uLong idxSize = compressBound(indexBufferSize);
-    Bytef *indices = (Bytef *)malloc(idxSize);
-    compress(indices, &idxSize, (const Bytef *)scene->mIndices.Data(), indexBufferSize);
-    fwrite(&idxSize, sizeof(uLong), 1, binFile);
-    fwrite(indices, sizeof(Bytef), idxSize, binFile);
+    fwrite(compressedData, sizeof(Bytef), compressedSize, binFile);
 
     fclose(binFile);
 
-    free(vertices);
-    free(indices);
+    free(data);
+    free(compressedData);
 }
 
 }
