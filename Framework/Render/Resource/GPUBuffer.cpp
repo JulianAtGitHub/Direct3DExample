@@ -43,7 +43,7 @@ void GPUBuffer::Initialize(void) {
     FillGPUAddress();
 }
 
-void GPUBuffer::CreateVertexBufferSRV(DescriptorHandle &handle, uint32_t count, uint32_t size) {
+void GPUBuffer::CreateStructBufferSRV(DescriptorHandle &handle, uint32_t count, uint32_t size) {
     if (!mResource) {
         return;
     }
