@@ -29,17 +29,17 @@ private:
     void BuildShaderTables(void);
     void CreateRaytracingOutput(void);
 
-    struct SceneConstantBuffer {
-        XMMATRIX projectionToWorld;
-        XMVECTOR cameraPosition;
-        XMVECTOR lightDirection;
-        XMVECTOR lightAmbientColor;
-        XMVECTOR lightDiffuseColor;
+    struct SceneConstants {
+        XMVECTOR cameraPos;
+        XMVECTOR cameraU;
+        XMVECTOR cameraV;
+        XMVECTOR cameraW;
+        XMVECTOR bgColor;
     };
 
-    struct MeshConstantBuffer {
-        XMFLOAT4 albedo[2];
-        XMUINT2 offset;
+    struct Geometry {
+        XMUINT4 indexInfo; // x: index offset, y: index count;
+        XMUINT4 texInfo;  // x: diffuse, y: specular, z: normal
     };
 
     struct Vertex {
@@ -50,10 +50,9 @@ private:
     enum GlobalRootSignatureParams {
         OutputViewSlot = 0,
         AccelerationStructureSlot,
-        SceneConstantSlot,
-        MeshConstantSlot,
+        SceneConstantsSlot,
         VertexBuffersSlot,
-        Count
+        SlotCount
     };
 
     CTimer                      mTimer;
@@ -68,8 +67,8 @@ private:
     uint32_t                    mHeight;
     uint32_t                    mCurrentFrame;
     uint64_t                    mFenceValues[Render::FRAME_COUNT];
-    SceneConstantBuffer         mSceneConstBuf[Render::FRAME_COUNT];
-    MeshConstantBuffer          mMeshConstBuf;
+    SceneConstants              mSceneConsts[Render::FRAME_COUNT];
+    Utils::Scene               *mScene;
 
     Render::RootSignature      *mGlobalRootSignature;
     Render::RootSignature      *mLocalRootSignature;
@@ -77,11 +76,13 @@ private:
     Render::DescriptorHeap     *mDescriptorHeap;
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
+    Render::GPUBuffer          *mGeometries;
     Render::ConstantBuffer     *mSceneConstantBuffer;
     Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
 
-    Render::BottomLevelAccelerationStructure   *mBLASCube;
-    Render::BottomLevelAccelerationStructure   *mBLASPlane;
-    Render::TopLevelAccelerationStructure      *mTLAS;
+    typedef Render::BottomLevelAccelerationStructure BLAS;
+    typedef Render::TopLevelAccelerationStructure TLAS;
+    CList<BLAS *>               mBLASes;
+    TLAS                       *mTLAS;
 };

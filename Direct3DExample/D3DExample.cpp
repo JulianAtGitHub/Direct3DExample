@@ -1,15 +1,5 @@
 #include "pch.h"
 #include "D3DExample.h"
-#include "Framework/Utils/Model.h"
-#include "Framework/Render/CommandContext.h"
-#include "Framework/Render/DescriptorHeap.h"
-#include "Framework/Render/Resource/GPUBuffer.h"
-#include "Framework/Render/Resource/ConstantBuffer.h"
-#include "Framework/Render/Resource/PixelBuffer.h"
-#include "Framework/Render/Resource/RenderTargetBuffer.h"
-#include "Framework/Render/Sampler.h"
-#include "Framework/Render/PipelineState.h"
-#include "Framework/Render/RootSignature.h"
 
 struct ConstBuffer {
     XMFLOAT4X4 mvp;

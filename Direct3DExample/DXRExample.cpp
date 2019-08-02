@@ -1,27 +1,11 @@
 #include "pch.h"
 #include "DXRExample.h"
-#include "Framework/Utils/Camera.h"
-#include "Framework/Render/CommandContext.h"
-#include "Framework/Render/RootSignature.h"
-#include "Framework/Render/DescriptorHeap.h"
-#include "Framework/Render/RayTracingState.h"
-#include "Framework/Render/AccelerationStructure.h"
-#include "Framework/Render/Resource/GPUBuffer.h"
-#include "Framework/Render/Resource/UploadBuffer.h"
-#include "Framework/Render/Resource/ConstantBuffer.h"
-#include "Framework/Render/Resource/PixelBuffer.h"
-#include "Framework/Render/Resource/RenderTargetBuffer.h"
 
-const static wchar_t *HitCubeGroupName = L"MyHitGroup";
-const static wchar_t *HitShadowGroupName = L"MyHitShadowGroup";
-const static wchar_t *RaygenShaderName = L"MyRaygenShader";
-const static wchar_t *ClosestHitShaderName = L"MyClosestHitShader";
-const static wchar_t *MissShaderName = L"MyMissShader";
-const static wchar_t *MissShadowName = L"MyMissShadow";
-
-static XMFLOAT4 lightDirection(0.0f, -1.0f, 0.0f, 0.0f);
-static XMFLOAT4 lightAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
-static XMFLOAT4 lightDiffuseColor(0.7f, 0.7f, 0.7f, 1.0f);
+const static wchar_t *RayGenerationName = L"RayGener";
+const static wchar_t *PrimaryMissName = L"PrimaryMiss";
+const static wchar_t *PrimaryHitGroupName = L"PrimaryHitGroup";
+const static wchar_t *PrimaryAnyHitName = L"PrimaryAnyHit";
+const static wchar_t *PrimaryClosetHitName = L"PrimaryClosestHit";
 
 DXRExample::DXRExample(HWND hwnd)
 : Example(hwnd)
@@ -38,11 +22,11 @@ DXRExample::DXRExample(HWND hwnd)
 , mDescriptorHeap(nullptr)
 , mVertices(nullptr)
 , mIndices(nullptr)
+, mGeometries(nullptr)
 , mSceneConstantBuffer(nullptr)
 , mMeshConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
-, mBLASCube(nullptr)
-, mBLASPlane(nullptr)
+, mScene(nullptr)
 , mTLAS(nullptr)
 {
     for (auto &fence : mFenceValues) {
@@ -115,10 +99,10 @@ void DXRExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    XMMATRIX rotate = XMMatrixRotationZ(XMConvertToRadians(elapse));
-    mSceneConstBuf[mCurrentFrame].lightDirection = XMVector4Transform(XMLoadFloat4(&lightDirection), rotate);
-    mSceneConstBuf[mCurrentFrame].cameraPosition = mCamera->GetPosition();
-    mSceneConstBuf[mCurrentFrame].projectionToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
+    mSceneConsts[mCurrentFrame].cameraPos = mCamera->GetPosition();
+    mSceneConsts[mCurrentFrame].cameraU = mCamera->GetU();
+    mSceneConsts[mCurrentFrame].cameraV = mCamera->GetV(); //XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
+    mSceneConsts[mCurrentFrame].cameraW = mCamera->GetW();
 }
 
 void DXRExample::Render(void) {
@@ -129,9 +113,8 @@ void DXRExample::Render(void) {
 
     // Copy the updated scene constant buffer to GPU.
     void *mappedConstantData = mSceneConstantBuffer->GetMappedBuffer(0, mCurrentFrame);
-    memcpy(mappedConstantData, mSceneConstBuf + mCurrentFrame, sizeof(SceneConstantBuffer));
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, mSceneConstantBuffer->GetGPUAddress(0, mCurrentFrame));
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::MeshConstantSlot, mMeshConstantBuffer->GetGPUAddress());
+    memcpy(mappedConstantData, mSceneConsts + mCurrentFrame, sizeof(SceneConstants));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneConstantBuffer->GetGPUAddress(0, mCurrentFrame));
 
     // Bind the heaps, acceleration structure and dispatch rays.
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap };
@@ -159,14 +142,18 @@ void DXRExample::Render(void) {
 void DXRExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
-    DeleteAndSetNull(mBLASCube);
-    DeleteAndSetNull(mBLASPlane);
+    DeleteAndSetNull(mScene);
+    for (uint32_t i = 0; i < mBLASes.Count(); ++i) {
+        delete mBLASes.At(i);
+    }
+    mBLASes.Clear();
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mMeshConstantBuffer);
     DeleteAndSetNull(mSceneConstantBuffer);
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
+    DeleteAndSetNull(mGeometries);
     DeleteAndSetNull(mDescriptorHeap);
     DeleteAndSetNull(mRayTracingState);
     DeleteAndSetNull(mLocalRootSignature);
@@ -219,225 +206,128 @@ void DXRExample::OnMouseMove(int64_t pos) {
 }
 
 void DXRExample::InitScene(void) {
-    mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 100.0f, 
-                                XMFLOAT4(0.0f, 10.0f, 10.0f, 1.0f), 
-                                XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), 
-                                XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f));
+    mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
+    assert(mScene);
 
-    mMeshConstBuf.albedo[0] = XMFLOAT4(1.0, 1.0, 1.0, 1.0);
-    mMeshConstBuf.albedo[1] = XMFLOAT4(0.7f, 0.5f, 0.1f, 1.0f);
-    mMeshConstBuf.offset.x = 0;
-    mMeshConstBuf.offset.y = 12;
-    for (auto &sceneConstBuf : mSceneConstBuf) {
-        sceneConstBuf.cameraPosition = mCamera->GetPosition();
-        sceneConstBuf.lightDirection = XMLoadFloat4(&lightDirection);
-        sceneConstBuf.lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
-        sceneConstBuf.lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
-        sceneConstBuf.projectionToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
+    mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 100.0f, 
+                                XMFLOAT4(-2.706775665283203f, 0.85294109582901f, -3.112438678741455f, 1.0f), 
+                                XMFLOAT4(-2.347264528274536f, 0.7383297681808472f, -2.1863629817962648f, 1.0f), 
+                                XMFLOAT4(0.038521841168403628f, 0.9933950304985046f, 0.1079813688993454f, 0.0f));
+
+    for (auto &sceneConst : mSceneConsts) {
+        sceneConst.cameraPos = mCamera->GetPosition();
+        sceneConst.cameraU = mCamera->GetU();
+        sceneConst.cameraV = mCamera->GetV();
+        sceneConst.cameraW = mCamera->GetW();
+        //sceneConst.projToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
+        sceneConst.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
     }
 }
 
 void DXRExample::CreateRootSignature(void) {
-    mGlobalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, GlobalRootSignatureParams::Count);
+    mGlobalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, GlobalRootSignatureParams::SlotCount);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
-    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
-    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::MeshConstantSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);
+    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1);
     mGlobalRootSignature->Create();
 
     mLocalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, 0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
     mLocalRootSignature->Create();
 }
 
-// Create a raytracing pipeline state object (RTPSO).
-// An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
-// with all configuration options resolved, such as local signatures and other state.
 void DXRExample::CreateRayTracingPipelineState(void) {
-    // 1 - DXIL library
-    // 1 - Shader config
-    // 2 - Triangle hit group
-    // 2 - Export Association
-    // 2 - Local root signature and association
-    // 1 - Global root signature
-    // 1 - Pipeline config
-    mRayTracingState = new Render::RayTracingState(10);
 
-    const wchar_t *shaderFuncs[] = { RaygenShaderName, ClosestHitShaderName, MissShaderName, MissShadowName };
-    mRayTracingState->AddDXILLibrary("raytracing.cso", shaderFuncs, _countof(shaderFuncs));
+    mRayTracingState = new Render::RayTracingState(7);
 
-    // Shader config
-    // Defines the maximum sizes in bytes for the ray payload and attribute structure.
+    const wchar_t *shaderFuncs[] = { RayGenerationName, PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName };
+    mRayTracingState->AddDXILLibrary("pathtracing.cso", shaderFuncs, _countof(shaderFuncs));
+
     mRayTracingState->AddRayTracingShaderConfig(sizeof(XMFLOAT4) /*float4 pixelColor*/, sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
-    // Triangle hit group
-    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
-    mRayTracingState->AddHitGroup(HitCubeGroupName, ClosestHitShaderName);
+    mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
 
-    // Local root signature and shader association
-    // This is a root signature that enables a shader to have unique arguments that come from shader tables.
-    uint32_t lrsIdx1 = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
-    mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx1, &HitCubeGroupName, 1);
+    uint32_t lrsIdx = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
 
-    // Shadow
-    mRayTracingState->AddHitGroup(HitShadowGroupName);
-    uint32_t lrsIdx2 = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
-    mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx2, &HitShadowGroupName, 1);
+    mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx, &PrimaryHitGroupName, 1);
 
-    // Global root signature
-    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
     mRayTracingState->AddGlobalRootSignature(mGlobalRootSignature);
 
-    // Pipeline config
-    // Defines the maximum TraceRay() recursion depth.
-    // PERFOMANCE TIP: Set max recursion depth as low as needed 
-    // as drivers may apply optimization strategies for low recursion depths.
     mRayTracingState->AddRayTracingPipelineConfig(2);
 
     mRayTracingState->Create();
 }
 
 void DXRExample::CreateDescriptorHeap(void) {
-    // Allocate a heap for 5 descriptors:
-    // 2 - vertex and index buffer SRVs
-    // 1 - raytracing output texture SRV
     mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5);
 }
 
 void DXRExample::BuildGeometry(void) {
+    mIndices = new Render::GPUBuffer(mScene->mIndices.Count() * sizeof(uint32_t));
+    mVertices = new Render::GPUBuffer(mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex));
+    mGeometries = new Render::GPUBuffer(mScene->mShapes.Count() * sizeof(Geometry));
+    Geometry *geometries = new Geometry[mScene->mShapes.Count()];
+    for (uint32_t i = 0; i < mScene->mShapes.Count(); ++i) {
+        auto &shape = mScene->mShapes.At(i);
+        geometries[i].indexInfo = { shape.indexOffset, shape.indexCount, 0, 0 };
+        geometries[i].texInfo = { shape.diffuseTex, shape.specularTex, shape.normalTex, 0 };
+    }
+
     Render::gCommand->Begin();
 
-    uint32_t indices[] = {
-        // Cube
-        0,1,3,
-        3,1,2,
+    Render::gCommand->UploadBuffer(mIndices, 0, mScene->mIndices.Data(), mIndices->GetBufferSize());
+    Render::gCommand->UploadBuffer(mVertices, 0, mScene->mVertices.Data(), mVertices->GetBufferSize());
+    Render::gCommand->UploadBuffer(mGeometries, 0, geometries, mGeometries->GetBufferSize());
 
-        5,4,6,
-        6,4,7,
-
-        8,9,11,
-        11,9,10,
-
-        13,12,14,
-        14,12,15,
-
-        16,17,19,
-        19,17,18,
-
-        21,20,22,
-        22,20,23,
-
-        // Plane
-        24,25,27,
-        27,25,26,
-    };
-
-    // Vertices positions and corresponding triangle normals.
-    Vertex vertices[] = {
-        // Cube
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-
-        // Plane
-        { XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-    };
-
-    mIndices = new Render::GPUBuffer(sizeof(indices));
-    mVertices = new Render::GPUBuffer(sizeof(vertices));
-
-    Render::gCommand->UploadBuffer(mIndices, 0, indices, sizeof(indices));
-    Render::gCommand->UploadBuffer(mVertices, 0, vertices, sizeof(vertices));
-
-    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), _countof(indices));
-    mVertices->CreateVertexBufferSRV(mDescriptorHeap->Allocate(), _countof(vertices), sizeof(Vertex));
+    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), mScene->mIndices.Count());
+    mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mVertices.Count(), sizeof(Utils::Scene::Vertex));
+    mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mShapes.Count(), sizeof(Geometry));
 
     Render::gCommand->End(true);
+
+    delete [] geometries;
 }
 
 void DXRExample::BuildAccelerationStructure(void) {
-    constexpr uint32_t cubeIndexCount = 3 * 12;
-    constexpr uint32_t planeIndexCount = 3 * 2;
-    constexpr uint32_t vertexCount = 4 * 6 + 4 * 1;
-
-    mBLASCube = new Render::BottomLevelAccelerationStructure();
-    mBLASPlane = new Render::BottomLevelAccelerationStructure();
     mTLAS = new Render::TopLevelAccelerationStructure();
+    XMMATRIX transform = XMMatrixIdentity();
 
-    // Mark the geometry as opaque. 
-    // PERFORMANCE TIP: mark geometry as opaque whenever applicable as it can enable important ray processing optimizations.
-    // Note: When rays encounter opaque geometry an any hit shader will not be executed whether it is present or not.
-    mBLASCube->AddTriangles(mIndices, 0, cubeIndexCount, false, mVertices, 0, vertexCount, sizeof(Vertex), DXGI_FORMAT_R32G32B32_FLOAT, D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE);
-    mBLASCube->PreBuild();
+    uint32_t shapeCount = mScene->mShapes.Count();
+    mBLASes.Reserve(shapeCount);
+    for (uint32_t i = 0; i < shapeCount; ++i) {
+        auto &shape = mScene->mShapes.At(i);
+        BLAS *blas = new BLAS();
+        blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, mVertices, 0, mScene->mVertices.Count(), sizeof(Utils::Scene::Vertex));
+        blas->PreBuild();
+        mBLASes.PushBack(blas);
+        mTLAS->AddInstance(blas, i, 0, transform);
+    }
 
-    mBLASPlane->AddTriangles(mIndices, cubeIndexCount, planeIndexCount, false, mVertices, 0, vertexCount, sizeof(Vertex), DXGI_FORMAT_R32G32B32_FLOAT, D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE);
-    mBLASPlane->PreBuild();
-   
-    XMVECTOR vMove = { 0.0f, 3.0f, 0.0f, 0.0f };
-    XMVECTOR yAxis = { 0.0f, 1.0f, 0.0f, 0.0f };
-    XMMATRIX mRotate = XMMatrixRotationAxis(yAxis, XM_PIDIV4);
-    XMMATRIX transformCube = mRotate * XMMatrixTranslationFromVector(vMove);
-
-    XMMATRIX mMove = XMMatrixTranslation(-0.5f, 0.0f, -0.5f);
-    XMMATRIX mScale = XMMatrixScaling(16.0f, 1.0f, 16.0f);
-    XMMATRIX transformPlane = mMove * mScale * XMMatrixIdentity();
-    
-    mTLAS->AddInstance(mBLASCube, 0, 0, transformCube, 0xFF, D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE);
-    mTLAS->AddInstance(mBLASPlane, 1, 0, transformPlane, 0xFF, D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE);
     mTLAS->PreBuild();
 
     Render::gCommand->Begin();
-    Render::gCommand->BuildAccelerationStructure(mBLASCube);
-    Render::gCommand->BuildAccelerationStructure(mBLASPlane);
+    for (uint32_t i = 0; i < shapeCount; ++i) {
+        Render::gCommand->BuildAccelerationStructure(mBLASes.At(i));
+    }
     Render::gCommand->BuildAccelerationStructure(mTLAS);
     Render::gCommand->End(true);
 
-    mBLASCube->PostBuild();
-    mBLASPlane->PostBuild();
+    for (uint32_t i = 0; i < shapeCount; ++i) {
+        mBLASes.At(i)->PostBuild();
+    }
     mTLAS->PostBuild();
 }
 
 void DXRExample::CreateConstantBuffer(void) {
-    mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstantBuffer), 1);
-    mMeshConstantBuffer = new Render::UploadBuffer(sizeof(MeshConstantBuffer));
-    mMeshConstantBuffer->UploadData(&mMeshConstBuf, sizeof(MeshConstantBuffer));
+    mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
 }
 
 // Build shader tables.
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
-    const wchar_t *rayGens[] = { RaygenShaderName };
-    const wchar_t *misses[] = { MissShaderName, MissShadowName };
-    const wchar_t *hipGroups[] = { HitCubeGroupName, HitShadowGroupName };
+    const wchar_t *rayGens[] = { RayGenerationName };
+    const wchar_t *misses[] = { PrimaryMissName };
+    const wchar_t *hipGroups[] = { PrimaryHitGroupName };
     mRayTracingState->BuildShaderTable(rayGens, _countof(rayGens), misses, _countof(misses), hipGroups, _countof(hipGroups));
 }
 
