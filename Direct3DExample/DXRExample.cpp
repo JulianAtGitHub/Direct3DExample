@@ -118,7 +118,7 @@ void DXRExample::Render(void) {
 
     // Bind the heaps, acceleration structure and dispatch rays.
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
-    Render::gCommand->SetDescriptorHeaps(heaps, 1);
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     // Set index and successive vertex buffer decriptor tables
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures.At(0)->GetHandle());
