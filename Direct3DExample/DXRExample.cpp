@@ -26,6 +26,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mSceneConstantBuffer(nullptr)
 , mMeshConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
+, mSamplerHeap(nullptr)
+, mSampler(nullptr)
 , mScene(nullptr)
 , mTLAS(nullptr)
 {
@@ -50,10 +52,8 @@ void DXRExample::Init(void) {
     InitScene();
     CreateRootSignature();
     CreateRayTracingPipelineState();
-    CreateDescriptorHeap();
     BuildGeometry();
     BuildAccelerationStructure();
-    CreateConstantBuffer();
     BuildShaderTables();
     CreateRaytracingOutput();
 
@@ -117,11 +117,14 @@ void DXRExample::Render(void) {
     Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneConstantBuffer->GetGPUAddress(0, mCurrentFrame));
 
     // Bind the heaps, acceleration structure and dispatch rays.
-    Render::DescriptorHeap *heaps[] = { mDescriptorHeap };
+    Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, 1);
     // Set index and successive vertex buffer decriptor tables
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures.At(0)->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputsSlot, mOutputs.At(0)->GetHandle());
     Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
     Render::gCommand->SetRayTracingState(mRayTracingState);
@@ -142,11 +145,16 @@ void DXRExample::Render(void) {
 void DXRExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
-    DeleteAndSetNull(mScene);
-    for (uint32_t i = 0; i < mBLASes.Count(); ++i) {
-        delete mBLASes.At(i);
-    }
+    for (uint32_t i = 0; i < mBLASes.Count(); ++i) { delete mBLASes.At(i); }
     mBLASes.Clear();
+    for (uint32_t i = 0; i < mTextures.Count(); ++i) { delete mTextures.At(i); }
+    mTextures.Clear();
+    for (uint32_t i = 0; i < mOutputs.Count(); ++i) { delete mOutputs.At(i); }
+    mOutputs.Clear();
+
+    DeleteAndSetNull(mSamplerHeap);
+    DeleteAndSetNull(mSampler);
+    DeleteAndSetNull(mScene);
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mMeshConstantBuffer);
@@ -222,6 +230,25 @@ void DXRExample::InitScene(void) {
         //sceneConst.projToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
         sceneConst.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
     }
+
+    mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 + mScene->mImages.Count() + OutputCount);
+    mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
+    mSampler = new Render::Sampler();
+    mSampler->Create(mSamplerHeap->Allocate());
+
+    Render::gCommand->Begin();
+
+    mTextures.Reserve(mScene->mImages.Count());
+    for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
+        auto &image = mScene->mImages.At(i);
+        Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
+        Render::gCommand->UploadTexture(texture, image.pixels);
+        texture->CreateSRV(mDescriptorHeap->Allocate());
+        mTextures.PushBack(texture);
+    }
+
+    Render::gCommand->End(true);
 }
 
 void DXRExample::CreateRootSignature(void) {
@@ -230,6 +257,9 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 4);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, OutputCount, 1);
     mGlobalRootSignature->Create();
 
     mLocalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, 0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
@@ -258,10 +288,6 @@ void DXRExample::CreateRayTracingPipelineState(void) {
     mRayTracingState->Create();
 }
 
-void DXRExample::CreateDescriptorHeap(void) {
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5);
-}
-
 void DXRExample::BuildGeometry(void) {
     mIndices = new Render::GPUBuffer(mScene->mIndices.Count() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex));
@@ -269,6 +295,7 @@ void DXRExample::BuildGeometry(void) {
     Geometry *geometries = new Geometry[mScene->mShapes.Count()];
     for (uint32_t i = 0; i < mScene->mShapes.Count(); ++i) {
         auto &shape = mScene->mShapes.At(i);
+        ASSERT_PRINT(shape.diffuseTex != ~0 && shape.specularTex != ~0);
         geometries[i].indexInfo = { shape.indexOffset, shape.indexCount, 0, 0 };
         geometries[i].texInfo = { shape.diffuseTex, shape.specularTex, shape.normalTex, 0 };
     }
@@ -318,10 +345,6 @@ void DXRExample::BuildAccelerationStructure(void) {
     mTLAS->PostBuild();
 }
 
-void DXRExample::CreateConstantBuffer(void) {
-    mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
-}
-
 // Build shader tables.
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
@@ -340,5 +363,12 @@ void DXRExample::CreateRaytracingOutput(void) {
     // Create the output resource. The dimensions and format should match the swap-chain.
     mRaytracingOutput = new Render::PixelBuffer(width, width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
+
+    mOutputs.Reserve(OutputCount);
+    for (uint32_t i = 0; i < OutputCount; ++i) {
+        Render::PixelBuffer *output = new Render::PixelBuffer(width, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        output->CreateUAV(mDescriptorHeap->Allocate());
+        mOutputs.PushBack(output);
+    }
 }
 

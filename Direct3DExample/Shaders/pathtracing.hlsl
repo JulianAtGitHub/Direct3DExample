@@ -36,6 +36,7 @@ namespace RayTraceParams {
         WsNormal,
         MatDiffuse,
         MatSpecular,
+        MatEmissive,
         MatExtra,
         OutputCount
     };
@@ -49,22 +50,26 @@ namespace RayTraceParams {
 
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 
-RaytracingAccelerationStructure RtScene : register(t0, space0);
+RaytracingAccelerationStructure gRtScene : register(t0, space0);
 
-ConstantBuffer<SceneConstants> SceneCB : register(b0);
+ConstantBuffer<SceneConstants> gSceneCB : register(b0);
 
-ByteAddressBuffer Indices : register(t1, space0);
-StructuredBuffer<Vertex> Vertices : register(t2, space0);
-StructuredBuffer<Geometry> Geometries : register(t3, space0);
+ByteAddressBuffer gIndices : register(t1, space0);
+StructuredBuffer<Vertex> gVertices : register(t2, space0);
+StructuredBuffer<Geometry> gGeometries : register(t3, space0);
+Texture2D<float4> gMatTextures[] : register(t4);
 
-RWTexture2D<float4> RenderTarget : register(u0);
+SamplerState gSampler : register(s0);
+
+RWTexture2D<float4> gRenderTarget : register(u0);
+RWTexture2D<float4> gOutputs[] : register(u1);
 
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(out float3 origin, out float3 direction) {
     float2 pixelCenter = (DispatchRaysIndex().xy + float2(0.5f, 0.5f)) / DispatchRaysDimensions().xy; 
     float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);                    
-    direction = normalize(ndc.x * SceneCB.cameraU.xyz + ndc.y * SceneCB.cameraV.xyz + SceneCB.cameraW.xyz);
-    origin = SceneCB.cameraPos.xyz;
+    direction = normalize(ndc.x * gSceneCB.cameraU.xyz + ndc.y * gSceneCB.cameraV.xyz + gSceneCB.cameraW.xyz);
+    origin = gSceneCB.cameraPos.xyz;
 }
 
 inline bool AlphaTestFails(Attributes attribs) {
@@ -72,7 +77,13 @@ inline bool AlphaTestFails(Attributes attribs) {
 }
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
-inline float3 LerpVertexAttributes(float3 vertexAttributes[3], Attributes attr) {
+inline float3 LerpFloat3Attributes(float3 vertexAttributes[3], Attributes attr) {
+    return  vertexAttributes[0] +
+            attr.barycentrics.x * (vertexAttributes[1] - vertexAttributes[0]) +
+            attr.barycentrics.y * (vertexAttributes[2] - vertexAttributes[0]);
+}
+
+inline float2 LerpFloat2Attributes(float2 vertexAttributes[3], Attributes attr) {
     return  vertexAttributes[0] +
             attr.barycentrics.x * (vertexAttributes[1] - vertexAttributes[0]) +
             attr.barycentrics.y * (vertexAttributes[2] - vertexAttributes[0]);
@@ -93,7 +104,7 @@ void RayGener() {
     PrimaryRayPayload payload;
     payload.color = float4(0, 0, 0, 0);
 
-    TraceRay(RtScene, 
+    TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
              RayTraceParams::InstanceMask, 
              RayTraceParams::HitGroupIndex[RayTraceParams::Primary], 
@@ -103,12 +114,12 @@ void RayGener() {
              payload);
 
     // Write the raytraced result to the output texture.
-    RenderTarget[DispatchRaysIndex().xy] = payload.color;
+    gRenderTarget[DispatchRaysIndex().xy] = payload.color;
 }
 
 [shader("miss")]
 void PrimaryMiss(inout PrimaryRayPayload payload) {
-    payload.color = SceneCB.bgColor;
+    payload.color = gSceneCB.bgColor;
 }
 
 [shader("anyhit")]
@@ -121,20 +132,54 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
+    uint2 launchIndex = DispatchRaysIndex().xy;
+    uint indexOffset = gGeometries[InstanceID()].indexInfo.x + PrimitiveIndex() * 3; // indicesPerTriangle(3)
+    uint3 idx = gIndices.Load3(indexOffset * 4); // indexSizeInBytes(4)
+
+    // position
     float3 hitPosition = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+    float4 wsPosition = float4(hitPosition, 1.0f);
+    gOutputs[RayTraceParams::WsPosition][launchIndex] = wsPosition;
 
-    uint indexOffset = Geometries[InstanceID()].indexInfo.x + PrimitiveIndex() * 3; // indicesPerTriangle(3)
-    uint3 indices = Indices.Load3(indexOffset * 4); // indexSizeInBytes(4)
-
-    float3 vertexNormals[3] = {
-        Vertices[indices.x].normal,
-        Vertices[indices.y].normal,
-        Vertices[indices.z].normal
-    };
-    float3 hitNormal = LerpVertexAttributes(vertexNormals, attribs);
+    // normal
+    float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
+    float3 hitNormal = LerpFloat3Attributes(normals, attribs);
     hitNormal = normalize(mul((float3x3) ObjectToWorld3x4(), hitNormal));
+    float4 wsNormal = float4(hitNormal, length(hitPosition - gSceneCB.cameraPos.xyz));
+    gOutputs[RayTraceParams::WsNormal][launchIndex] = wsNormal;
 
-    hitNormal = hitNormal * 0.5 + 0.5;
+    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
+    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
 
-    payload.color = float4(hitNormal, 1);
+    /**
+    BaseColor
+        - RGB - Base Color
+        - A   - Transparency
+    Specular
+        - R - Occlusion
+        - G - Metalness
+        - B - Roughness
+        - A - Reserved
+    Emissive
+        - RGB - Emissive Color
+        - A   - Unused
+    */
+    uint diffTexIdx = gGeometries[InstanceID()].texInfo.x;
+    uint specTexIdx = gGeometries[InstanceID()].texInfo.y;
+    float4 baseColor = gMatTextures[diffTexIdx].SampleLevel(gSampler, hitTexCoord, 0);
+    float4 spec = gMatTextures[specTexIdx].SampleLevel(gSampler, hitTexCoord, 0);
+
+    // diffuse 
+    float4 diffColor = float4(lerp(baseColor.rgb, float3(0, 0, 0), spec.b), baseColor.a);
+    gOutputs[RayTraceParams::MatDiffuse][launchIndex] = diffColor;
+    // specular UE4 uses 0.08 multiplied by a default specular value of 0.5 as a base, hence the 0.04
+    // Clamp the roughness so that the BRDF won't explode
+    float4 specColor = float4(lerp(float3(0.04f, 0.04f, 0.04f), baseColor.rgb, spec.b), max(0.08, spec.g));
+    gOutputs[RayTraceParams::MatSpecular][launchIndex] = specColor;
+
+    // other mats
+    gOutputs[RayTraceParams::MatEmissive][launchIndex] = float4(0, 0, 0, 0);
+    gOutputs[RayTraceParams::MatExtra][launchIndex] = float4(1, 0, 0, 0);
+
+    payload.color = wsNormal;
 }

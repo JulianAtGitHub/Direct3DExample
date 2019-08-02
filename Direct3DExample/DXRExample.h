@@ -22,10 +22,8 @@ private:
     void InitScene(void);
     void CreateRootSignature(void);
     void CreateRayTracingPipelineState(void);
-    void CreateDescriptorHeap(void);
     void BuildGeometry(void);
     void BuildAccelerationStructure(void);
-    void CreateConstantBuffer(void);
     void BuildShaderTables(void);
     void CreateRaytracingOutput(void);
 
@@ -42,17 +40,25 @@ private:
         XMUINT4 texInfo;  // x: diffuse, y: specular, z: normal
     };
 
-    struct Vertex {
-        XMFLOAT3 position;
-        XMFLOAT3 normal;
-    };
-
     enum GlobalRootSignatureParams {
         OutputViewSlot = 0,
         AccelerationStructureSlot,
         SceneConstantsSlot,
         VertexBuffersSlot,
+        TexturesSlot,
+        SamplerSlot,
+        OutputsSlot,
         SlotCount
+    };
+
+    enum Outputs {
+        WsPosition = 0,
+        WsNormal,
+        MatDiffuse,
+        MatSpecular,
+        MatEmissive,
+        MatExtra,
+        OutputCount
     };
 
     CTimer                      mTimer;
@@ -80,6 +86,10 @@ private:
     Render::ConstantBuffer     *mSceneConstantBuffer;
     Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
+    Render::DescriptorHeap     *mSamplerHeap;
+    Render::Sampler            *mSampler;
+    CList<Render::PixelBuffer*> mTextures;
+    CList<Render::PixelBuffer*> mOutputs;
 
     typedef Render::BottomLevelAccelerationStructure BLAS;
     typedef Render::TopLevelAccelerationStructure TLAS;
