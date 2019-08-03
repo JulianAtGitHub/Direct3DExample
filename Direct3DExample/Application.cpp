@@ -46,7 +46,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
     mHwnd = CreateWindow(
         windowClass.lpszClassName,
         mTitle.Get(),
-        WS_OVERLAPPEDWINDOW,
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         windowRect.right - windowRect.left,
