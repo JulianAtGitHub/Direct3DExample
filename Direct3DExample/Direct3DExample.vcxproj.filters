@@ -11,6 +11,9 @@
     <Filter Include="Resource Files\Shaders">
       <UniqueIdentifier>{70602350-46b1-49c1-8e7a-797b0e4666a8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\RayTracing">
+      <UniqueIdentifier>{f484b83a-c270-4dbc-9831-6c15ab7f9122}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -53,17 +56,23 @@
     <FxCompile Include="Shaders\color.ps.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\raytracing.hlsl">
-      <Filter>Resource Files\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\pathtracing.hlsl">
-      <Filter>Resource Files\Shaders</Filter>
+    <FxCompile Include="Shaders\RayTracing\RayTracer.hlsl">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\inputs.hlsli">
       <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\AORay.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\Common.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\Utils.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
   </ItemGroup>
 </Project>

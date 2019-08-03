@@ -2,10 +2,16 @@
 #include "DXRExample.h"
 
 const static wchar_t *RayGenerationName = L"RayGener";
+
 const static wchar_t *PrimaryMissName = L"PrimaryMiss";
 const static wchar_t *PrimaryHitGroupName = L"PrimaryHitGroup";
 const static wchar_t *PrimaryAnyHitName = L"PrimaryAnyHit";
 const static wchar_t *PrimaryClosetHitName = L"PrimaryClosestHit";
+
+const static wchar_t *AOMissName = L"AOMiss";
+const static wchar_t *AOHitGroupName = L"AOHitGroup";
+const static wchar_t *AOAnyHitName = L"AOAnyHit";
+const static wchar_t *AOClosetHitName = L"AOClosestHit";
 
 DXRExample::DXRExample(HWND hwnd)
 : Example(hwnd)
@@ -15,6 +21,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
+, mFrameCount(0)
+, mAccumCount(0)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
@@ -97,12 +105,18 @@ void DXRExample::Update(void) {
         mCamera->MoveRight(deltaSecond * mSpeedX * 2);
     }
 
+    if (mIsRotating || mSpeedZ != 0.0f || mSpeedX != 0.0f) {
+        mAccumCount = 0;
+    }
+
     mCamera->UpdateMatrixs();
 
     mSceneConsts[mCurrentFrame].cameraPos = mCamera->GetPosition();
     mSceneConsts[mCurrentFrame].cameraU = mCamera->GetU();
     mSceneConsts[mCurrentFrame].cameraV = mCamera->GetV(); //XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
     mSceneConsts[mCurrentFrame].cameraW = mCamera->GetW();
+    mSceneConsts[mCurrentFrame].frameCount = mFrameCount ++;
+    mSceneConsts[mCurrentFrame].accumCount = mAccumCount ++;
 }
 
 void DXRExample::Render(void) {
@@ -124,21 +138,22 @@ void DXRExample::Render(void) {
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures.At(0)->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputsSlot, mOutputs.At(0)->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, mDisplayColor->GetHandle());
     Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
     Render::gCommand->SetRayTracingState(mRayTracingState);
     Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
 
-    Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mRaytracingOutput);
+    Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mDisplayColor);
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
-    Render::gCommand->TransitResource(mRaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    Render::gCommand->TransitResource(mDisplayColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
     ASSERT_SUCCEEDED(Render::gSwapChain->Present(1, 0));
 
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
+    //Render::gCommand->GetQueue()->WaitForIdle();
     Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
 }
 
@@ -149,13 +164,12 @@ void DXRExample::Destroy(void) {
     mBLASes.Clear();
     for (uint32_t i = 0; i < mTextures.Count(); ++i) { delete mTextures.At(i); }
     mTextures.Clear();
-    for (uint32_t i = 0; i < mOutputs.Count(); ++i) { delete mOutputs.At(i); }
-    mOutputs.Clear();
 
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mScene);
     DeleteAndSetNull(mTLAS);
+    DeleteAndSetNull(mDisplayColor);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mMeshConstantBuffer);
     DeleteAndSetNull(mSceneConstantBuffer);
@@ -227,12 +241,14 @@ void DXRExample::InitScene(void) {
         sceneConst.cameraU = mCamera->GetU();
         sceneConst.cameraV = mCamera->GetV();
         sceneConst.cameraW = mCamera->GetW();
-        //sceneConst.projToWorld = XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
         sceneConst.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        sceneConst.frameCount = mFrameCount;
+        sceneConst.accumCount = mAccumCount;
+        sceneConst.aoRadius = 1.261f;
     }
 
     mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 + mScene->mImages.Count() + OutputCount);
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3 + 2 + mScene->mImages.Count());
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
@@ -254,12 +270,12 @@ void DXRExample::InitScene(void) {
 void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, GlobalRootSignatureParams::SlotCount);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 4);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, OutputCount, 1);
     mGlobalRootSignature->Create();
 
     mLocalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, 0, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
@@ -268,18 +284,21 @@ void DXRExample::CreateRootSignature(void) {
 
 void DXRExample::CreateRayTracingPipelineState(void) {
 
-    mRayTracingState = new Render::RayTracingState(7);
+    mRayTracingState = new Render::RayTracingState(8);
 
-    const wchar_t *shaderFuncs[] = { RayGenerationName, PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName };
-    mRayTracingState->AddDXILLibrary("pathtracing.cso", shaderFuncs, _countof(shaderFuncs));
+    const wchar_t *shaderFuncs[] = { RayGenerationName, 
+                                     PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
+                                     AOMissName, AOAnyHitName, AOClosetHitName};
+    mRayTracingState->AddDXILLibrary("RayTracer.cso", shaderFuncs, _countof(shaderFuncs));
 
     mRayTracingState->AddRayTracingShaderConfig(sizeof(XMFLOAT4) /*float4 pixelColor*/, sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
     mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
+    mRayTracingState->AddHitGroup(AOHitGroupName, AOClosetHitName, AOAnyHitName);
 
+    const wchar_t *hitGroups[] = { PrimaryHitGroupName, AOHitGroupName };
     uint32_t lrsIdx = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
-
-    mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx, &PrimaryHitGroupName, 1);
+    mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx, hitGroups, _countof(hitGroups));
 
     mRayTracingState->AddGlobalRootSignature(mGlobalRootSignature);
 
@@ -349,8 +368,8 @@ void DXRExample::BuildAccelerationStructure(void) {
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
     const wchar_t *rayGens[] = { RayGenerationName };
-    const wchar_t *misses[] = { PrimaryMissName };
-    const wchar_t *hipGroups[] = { PrimaryHitGroupName };
+    const wchar_t *misses[] = { PrimaryMissName, AOMissName };
+    const wchar_t *hipGroups[] = { PrimaryHitGroupName, AOHitGroupName };
     mRayTracingState->BuildShaderTable(rayGens, _countof(rayGens), misses, _countof(misses), hipGroups, _countof(hipGroups));
 }
 
@@ -361,14 +380,10 @@ void DXRExample::CreateRaytracingOutput(void) {
     uint32_t height = Render::gRenderTarget[0]->GetHeight();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    mRaytracingOutput = new Render::PixelBuffer(width, width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mRaytracingOutput = new Render::PixelBuffer(width, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
 
-    mOutputs.Reserve(OutputCount);
-    for (uint32_t i = 0; i < OutputCount; ++i) {
-        Render::PixelBuffer *output = new Render::PixelBuffer(width, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        output->CreateUAV(mDescriptorHeap->Allocate());
-        mOutputs.PushBack(output);
-    }
+    mDisplayColor = new Render::PixelBuffer(width, width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mDisplayColor->CreateUAV(mDescriptorHeap->Allocate());
 }
 

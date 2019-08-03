@@ -32,7 +32,10 @@ private:
         XMVECTOR cameraU;
         XMVECTOR cameraV;
         XMVECTOR cameraW;
-        XMVECTOR bgColor;
+        XMFLOAT4 bgColor;
+        uint32_t frameCount;
+        uint32_t accumCount;
+        float    aoRadius;
     };
 
     struct Geometry {
@@ -42,23 +45,13 @@ private:
 
     enum GlobalRootSignatureParams {
         OutputViewSlot = 0,
+        OutputColorSlot,
         AccelerationStructureSlot,
         SceneConstantsSlot,
         VertexBuffersSlot,
         TexturesSlot,
         SamplerSlot,
-        OutputsSlot,
         SlotCount
-    };
-
-    enum Outputs {
-        WsPosition = 0,
-        WsNormal,
-        MatDiffuse,
-        MatSpecular,
-        MatEmissive,
-        MatExtra,
-        OutputCount
     };
 
     CTimer                      mTimer;
@@ -71,6 +64,8 @@ private:
 
     uint32_t                    mWidth;
     uint32_t                    mHeight;
+    uint32_t                    mFrameCount;
+    uint32_t                    mAccumCount;
     uint32_t                    mCurrentFrame;
     uint64_t                    mFenceValues[Render::FRAME_COUNT];
     SceneConstants              mSceneConsts[Render::FRAME_COUNT];
@@ -86,10 +81,10 @@ private:
     Render::ConstantBuffer     *mSceneConstantBuffer;
     Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
+    Render::PixelBuffer        *mDisplayColor;
     Render::DescriptorHeap     *mSamplerHeap;
     Render::Sampler            *mSampler;
     CList<Render::PixelBuffer*> mTextures;
-    CList<Render::PixelBuffer*> mOutputs;
 
     typedef Render::BottomLevelAccelerationStructure BLAS;
     typedef Render::TopLevelAccelerationStructure TLAS;
