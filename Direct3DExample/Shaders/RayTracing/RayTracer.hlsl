@@ -5,7 +5,7 @@
 
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(out float3 origin, out float3 direction) {
-    float2 pixelCenter = (DispatchRaysIndex().xy + float2(0.5f, 0.5f)) / DispatchRaysDimensions().xy; 
+    float2 pixelCenter = (DispatchRaysIndex().xy + float2(0.5f, 0.5f) + gSceneCB.jitter) / DispatchRaysDimensions().xy; 
     float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);                    
     direction = normalize(ndc.x * gSceneCB.cameraU.xyz + ndc.y * gSceneCB.cameraV.xyz + gSceneCB.cameraW.xyz);
     origin = gSceneCB.cameraPos.xyz;

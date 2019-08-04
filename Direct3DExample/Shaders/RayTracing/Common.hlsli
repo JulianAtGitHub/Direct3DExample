@@ -20,6 +20,7 @@ struct SceneConstants {
     float4 cameraV;
     float4 cameraW;
     float4 bgColor;
+    float2 jitter;
     uint   frameCount;
     uint   accumCount;
     float  aoRadius;

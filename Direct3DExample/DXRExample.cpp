@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DXRExample.h"
+#include <sys/timeb.h>
 
 const static wchar_t *RayGenerationName = L"RayGener";
 
@@ -47,6 +48,10 @@ DXRExample::DXRExample(HWND hwnd)
     GetWindowInfo(mHwnd, &windowInfo);
     mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
     mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
+
+    struct timeb tb;
+    ftime(&tb);
+    mRang = std::mt19937( uint32_t(tb.time * 1000 + tb.millitm) );
 }
 
 DXRExample::~DXRExample(void) {
@@ -105,16 +110,20 @@ void DXRExample::Update(void) {
         mCamera->MoveRight(deltaSecond * mSpeedX * 2);
     }
 
+    float jitterX = mRangDist(mRang) - 0.5f;
+    float jitterY = mRangDist(mRang) - 0.5f;
     if (mIsRotating || mSpeedZ != 0.0f || mSpeedX != 0.0f) {
         mAccumCount = 0;
+        jitterX = 0;
+        jitterY = 0;
     }
 
     mCamera->UpdateMatrixs();
-
     mSceneConsts[mCurrentFrame].cameraPos = mCamera->GetPosition();
     mSceneConsts[mCurrentFrame].cameraU = mCamera->GetU();
-    mSceneConsts[mCurrentFrame].cameraV = mCamera->GetV(); //XMMatrixInverse(nullptr, mCamera->GetCombinedMatrix());
+    mSceneConsts[mCurrentFrame].cameraV = mCamera->GetV();
     mSceneConsts[mCurrentFrame].cameraW = mCamera->GetW();
+    mSceneConsts[mCurrentFrame].jitter = { jitterX, jitterY };
     mSceneConsts[mCurrentFrame].frameCount = mFrameCount ++;
     mSceneConsts[mCurrentFrame].accumCount = mAccumCount ++;
 }
@@ -153,7 +162,6 @@ void DXRExample::Render(void) {
     ASSERT_SUCCEEDED(Render::gSwapChain->Present(1, 0));
 
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
-    //Render::gCommand->GetQueue()->WaitForIdle();
     Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
 }
 
@@ -244,7 +252,7 @@ void DXRExample::InitScene(void) {
         sceneConst.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
         sceneConst.frameCount = mFrameCount;
         sceneConst.accumCount = mAccumCount;
-        sceneConst.aoRadius = 1.261f;
+        sceneConst.aoRadius = 0.63f;
     }
 
     mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);

@@ -2,6 +2,8 @@
 
 #include "Example.h"
 
+#include <random>
+
 class DXRExample : public Example {
 public:
     DXRExample(HWND hwnd);
@@ -33,6 +35,7 @@ private:
         XMVECTOR cameraV;
         XMVECTOR cameraW;
         XMFLOAT4 bgColor;
+        XMFLOAT2 jitter;
         uint32_t frameCount;
         uint32_t accumCount;
         float    aoRadius;
@@ -56,6 +59,10 @@ private:
 
     CTimer                      mTimer;
     Utils::Camera              *mCamera;
+    // jitter camera
+    std::mt19937                            mRang;
+    std::uniform_real_distribution<float>   mRangDist;
+
     float                       mSpeedX;
     float                       mSpeedZ;
     bool                        mIsRotating;
