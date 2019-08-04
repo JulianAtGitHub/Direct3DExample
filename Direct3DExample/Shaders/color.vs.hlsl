@@ -12,6 +12,7 @@ PSInput VSMain(VSInput input)
 
     PSInput ret;
     ret.pos = newPos;
+    ret.norm = input.normal;
     ret.uv = input.texCoord;
     return ret;
 }
