@@ -32,11 +32,13 @@ DXRExample::DXRExample(HWND hwnd)
 , mVertices(nullptr)
 , mIndices(nullptr)
 , mGeometries(nullptr)
-, mSceneConstantBuffer(nullptr)
-, mMeshConstantBuffer(nullptr)
 , mRaytracingOutput(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
+, mSettingsCB(nullptr)
+, mSceneCB(nullptr)
+, mCameraCB(nullptr)
+, mMeshCB(nullptr)
 , mScene(nullptr)
 , mTLAS(nullptr)
 {
@@ -119,13 +121,23 @@ void DXRExample::Update(void) {
     }
 
     mCamera->UpdateMatrixs();
-    mSceneConsts[mCurrentFrame].cameraPos = mCamera->GetPosition();
-    mSceneConsts[mCurrentFrame].cameraU = mCamera->GetU();
-    mSceneConsts[mCurrentFrame].cameraV = mCamera->GetV();
-    mSceneConsts[mCurrentFrame].cameraW = mCamera->GetW();
-    mSceneConsts[mCurrentFrame].jitter = { jitterX, jitterY };
-    mSceneConsts[mCurrentFrame].frameCount = mFrameCount ++;
-    mSceneConsts[mCurrentFrame].accumCount = mAccumCount ++;
+
+    mSettings.enableAccumulate = 1;
+    mSettings.enableJitterCamera = 1;
+    mSettings.enableLensCamera = 1;
+
+    XMStoreFloat4(&mCameraConsts.pos, mCamera->GetPosition());
+    XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
+    XMStoreFloat4(&mCameraConsts.v, mCamera->GetV());
+    XMStoreFloat4(&mCameraConsts.w, mCamera->GetW());
+    mCameraConsts.jitter = { jitterX, jitterY };
+    mCameraConsts.lensRadius = mCamera->GetLensRadius();
+    mCameraConsts.focalLength = mCamera->GetFocalLength();
+
+    mSceneConsts.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    mSceneConsts.frameCount = mFrameCount ++;
+    mSceneConsts.accumCount = mAccumCount ++;
+    mSceneConsts.aoRadius = 0.63f;
 }
 
 void DXRExample::Render(void) {
@@ -135,9 +147,17 @@ void DXRExample::Render(void) {
     Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
     // Copy the updated scene constant buffer to GPU.
-    void *mappedConstantData = mSceneConstantBuffer->GetMappedBuffer(0, mCurrentFrame);
-    memcpy(mappedConstantData, mSceneConsts + mCurrentFrame, sizeof(SceneConstants));
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneConstantBuffer->GetGPUAddress(0, mCurrentFrame));
+    void *mappedConstantData = mSettingsCB->GetMappedBuffer(0, mCurrentFrame);
+    memcpy(mappedConstantData, &mSettings, sizeof(AppSettings));
+    mappedConstantData = mSceneCB->GetMappedBuffer(0, mCurrentFrame);
+    memcpy(mappedConstantData, &mSceneConsts, sizeof(SceneConstants));
+    mappedConstantData = mCameraCB->GetMappedBuffer(0, mCurrentFrame);
+    memcpy(mappedConstantData, &mCameraConsts, sizeof(CameraConstants));
+
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::CameraConstantsSlot, mCameraCB->GetGPUAddress(0, mCurrentFrame));
+
 
     // Bind the heaps, acceleration structure and dispatch rays.
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
@@ -179,8 +199,10 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mDisplayColor);
     DeleteAndSetNull(mRaytracingOutput);
-    DeleteAndSetNull(mMeshConstantBuffer);
-    DeleteAndSetNull(mSceneConstantBuffer);
+    DeleteAndSetNull(mMeshCB);
+    DeleteAndSetNull(mSettingsCB);
+    DeleteAndSetNull(mSceneCB);
+    DeleteAndSetNull(mCameraCB);
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mGeometries);
@@ -243,19 +265,11 @@ void DXRExample::InitScene(void) {
                                 XMFLOAT4(-2.706775665283203f, 0.85294109582901f, -3.112438678741455f, 1.0f), 
                                 XMFLOAT4(-2.347264528274536f, 0.7383297681808472f, -2.1863629817962648f, 1.0f), 
                                 XMFLOAT4(0.038521841168403628f, 0.9933950304985046f, 0.1079813688993454f, 0.0f));
+    mCamera->SetLensParams(32.0f, 2.0f);
 
-    for (auto &sceneConst : mSceneConsts) {
-        sceneConst.cameraPos = mCamera->GetPosition();
-        sceneConst.cameraU = mCamera->GetU();
-        sceneConst.cameraV = mCamera->GetV();
-        sceneConst.cameraW = mCamera->GetW();
-        sceneConst.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-        sceneConst.frameCount = mFrameCount;
-        sceneConst.accumCount = mAccumCount;
-        sceneConst.aoRadius = 0.63f;
-    }
-
-    mSceneConstantBuffer = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
+    mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
+    mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
+    mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
     mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3 + 2 + mScene->mImages.Count());
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
@@ -280,7 +294,9 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
-    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AppSettingsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
+    mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::CameraConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 4);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
@@ -299,7 +315,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
                                      AOMissName, AOAnyHitName, AOClosetHitName};
     mRayTracingState->AddDXILLibrary("RayTracer.cso", shaderFuncs, _countof(shaderFuncs));
 
-    mRayTracingState->AddRayTracingShaderConfig(sizeof(XMFLOAT4) /*float4 pixelColor*/, sizeof(XMFLOAT2) /*float2 barycentrics*/);
+    mRayTracingState->AddRayTracingShaderConfig(2 * sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
     mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
     mRayTracingState->AddHitGroup(AOHitGroupName, AOClosetHitName, AOAnyHitName);

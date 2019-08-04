@@ -29,13 +29,24 @@ private:
     void BuildShaderTables(void);
     void CreateRaytracingOutput(void);
 
-    struct SceneConstants {
-        XMVECTOR cameraPos;
-        XMVECTOR cameraU;
-        XMVECTOR cameraV;
-        XMVECTOR cameraW;
-        XMFLOAT4 bgColor;
+    struct AppSettings {
+        uint32_t enableAccumulate;
+        uint32_t enableJitterCamera;
+        uint32_t enableLensCamera;
+    };
+
+    struct CameraConstants {
+        XMFLOAT4 pos;
+        XMFLOAT4 u;
+        XMFLOAT4 v;
+        XMFLOAT4 w;
         XMFLOAT2 jitter;
+        float    lensRadius;
+        float    focalLength;
+    };
+
+    struct SceneConstants {
+        XMFLOAT4 bgColor;
         uint32_t frameCount;
         uint32_t accumCount;
         float    aoRadius;
@@ -50,7 +61,9 @@ private:
         OutputViewSlot = 0,
         OutputColorSlot,
         AccelerationStructureSlot,
+        AppSettingsSlot,
         SceneConstantsSlot,
+        CameraConstantsSlot,
         VertexBuffersSlot,
         TexturesSlot,
         SamplerSlot,
@@ -75,7 +88,6 @@ private:
     uint32_t                    mAccumCount;
     uint32_t                    mCurrentFrame;
     uint64_t                    mFenceValues[Render::FRAME_COUNT];
-    SceneConstants              mSceneConsts[Render::FRAME_COUNT];
     Utils::Scene               *mScene;
 
     Render::RootSignature      *mGlobalRootSignature;
@@ -85,13 +97,19 @@ private:
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
     Render::GPUBuffer          *mGeometries;
-    Render::ConstantBuffer     *mSceneConstantBuffer;
-    Render::UploadBuffer       *mMeshConstantBuffer;
     Render::PixelBuffer        *mRaytracingOutput;
     Render::PixelBuffer        *mDisplayColor;
     Render::DescriptorHeap     *mSamplerHeap;
     Render::Sampler            *mSampler;
     CList<Render::PixelBuffer*> mTextures;
+
+    AppSettings                 mSettings;
+    SceneConstants              mSceneConsts;
+    CameraConstants             mCameraConsts;
+    Render::ConstantBuffer     *mSettingsCB;
+    Render::ConstantBuffer     *mSceneCB;
+    Render::ConstantBuffer     *mCameraCB;
+    Render::UploadBuffer       *mMeshCB;
 
     typedef Render::BottomLevelAccelerationStructure BLAS;
     typedef Render::TopLevelAccelerationStructure TLAS;
