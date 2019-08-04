@@ -3,27 +3,63 @@
 #include "Utils.hlsli"
 #include "AORay.hlsli"
 
-// Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
-inline void GenerateCameraRay(out float3 origin, out float3 direction) {
-    float2 pixelCenter = (DispatchRaysIndex().xy + float2(0.5f, 0.5f) + gSceneCB.jitter) / DispatchRaysDimensions().xy; 
-    float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);                    
-    direction = normalize(ndc.x * gSceneCB.cameraU.xyz + ndc.y * gSceneCB.cameraV.xyz + gSceneCB.cameraW.xyz);
-    origin = gSceneCB.cameraPos.xyz;
+inline void WriteToOutput(in PrimaryRayPayload payload, in uint2 index) {
+    if (gSettingsCB.enableAccumulate) {
+        float4 lastFrameColor = gRenderTarget[index];
+        float4 finalColor = (lastFrameColor * gSceneCB.accumCount + payload.color) / (gSceneCB.accumCount + 1);
+        gRenderTarget[index] = finalColor;
+        gRenderDisplay[index] = finalColor;
+    } else {
+        gRenderTarget[index] = payload.color;
+        gRenderDisplay[index] = payload.color;
+    }
+}
+
+inline void PinholdCameraRay(in float2 pixel, out RayDesc ray) {
+    float2 ndc = float2(2, -2) * pixel + float2(-1, 1);                    
+    ray.Origin = gCameraCB.pos;
+    ray.Direction = normalize(ndc.x * gCameraCB.u + ndc.y * gCameraCB.v + gCameraCB.w);
+    ray.TMin = 1e-4f;
+    ray.TMax = 1e+38f;
+}
+
+inline void LensCameraRay(in float2 pixel, inout uint randSeed, out RayDesc ray) {
+    float2 ndc = float2(2, -2) * pixel + float2(-1, 1);
+
+    float3 rayDir = ndc.x * gCameraCB.u + ndc.y * gCameraCB.v + gCameraCB.w;
+    rayDir /= length(gCameraCB.w);
+
+    float3 focalPoint = gCameraCB.pos + gCameraCB.focalLength * rayDir;
+
+    // Get point on lens (in polar coords then convert to Cartesian)
+    float2 rnd = float2(2.0f * M_PI * NextRand(randSeed),  gCameraCB.lensRadius * NextRand(randSeed));
+    float2 uv = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
+
+    ray.Origin = gCameraCB.pos + uv.x * normalize(gCameraCB.u) + uv.y * normalize(gCameraCB.v);
+    ray.Direction = normalize(focalPoint - ray.Origin);
+    ray.TMin = 1e-4f;
+    ray.TMax = 1e+38f;
 }
 
 [shader("raygeneration")]
 void RayGener() {
-    float3 rayPos;
-    float3 rayDir;
-    GenerateCameraRay(rayPos, rayDir);
+    uint2 launchIdx = DispatchRaysIndex().xy;
+    uint2 launchDim = DispatchRaysDimensions().xy;
+    uint randSeed = InitRand(launchIdx.x + launchIdx.y * launchDim.x, gSceneCB.frameCount);
+
+    float2 pixel = (launchIdx + float2(0.5f, 0.5f)) / launchDim;;
+    if (gSettingsCB.enableJitterCamera) {
+        pixel += (gCameraCB.jitter / launchDim);
+    }
 
     RayDesc ray;
-    ray.Origin = rayPos;
-    ray.Direction = rayDir;
-    ray.TMin = 1e-4f;
-    ray.TMax = 1e+38f;
+    if (gSettingsCB.enableLensCamera) {
+        LensCameraRay(pixel, randSeed, ray);
+    } else {
+        PinholdCameraRay(pixel, ray);
+    }
 
-    PrimaryRayPayload payload = { float4(0, 0, 0, 1) };
+    PrimaryRayPayload payload = { float4(0, 0, 0, 1), randSeed };
 
     TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
@@ -34,11 +70,7 @@ void RayGener() {
              ray, 
              payload);
 
-    // Write the raytraced result to the output texture.
-    float4 lastFrameColor = gRenderTarget[DispatchRaysIndex().xy];
-    float4 finalColor = (lastFrameColor * gSceneCB.accumCount + payload.color) / (gSceneCB.accumCount + 1);
-    gRenderTarget[DispatchRaysIndex().xy] = finalColor;
-    gRenderDisplay[DispatchRaysIndex().xy] = finalColor;
+    WriteToOutput(payload, launchIdx);
 }
 
 [shader("miss")]
@@ -70,7 +102,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
     float3 hitNormal = LerpFloat3Attributes(normals, attribs);
     hitNormal = normalize(mul((float3x3) ObjectToWorld3x4(), hitNormal));
-    //float4 wsNormal = float4(hitNormal, length(hitPosition - gSceneCB.cameraPos.xyz));
+    //float4 wsNormal = float4(hitNormal, length(hitPosition - gCameraCB.pos));
     //gOutputs[RayTraceParams::WsNormal][launchIndex] = wsNormal;
 
     float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
@@ -106,9 +138,10 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     //gOutputs[RayTraceParams::MatExtra][launchIndex] = float4(1, 0, 0, 0);
 
     // calculate AO
-    uint randSeed = InitRand(launchIndex.x + launchIndex.y * launchDim.x, gSceneCB.frameCount, 16);
+    uint randSeed = payload.randSeed;
     float ambientOcclusion = AORayGen(hitPosition, hitNormal, randSeed);
 
+    payload.randSeed = randSeed;
     payload.color.rgb = ambientOcclusion;
     payload.color.a = 1;
 }

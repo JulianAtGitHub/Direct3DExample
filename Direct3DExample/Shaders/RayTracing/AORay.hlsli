@@ -3,7 +3,7 @@
 
 #include "Utils.hlsli"
 
-float AORayGen(float3 hitPos, float3 hitNorm, uint seed) {
+float AORayGen(float3 hitPos, float3 hitNorm, inout uint seed) {
     float3 rayDir = CosHemisphereSample(seed, hitNorm);
 
     RayDesc ray;
