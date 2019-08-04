@@ -10,6 +10,10 @@ public:
            const XMFLOAT4 &eye, const XMFLOAT4 &lookAt, const XMFLOAT4 &up);
     ~Camera(void);
 
+    INLINE void SetLensParams(float fNumber, float focalLen) { mFNumber = fNumber; mFocalLength = focalLen; }
+    INLINE float GetFocalLength(void) const { return mFocalLength; }
+    INLINE float GetLensRadius(void) { return mFocalLength > 0.0f ? mFocalLength / (2.0f * mFNumber) : 0.0f; }
+
     INLINE XMVECTOR GetPosition(void) const { return mPosition; };
     INLINE XMVECTOR GetDirection(void) const { return mDirection; };
     INLINE XMVECTOR GetUp(void) const { return mUp; };
@@ -35,6 +39,8 @@ private:
     float       mAspectRatio;
     float       mNear;
     float       mFar;
+    float       mFocalLength;
+    float       mFNumber;
 
     XMVECTOR    mPosition;
     XMVECTOR    mDirection;

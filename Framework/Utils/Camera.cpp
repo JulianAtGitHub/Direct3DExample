@@ -8,6 +8,8 @@ Camera::Camera(float fov, float aspectRatio, float near, float far, const XMFLOA
 , mAspectRatio(aspectRatio)
 , mNear(near)
 , mFar(near)
+, mFocalLength(0.0f)
+, mFNumber(0.0f)
 {
     mPosition = XMLoadFloat4(&eye);
     mDirection = XMVector3Normalize(XMLoadFloat4(&lookAt) - mPosition);
@@ -22,6 +24,8 @@ Camera::Camera(float fov, float aspectRatio, float near, float far, const XMFLOA
 , mAspectRatio(aspectRatio)
 , mNear(near)
 , mFar(near)
+, mFocalLength(0.0f)
+, mFNumber(0.0f)
 {
     mPosition = XMLoadFloat4(&eye);
     mDirection = XMVector3Normalize(XMLoadFloat4(&lookAt) - mPosition);
