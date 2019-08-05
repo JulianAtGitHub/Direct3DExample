@@ -147,12 +147,9 @@ void DXRExample::Render(void) {
     Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
     // Copy the updated scene constant buffer to GPU.
-    void *mappedConstantData = mSettingsCB->GetMappedBuffer(0, mCurrentFrame);
-    memcpy(mappedConstantData, &mSettings, sizeof(AppSettings));
-    mappedConstantData = mSceneCB->GetMappedBuffer(0, mCurrentFrame);
-    memcpy(mappedConstantData, &mSceneConsts, sizeof(SceneConstants));
-    mappedConstantData = mCameraCB->GetMappedBuffer(0, mCurrentFrame);
-    memcpy(mappedConstantData, &mCameraConsts, sizeof(CameraConstants));
+    mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
+    mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
+    mCameraCB->CopyData(&mCameraConsts, sizeof(CameraConstants), 0, mCurrentFrame);
 
     Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
     Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));

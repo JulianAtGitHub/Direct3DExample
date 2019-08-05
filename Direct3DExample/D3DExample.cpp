@@ -52,7 +52,7 @@ void D3DExample::Update(void) {
     XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 100.0f);
     XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
 
-    memcpy(mConstBuffer->GetMappedBuffer(0, mCurrentFrame), &constBuffer, sizeof(constBuffer));
+    mConstBuffer->CopyData(&constBuffer, sizeof(constBuffer), 0, mCurrentFrame);
 }
 
 void D3DExample::Render(void) {
