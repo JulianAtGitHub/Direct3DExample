@@ -35,11 +35,20 @@ void ConstantBuffer::Initialize(void) {
     ASSERT_SUCCEEDED(mResource->Map(0, &readRange, &mMappedBuffer));
 }
 
-void * ConstantBuffer::GetMappedBuffer(uint32_t index, uint32_t frameIndex) {
+INLINE void * ConstantBuffer::GetMappedBuffer(uint32_t index, uint32_t frameIndex) {
     ASSERT_PRINT((index < mElementCount));
     ASSERT_PRINT((frameIndex < FRAME_COUNT));
 
     return ((uint8_t *)mMappedBuffer) + mElementSize * (FRAME_COUNT * index + frameIndex);
+}
+
+void ConstantBuffer::CopyData(const void *src, size_t size, uint32_t index, uint32_t frameIndex) {
+    if (!src || !size) {
+        return;
+    }
+
+    void *dest = GetMappedBuffer(index, frameIndex);
+    memcpy(dest, src, size);
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS ConstantBuffer::GetGPUAddress(uint32_t index, uint32_t frameIndex) {
