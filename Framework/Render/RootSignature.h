@@ -39,10 +39,10 @@ public:
 private:
     void CleanupDescriptorRanges(D3D12_ROOT_PARAMETER &param);
 
-    Type                            mType;
-    CList<D3D12_ROOT_PARAMETER>     mParameters;
-    D3D12_ROOT_SIGNATURE_FLAGS      mFlags;
-    ID3D12RootSignature            *mRootSignature;
+    Type                                mType;
+    std::vector<D3D12_ROOT_PARAMETER>   mParameters;
+    D3D12_ROOT_SIGNATURE_FLAGS          mFlags;
+    ID3D12RootSignature                *mRootSignature;
 };
 
 INLINE void RootSignature::CleanupDescriptorRanges(D3D12_ROOT_PARAMETER &param) {
@@ -54,11 +54,11 @@ INLINE void RootSignature::CleanupDescriptorRanges(D3D12_ROOT_PARAMETER &param) 
 }
 
 INLINE void RootSignature::SetConstants(uint32_t index, uint32_t num32BitValues, uint32_t shaderRegister, D3D12_SHADER_VISIBILITY visibility) {
-    if (index >= mParameters.Count()) {
+    if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
 
-    auto & param = mParameters.At(index);
+    auto & param = mParameters[index];
     CleanupDescriptorRanges(param);
 
     param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
@@ -69,11 +69,11 @@ INLINE void RootSignature::SetConstants(uint32_t index, uint32_t num32BitValues,
 }
 
 INLINE void RootSignature::SetDescriptor(uint32_t index, D3D12_ROOT_PARAMETER_TYPE type, uint32_t shaderRegister, D3D12_SHADER_VISIBILITY visibility) {
-    if (index >= mParameters.Count()) {
+    if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
 
-    auto & param = mParameters.At(index);
+    auto & param = mParameters[index];
     CleanupDescriptorRanges(param);
 
     param.ParameterType = type;
@@ -83,11 +83,11 @@ INLINE void RootSignature::SetDescriptor(uint32_t index, D3D12_ROOT_PARAMETER_TY
 }
 
 INLINE void RootSignature::SetDescriptorTable(uint32_t index, D3D12_DESCRIPTOR_RANGE_TYPE rangeType, uint32_t descCount, uint32_t baseRegister, D3D12_SHADER_VISIBILITY visibility) {
-    if (index >= mParameters.Count()) {
+    if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
 
-    auto & param = mParameters.At(index);
+    auto & param = mParameters[index];
     CleanupDescriptorRanges(param);
 
     param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;

@@ -1,8 +1,10 @@
 #pragma once
 
-class CTimer {
+namespace Utils {
+
+class Timer {
 public:
-    CTimer(void)
+    Timer(void)
     : mElapsedTicks(0)
     , mTotalTicks(0)
     , mLeftOverTicks(0)
@@ -18,7 +20,7 @@ public:
         mMaxDelta.QuadPart = mFrequency.QuadPart / 10;
     }
 
-    ~CTimer(void) {
+    ~Timer(void) {
     }
 
     // Get elapsed time since the previous Update call.
@@ -135,3 +137,5 @@ private:
     uint32_t        mFramesThisSecond;
     int64_t         mSecondCounter;
 };
+
+}

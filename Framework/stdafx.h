@@ -40,10 +40,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <wchar.h>
-
-#include <exception>
-
 #include <wrl.h>
+
+#include <string>
+#include <vector>
+#include <queue>
+#include <exception>
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -64,12 +66,5 @@ using namespace DirectX;
 #endif
 
 #include "Common/Common.h"
-#include "Common/CTimer.hpp"
-#include "Common/CUtils.hpp"
-#include "Common/CString.hpp"
-#include "Common/CList.hpp"
-#include "Common/CQueue.hpp"
-#include "Common/CStack.hpp"
-
 #include "Render/RenderCore.h"
 

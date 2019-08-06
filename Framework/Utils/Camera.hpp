@@ -4,11 +4,41 @@ namespace Utils {
 
 class Camera {
 public:
-    Camera(float fov, float aspectRatio, float near, float far, 
-           const XMFLOAT4 &eye, const XMFLOAT4 &lookAt);
-    Camera(float fov, float aspectRatio, float near, float far, 
-           const XMFLOAT4 &eye, const XMFLOAT4 &lookAt, const XMFLOAT4 &up);
-    ~Camera(void);
+    Camera(float fov, float aspectRatio, float near, float far, const XMFLOAT4 &eye, const XMFLOAT4 &lookAt)
+    : mFov(fov)
+    , mAspectRatio(aspectRatio)
+    , mNear(near)
+    , mFar(near)
+    , mFocalLength(0.0f)
+    , mFNumber(0.0f)
+    {
+        mPosition = XMLoadFloat4(&eye);
+        mDirection = XMVector3Normalize(XMLoadFloat4(&lookAt) - mPosition);
+        mUp = { 0.0f, 1.0f, 0.0f, 0.0f };
+        mRight = XMVector3Normalize(XMVector3Cross(mDirection, mUp));
+        mProject = XMMatrixPerspectiveFovRH(fov, aspectRatio, near, far);
+        UpdateMatrixs();
+    }
+
+    Camera(float fov, float aspectRatio, float near, float far, const XMFLOAT4 &eye, const XMFLOAT4 &lookAt, const XMFLOAT4 &up)
+    : mFov(fov)
+    , mAspectRatio(aspectRatio)
+    , mNear(near)
+    , mFar(near)
+    , mFocalLength(0.0f)
+    , mFNumber(0.0f)
+    {
+        mPosition = XMLoadFloat4(&eye);
+        mDirection = XMVector3Normalize(XMLoadFloat4(&lookAt) - mPosition);
+        mUp = XMVector3Normalize(XMLoadFloat4(&up));
+        mRight = XMVector3Normalize(XMVector3Cross(mDirection, mUp));
+        mProject = XMMatrixPerspectiveFovRH(fov, aspectRatio, near, far);
+        UpdateMatrixs();
+    }
+
+    ~Camera(void) {
+
+    }
 
     INLINE void SetLensParams(float fNumber, float focalLen) { mFNumber = fNumber; mFocalLength = focalLen; }
     INLINE float GetFocalLength(void) const { return mFocalLength; }
@@ -53,6 +83,18 @@ private:
     XMVECTOR    mV;
     XMVECTOR    mW;
 };
+
+INLINE void Camera::UpdateMatrixs(void) {
+    mView = XMMatrixLookToRH(mPosition, mDirection, mUp); 
+
+    mW = XMVectorScale(mDirection, mFar);
+
+    mU = XMVector3Normalize(XMVector3Cross(mW, mUp));
+    mU = XMVectorScale(mU, mFar * tanf(mFov * 0.5f) * mAspectRatio);
+
+    mV = XMVector3Normalize(XMVector3Cross(mU, mW));
+    mV = XMVectorScale(mV, mFar * tanf(mFov * 0.5f));
+}
 
 INLINE void Camera::RotateY(float angle) {
     XMVECTOR quaternion = XMQuaternionRotationAxis(mUp, angle);

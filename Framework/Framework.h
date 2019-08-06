@@ -17,5 +17,6 @@
 #include "Render/Resource/RenderTargetBuffer.h"
 #include "Render/Resource/DepthStencilBuffer.h"
 
-#include "Utils/Camera.h"
+#include "Utils/Timer.hpp"
+#include "Utils/Camera.hpp"
 #include "Utils/Model.h"

@@ -28,25 +28,7 @@
     <ClInclude Include="stdafx.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="Common\CUtils.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\CTimer.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\CString.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\CStack.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\CQueue.hpp">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\Common.h">
-      <Filter>Sources\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\CList.hpp">
       <Filter>Sources\Common</Filter>
     </ClInclude>
     <ClInclude Include="DirectX\d3dx12.h">
@@ -56,9 +38,6 @@
       <Filter>Sources\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Model.h">
-      <Filter>Sources\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Camera.h">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Render\AccelerationStructure.h">
@@ -117,6 +96,12 @@
     </ClInclude>
     <ClInclude Include="Framework.h">
       <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Camera.hpp">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Timer.hpp">
+      <Filter>Sources\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -182,9 +167,6 @@
     </ClCompile>
     <ClCompile Include="Render\Resource\ConstantBuffer.cpp">
       <Filter>Sources\Render\Resource</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils\Camera.cpp">
-      <Filter>Sources\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

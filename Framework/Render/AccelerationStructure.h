@@ -34,7 +34,7 @@ public:
     void PostBuild(void);
 
 private:
-    CList<D3D12_RAYTRACING_GEOMETRY_DESC>   mGeometryDescs;
+    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC>   mGeometryDescs;
 };
 
 class TopLevelAccelerationStructure : public AccelerationStructure {
@@ -48,7 +48,7 @@ public:
     void PostBuild(void);
 
 private:
-    CList<D3D12_RAYTRACING_INSTANCE_DESC>   mInstanceDescs;
+    std::vector<D3D12_RAYTRACING_INSTANCE_DESC>   mInstanceDescs;
     UploadBuffer   *mInstances;
 };
 

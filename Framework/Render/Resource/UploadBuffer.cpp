@@ -12,7 +12,7 @@ UploadBuffer::UploadBuffer(size_t size)
 }
 
 UploadBuffer::~UploadBuffer(void) {
-
+    mResource->Unmap(0, nullptr);
 }
 
 void UploadBuffer::Initialize(void) {
@@ -27,6 +27,9 @@ void UploadBuffer::Initialize(void) {
     mResource->SetName(L"UploadBuffer");
 
     FillGPUAddress();
+
+    CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+    ASSERT_SUCCEEDED(mResource->Map(0, &readRange, &mMappedBuffer));
 }
 
 void UploadBuffer::UploadData(const void *data, size_t size, uint64_t offset) {
@@ -38,13 +41,8 @@ void UploadBuffer::UploadData(const void *data, size_t size, uint64_t offset) {
         size = mBufferSize - offset;
     }
 
-    CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-    ASSERT_SUCCEEDED(mResource->Map(0, &readRange, &mMappedBuffer));
-
     uint8_t *dest = (uint8_t *)mMappedBuffer;
     memcpy(dest + offset, data, size);
-
-    mResource->Unmap(0, nullptr);
 }
 
 }

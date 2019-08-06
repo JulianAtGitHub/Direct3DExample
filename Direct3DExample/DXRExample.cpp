@@ -167,7 +167,7 @@ void DXRExample::Render(void) {
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     // Set index and successive vertex buffer decriptor tables
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures.At(0)->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, mDisplayColor->GetHandle());
@@ -191,10 +191,10 @@ void DXRExample::Render(void) {
 void DXRExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
-    for (uint32_t i = 0; i < mBLASes.Count(); ++i) { delete mBLASes.At(i); }
-    mBLASes.Clear();
-    for (uint32_t i = 0; i < mTextures.Count(); ++i) { delete mTextures.At(i); }
-    mTextures.Clear();
+    for (auto blas : mBLASes) { delete blas; }
+    mBLASes.clear();
+    for (auto texture : mTextures) { delete texture; }
+    mTextures.clear();
 
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
@@ -273,20 +273,20 @@ void DXRExample::InitScene(void) {
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
     mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
     mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 + 2 + mScene->mImages.Count());
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(4 + 2 + mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
 
     Render::gCommand->Begin();
 
-    mTextures.Reserve(mScene->mImages.Count());
-    for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
-        auto &image = mScene->mImages.At(i);
+    mTextures.reserve(mScene->mImages.size());
+    for (uint32_t i = 0; i < mScene->mImages.size(); ++i) {
+        auto &image = mScene->mImages[i];
         Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
         Render::gCommand->UploadTexture(texture, image.pixels);
         texture->CreateSRV(mDescriptorHeap->Allocate());
-        mTextures.PushBack(texture);
+        mTextures.push_back(texture);
     }
 
     Render::gCommand->End(true);
@@ -301,7 +301,7 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::CameraConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::BuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 5);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<uint32_t>(mScene->mImages.size()), 5);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mGlobalRootSignature->Create();
 
@@ -339,14 +339,14 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 void DXRExample::BuildGeometry(void) {
     constexpr uint32_t lightCount = 3;
 
-    mIndices = new Render::GPUBuffer(mScene->mIndices.Count() * sizeof(uint32_t));
-    mVertices = new Render::GPUBuffer(mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex));
-    mGeometries = new Render::GPUBuffer(mScene->mShapes.Count() * sizeof(Geometry));
+    mIndices = new Render::GPUBuffer(mScene->mIndices.size() * sizeof(uint32_t));
+    mVertices = new Render::GPUBuffer(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
+    mGeometries = new Render::GPUBuffer(mScene->mShapes.size() * sizeof(Geometry));
     mLights = new Render::GPUBuffer(lightCount * sizeof(Light));
 
-    Geometry *geometries = new Geometry[mScene->mShapes.Count()];
-    for (uint32_t i = 0; i < mScene->mShapes.Count(); ++i) {
-        auto &shape = mScene->mShapes.At(i);
+    Geometry *geometries = new Geometry[mScene->mShapes.size()];
+    for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
+        auto &shape = mScene->mShapes[i];
         ASSERT_PRINT(shape.diffuseTex != ~0 && shape.specularTex != ~0);
         geometries[i].indexInfo = { shape.indexOffset, shape.indexCount, 0, 0 };
         geometries[i].texInfo = { shape.diffuseTex, shape.specularTex, shape.normalTex, 0 };
@@ -361,14 +361,14 @@ void DXRExample::BuildGeometry(void) {
 
     Render::gCommand->Begin();
 
-    Render::gCommand->UploadBuffer(mIndices, 0, mScene->mIndices.Data(), mIndices->GetBufferSize());
-    Render::gCommand->UploadBuffer(mVertices, 0, mScene->mVertices.Data(), mVertices->GetBufferSize());
+    Render::gCommand->UploadBuffer(mIndices, 0, mScene->mIndices.data(), mIndices->GetBufferSize());
+    Render::gCommand->UploadBuffer(mVertices, 0, mScene->mVertices.data(), mVertices->GetBufferSize());
     Render::gCommand->UploadBuffer(mGeometries, 0, geometries, mGeometries->GetBufferSize());
     Render::gCommand->UploadBuffer(mLights, 0, lights, mLights->GetBufferSize());
 
-    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), mScene->mIndices.Count());
-    mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mVertices.Count(), sizeof(Utils::Scene::Vertex));
-    mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mShapes.Count(), sizeof(Geometry));
+    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
+    mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
+    mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
     mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), lightCount, sizeof(Light));
 
     Render::gCommand->End(true);
@@ -380,28 +380,28 @@ void DXRExample::BuildAccelerationStructure(void) {
     mTLAS = new Render::TopLevelAccelerationStructure();
     XMMATRIX transform = XMMatrixIdentity();
 
-    uint32_t shapeCount = mScene->mShapes.Count();
-    mBLASes.Reserve(shapeCount);
+    uint32_t shapeCount = static_cast<uint32_t>(mScene->mShapes.size());
+    mBLASes.reserve(shapeCount);
     for (uint32_t i = 0; i < shapeCount; ++i) {
-        auto &shape = mScene->mShapes.At(i);
+        auto &shape = mScene->mShapes[i];
         BLAS *blas = new BLAS();
-        blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, mVertices, 0, mScene->mVertices.Count(), sizeof(Utils::Scene::Vertex));
+        blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, mVertices, 0, static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
         blas->PreBuild();
-        mBLASes.PushBack(blas);
+        mBLASes.push_back(blas);
         mTLAS->AddInstance(blas, i, 0, transform);
     }
 
     mTLAS->PreBuild();
 
     Render::gCommand->Begin();
-    for (uint32_t i = 0; i < shapeCount; ++i) {
-        Render::gCommand->BuildAccelerationStructure(mBLASes.At(i));
+    for (auto blas : mBLASes) {
+        Render::gCommand->BuildAccelerationStructure(blas);
     }
     Render::gCommand->BuildAccelerationStructure(mTLAS);
     Render::gCommand->End(true);
 
-    for (uint32_t i = 0; i < shapeCount; ++i) {
-        mBLASes.At(i)->PostBuild();
+    for (auto blas : mBLASes) {
+        blas->PostBuild();
     }
     mTLAS->PostBuild();
 }

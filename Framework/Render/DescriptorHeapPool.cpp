@@ -28,10 +28,10 @@ DescriptorHeapPool::~DescriptorHeapPool(void) {
 }
 
 void DescriptorHeapPool::DestroyAll(void) {
-    for (uint32_t i = 0; i < mHeapPool.Count(); ++i) {
-        mHeapPool.At(i)->Release();
+    for (auto heap : mHeapPool) {
+        heap->Release();
     }
-
+    mHeapPool.clear();
     mHeap = nullptr;
     mDescriptorSize = 0;
     mRemainingCount = 0;
@@ -42,7 +42,7 @@ DescriptorHandle DescriptorHeapPool::Allocate(void) {
         ASSERT_SUCCEEDED(gDevice->CreateDescriptorHeap(&mHeapDesc, IID_PPV_ARGS(&mHeap)));
         mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(mHeapDesc.Type);
         mRemainingCount = mHeapDesc.NumDescriptors;
-        mHeapPool.PushBack(mHeap);
+        mHeapPool.push_back(mHeap);
     }
 
     uint32_t offset = mHeapDesc.NumDescriptors - mRemainingCount;

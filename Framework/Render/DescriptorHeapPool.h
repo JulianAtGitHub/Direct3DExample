@@ -16,11 +16,11 @@ public:
 private:
     void DestroyAll(void);
 
-    CList<ID3D12DescriptorHeap *>   mHeapPool;
-    ID3D12DescriptorHeap           *mHeap;
-    D3D12_DESCRIPTOR_HEAP_DESC      mHeapDesc;
-    uint32_t                        mDescriptorSize;
-    uint32_t                        mRemainingCount;
+    std::vector<ID3D12DescriptorHeap *> mHeapPool;
+    ID3D12DescriptorHeap               *mHeap;
+    D3D12_DESCRIPTOR_HEAP_DESC          mHeapDesc;
+    uint32_t                            mDescriptorSize;
+    uint32_t                            mRemainingCount;
 };
 
 }

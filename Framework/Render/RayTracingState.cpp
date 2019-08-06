@@ -7,10 +7,10 @@
 namespace Render {
 
 RayTracingState::RayTracingState(uint32_t subCount)
-: mSubObjects(subCount)
-, mState(nullptr)
+: mState(nullptr)
 , mShaderTable(nullptr)
 {
+    mSubObjects.reserve(subCount);
     mRaysDesc = {};
 }
 
@@ -24,33 +24,33 @@ int32_t RayTracingState::AddSubObject(D3D12_STATE_SUBOBJECT_TYPE type, const voi
     if (!object || type >= D3D12_STATE_SUBOBJECT_TYPE_MAX_VALID) {
         return -1;
     }
-    mSubObjects.PushBack({ type, object });
-    return static_cast<int32_t>(mSubObjects.Count() - 1);
+    mSubObjects.push_back({ type, object });
+    return static_cast<int32_t>(mSubObjects.size() - 1);
 }
 
 int32_t RayTracingState::AddStateObjectConfig(D3D12_STATE_OBJECT_FLAGS flags) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_STATE_OBJECT_CONFIG *object = new D3D12_STATE_OBJECT_CONFIG;
     object->Flags = flags;
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_STATE_OBJECT_CONFIG, object);
 }
 
 int32_t RayTracingState::AddGlobalRootSignature(RootSignature *rs) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_GLOBAL_ROOT_SIGNATURE *object = new D3D12_GLOBAL_ROOT_SIGNATURE;
     object->pGlobalRootSignature = rs->Get();
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, object);
 }
 
 int32_t RayTracingState::AddLocalRootSignature(RootSignature *rs) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_LOCAL_ROOT_SIGNATURE *object = new D3D12_LOCAL_ROOT_SIGNATURE;
     object->pLocalRootSignature = rs->Get();
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE, object);
 }
 
 int32_t RayTracingState::AddNodeMask(uint32_t mask) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_NODE_MASK *object = new D3D12_NODE_MASK;
     object->NodeMask = mask;
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK, object);
@@ -61,7 +61,7 @@ int32_t RayTracingState::AddDXILLibrary(const char *shaderFile, const wchar_t *f
         return -1;
     }
 
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_DXIL_LIBRARY_DESC *object = new D3D12_DXIL_LIBRARY_DESC;
     object->DXILLibrary.pShaderBytecode = ReadFileData(shaderFile, object->DXILLibrary.BytecodeLength);
     object->NumExports = funcCount;
@@ -75,13 +75,13 @@ int32_t RayTracingState::AddDXILLibrary(const char *shaderFile, const wchar_t *f
 }
 
 int32_t RayTracingState::AddSubObjectToExportsAssociation(uint32_t subObjIndex, const wchar_t *exports[], uint32_t exportCount) {
-    if (!exports || !exportCount || mSubObjects.Count() <= subObjIndex) {
+    if (!exports || !exportCount || mSubObjects.size() <= subObjIndex) {
         return -1;
     }
 
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = new D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
-    object->pSubobjectToAssociate = mSubObjects.Data() + subObjIndex;
+    object->pSubobjectToAssociate = mSubObjects.data() + subObjIndex;
     object->NumExports = exportCount;
     object->pExports = exports;
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION, object);
@@ -92,7 +92,7 @@ int32_t RayTracingState::AddDXILSubObjectToExportsAssociation(const wchar_t *sub
         return -1;
     }
 
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = new D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     object->SubobjectToAssociate = subObj;
     object->NumExports = exportCount;
@@ -101,7 +101,7 @@ int32_t RayTracingState::AddDXILSubObjectToExportsAssociation(const wchar_t *sub
 }
 
 int32_t RayTracingState::AddRayTracingShaderConfig(uint32_t maxPayloadSize, uint32_t maxAttributeSize) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_RAYTRACING_SHADER_CONFIG *object = new D3D12_RAYTRACING_SHADER_CONFIG;
     object->MaxPayloadSizeInBytes = maxPayloadSize;
     object->MaxAttributeSizeInBytes = maxAttributeSize;
@@ -109,7 +109,7 @@ int32_t RayTracingState::AddRayTracingShaderConfig(uint32_t maxPayloadSize, uint
 }
 
 int32_t RayTracingState::AddRayTracingPipelineConfig(uint32_t maxTraceDepth) {
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_RAYTRACING_PIPELINE_CONFIG *object = new D3D12_RAYTRACING_PIPELINE_CONFIG;
     object->MaxTraceRecursionDepth = maxTraceDepth;
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, object);
@@ -120,7 +120,7 @@ int32_t RayTracingState::AddHitGroup(const wchar_t *hitGroup, const wchar_t *clo
         return -1;
     }
 
-    ASSERT_PRINT(mSubObjects.Count() < mSubObjects.Capacity());
+    ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_HIT_GROUP_DESC *object = new D3D12_HIT_GROUP_DESC;
     object->HitGroupExport = hitGroup;
     object->ClosestHitShaderImport = closetHit;
@@ -131,7 +131,7 @@ int32_t RayTracingState::AddHitGroup(const wchar_t *hitGroup, const wchar_t *clo
 }
 
 void RayTracingState::Create(void) {
-    if (!mSubObjects.Count()) {
+    if (!mSubObjects.size()) {
         return;
     }
 
@@ -139,8 +139,8 @@ void RayTracingState::Create(void) {
 
     D3D12_STATE_OBJECT_DESC desc = {};
     desc.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
-    desc.NumSubobjects = mSubObjects.Count();
-    desc.pSubobjects = mSubObjects.Data();
+    desc.NumSubobjects = static_cast<uint32_t>(mSubObjects.size());
+    desc.pSubobjects = mSubObjects.data();
 
 #ifdef _DEBUG
     PrintStateObjectDesc(desc);
@@ -152,8 +152,7 @@ void RayTracingState::Create(void) {
 }
 
 void RayTracingState::CleanupSubObjects(void) {
-    for (uint32_t i = 0; i < mSubObjects.Count(); ++i) {
-        auto &subObject = mSubObjects.At(i);
+    for (auto &subObject : mSubObjects) {
         switch (subObject.Type) {
         case D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY: {
             D3D12_DXIL_LIBRARY_DESC *object = (D3D12_DXIL_LIBRARY_DESC *)(subObject.pDesc);
@@ -165,7 +164,7 @@ void RayTracingState::CleanupSubObjects(void) {
             break;
         }
     }
-    mSubObjects.Clear();
+    mSubObjects.clear();
 }
 
 void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGenCount, const wchar_t *misses[], uint32_t missCount, const wchar_t *hitGroups[], uint32_t hitGroupCount) {
@@ -173,23 +172,23 @@ void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGen
     ASSERT_SUCCEEDED(mState->QueryInterface(IID_PPV_ARGS(&stateProperties)));
 
     // Get shader identifiers.
-    CList<void *> rayGenIds(rayGenCount);
-    CList<void *> missIds(missCount);
-    CList<void *> hipGroupIds(hitGroupCount);
+    std::vector<void *> rayGenIds(rayGenCount);
+    std::vector<void *> missIds(missCount);
+    std::vector<void *> hipGroupIds(hitGroupCount);
     for (uint32_t i = 0; i < rayGenCount; ++i) {
         void *id = stateProperties->GetShaderIdentifier(rayGens[i]);
         ASSERT_PRINT(id != nullptr);
-        rayGenIds.PushBack(id);
+        rayGenIds[i] = id;
     }
     for (uint32_t i = 0; i < missCount; ++i) {
         void *id = stateProperties->GetShaderIdentifier(misses[i]);
         ASSERT_PRINT(id != nullptr);
-        missIds.PushBack(id);
+        missIds[i] = id;
     }
     for (uint32_t i = 0; i < hitGroupCount; ++i) {
         void *id = stateProperties->GetShaderIdentifier(hitGroups[i]);
         ASSERT_PRINT(id != nullptr);
-        hipGroupIds.PushBack(id);
+        hipGroupIds[i] = id;
     }
 
     const uint32_t idSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
@@ -205,15 +204,15 @@ void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGen
     mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
     uint32_t offset = 0;
     for (uint32_t i = 0; i < rayGenCount; ++i) {
-        mShaderTable->UploadData(rayGenIds.At(i), idSize, offset + i * rayGenRecordSize);
+        mShaderTable->UploadData(rayGenIds[i], idSize, offset + i * rayGenRecordSize);
     }
     offset += rayGenTableSize;
     for (uint32_t i = 0; i < missCount; ++i) {
-        mShaderTable->UploadData(missIds.At(i), idSize, offset + i * missRecordSize);
+        mShaderTable->UploadData(missIds[i], idSize, offset + i * missRecordSize);
     }
     offset += missTableSize;
     for (uint32_t i = 0; i < hitGroupCount; ++i) {
-        mShaderTable->UploadData(hipGroupIds.At(i), idSize, offset + i * hitGroupRecordSize);
+        mShaderTable->UploadData(hipGroupIds[i], idSize, offset + i * hitGroupRecordSize);
     }
 
     mRaysDesc = {};
@@ -241,11 +240,11 @@ INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC 
         Printf("Raytracing Pipeline\n");
     }
 
-    auto ExportTree = [](UINT depth, UINT numExports, const D3D12_EXPORT_DESC* exports) {
-        for (UINT i = 0; i < numExports; i++) {
+    auto ExportTree = [](uint32_t depth, uint32_t numExports, const D3D12_EXPORT_DESC* exports) {
+        for (uint32_t i = 0; i < numExports; i++) {
             Printf("|");
             if (depth > 0) {
-                for (UINT j = 0; j < 2 * depth - 1; j++) {
+                for (uint32_t j = 0; j < 2 * depth - 1; j++) {
                     Printf(" ");
                 }
             }
@@ -259,7 +258,7 @@ INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC 
         }
     };
 
-    for (UINT i = 0; i < desc.NumSubobjects; i++) {
+    for (uint32_t i = 0; i < desc.NumSubobjects; i++) {
         Print("| [%d]: ", i);
         switch (desc.pSubobjects[i].Type) {
         case D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE:
@@ -269,7 +268,7 @@ INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC 
             Print("Local Root Signature 0x%llx\n", desc.pSubobjects[i].pDesc);
             break;
         case D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK:
-            Print("Node Mask: 0x%llx\n", *static_cast<const UINT*>(desc.pSubobjects[i].pDesc));
+            Print("Node Mask: 0x%llx\n", *static_cast<const uint32_t*>(desc.pSubobjects[i].pDesc));
             break;
         case D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY: {
             auto lib = static_cast<const D3D12_DXIL_LIBRARY_DESC*>(desc.pSubobjects[i].pDesc);
@@ -285,9 +284,9 @@ INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC 
         }
         case D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
             auto association = static_cast<const D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION*>(desc.pSubobjects[i].pDesc);
-            UINT index = static_cast<UINT>(association->pSubobjectToAssociate - desc.pSubobjects);
+            uint32_t index = static_cast<uint32_t>(association->pSubobjectToAssociate - desc.pSubobjects);
             Print("Subobject to Exports Association (Subobject [%d])\n", index);
-            for (UINT j = 0; j < association->NumExports; j++) {
+            for (uint32_t j = 0; j < association->NumExports; j++) {
                 Print("|  [%d]: ", j); WPrintf(association->pExports[j]); Printf("\n");
             }
             break;
@@ -295,7 +294,7 @@ INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC 
         case D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
             auto association = static_cast<const D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION*>(desc.pSubobjects[i].pDesc);
             Printf("DXIL Subobjects to Exports Association (");  WPrintf(association->SubobjectToAssociate); Printf(")\n");
-            for (UINT j = 0; j < association->NumExports; j++) {
+            for (uint32_t j = 0; j < association->NumExports; j++) {
                 Print("|  [%d]: ", j); WPrintf(association->pExports[j]); Printf("\n");
             }
             break;

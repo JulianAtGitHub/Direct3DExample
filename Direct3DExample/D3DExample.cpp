@@ -68,10 +68,8 @@ void D3DExample::Destroy(void) {
 
     DeleteAndSetNull(mScene);
 
-    for (uint32_t i = 0; i < mTextures.Count(); ++i) {
-        delete mTextures.At(i);
-    };
-    mTextures.Clear();
+    for (auto texture : mTextures) { delete texture; }
+    mTextures.clear();
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mShaderResourceHeap);
@@ -101,7 +99,7 @@ void D3DExample::LoadAssets(void) {
     //assert(mScene);
     //Utils::Model::SaveToMMB(mScene, "Models\\pink_room\\pink_room.mmb");
 
-    mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mScene->mImages.Count());
+    mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
 
     // root signature
@@ -134,26 +132,26 @@ void D3DExample::LoadAssets(void) {
 
     // vertex and index
     {
-        const uint32_t vertexSize = mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex);
+        const uint32_t vertexSize = static_cast<uint32_t>(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
         const uint32_t vertexAlignSize = AlignUp(vertexSize, 256);
-        const uint32_t indexSize = mScene->mIndices.Count() * sizeof(uint32_t);
+        const uint32_t indexSize = static_cast<uint32_t>(mScene->mIndices.size() * sizeof(uint32_t));
         const uint32_t indexAlignSize = AlignUp(indexSize, 256);
         mVertexIndexBuffer = new Render::GPUBuffer(vertexAlignSize + indexAlignSize);
 
-        Render::gCommand->UploadBuffer(mVertexIndexBuffer, 0, mScene->mVertices.Data(), vertexSize);
-        Render::gCommand->UploadBuffer(mVertexIndexBuffer, vertexAlignSize, mScene->mIndices.Data(), indexSize);
+        Render::gCommand->UploadBuffer(mVertexIndexBuffer, 0, mScene->mVertices.data(), vertexSize);
+        Render::gCommand->UploadBuffer(mVertexIndexBuffer, vertexAlignSize, mScene->mIndices.data(), indexSize);
 
         mVertexBufferView = mVertexIndexBuffer->FillVertexBufferView(0, vertexSize, sizeof(Utils::Scene::Vertex));
         mIndexBufferView = mVertexIndexBuffer->FillIndexBufferView(vertexAlignSize, indexSize, false);
     }
 
-    mTextures.Reserve(mScene->mImages.Count());
-    for (uint32_t i = 0; i < mScene->mImages.Count(); ++i) {
-        Utils::Scene::Image &image = mScene->mImages.At(i);
+    mTextures.reserve(mScene->mImages.size());
+    for (uint32_t i = 0; i < mScene->mImages.size(); ++i) {
+        Utils::Scene::Image &image = mScene->mImages[i];
         Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
         Render::gCommand->UploadTexture(texture, image.pixels);
         texture->CreateSRV(mShaderResourceHeap->Allocate());
-        mTextures.PushBack(texture);
+        mTextures.push_back(texture);
     }
 
     Render::gCommand->End(true);
@@ -176,9 +174,9 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
-    for (uint32_t j = 0; j < mScene->mShapes.Count(); ++j) {
-        const Utils::Scene::Shape &shape = mScene->mShapes.At(j);
-        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures.At(shape.diffuseTex)->GetHandle());
+    for (uint32_t j = 0; j < mScene->mShapes.size(); ++j) {
+        const Utils::Scene::Shape &shape = mScene->mShapes[j];
+        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.diffuseTex]->GetHandle());
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }
 

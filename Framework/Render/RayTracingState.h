@@ -36,10 +36,10 @@ private:
 
     void PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC &desc);
 
-    CList<D3D12_STATE_SUBOBJECT>    mSubObjects;
-    ID3D12StateObject              *mState;
-    D3D12_DISPATCH_RAYS_DESC        mRaysDesc;
-    UploadBuffer                   *mShaderTable;
+    std::vector<D3D12_STATE_SUBOBJECT>  mSubObjects;
+    ID3D12StateObject                  *mState;
+    D3D12_DISPATCH_RAYS_DESC            mRaysDesc;
+    UploadBuffer                       *mShaderTable;
 };
 
 }

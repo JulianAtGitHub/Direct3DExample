@@ -37,11 +37,11 @@ void CommandQueue::Initialize(void) {
 }
 
 void CommandQueue::Destroy(void) {
-    for (uint32_t i = 0; i < mAllocatorPool.Count(); ++i) {
-        mAllocatorPool.At(i)->Release();
+    for (auto allocator : mAllocatorPool) {
+        allocator->Release();
     }
-    mAllocatorPool.Clear();
-    mUsedAllocators.Clear();
+    mAllocatorPool.clear();
+    while(!mUsedAllocators.empty()) { mUsedAllocators.pop(); }
 
     CloseHandle(mFenceEvent);
     mFenceEvent = INVALID_HANDLE_VALUE;
@@ -53,21 +53,21 @@ ID3D12CommandAllocator * CommandQueue::QueryAllocator(void) {
     ID3D12CommandAllocator *allocator = nullptr;
     uint64_t fenceValue = mFence->GetCompletedValue();
 
-    if (mUsedAllocators.Count() > 0) {
-        UsedAllocator &usedAllocator = mUsedAllocators.Front();
+    if (mUsedAllocators.size() > 0) {
+        UsedAllocator &usedAllocator = mUsedAllocators.front();
         if (usedAllocator.fenceValue <= fenceValue) {
             allocator = usedAllocator.allocator;
             ASSERT_SUCCEEDED(allocator->Reset());
-            mUsedAllocators.Pop();
+            mUsedAllocators.pop();
         }
     }
 
     if (!allocator) {
         ASSERT_SUCCEEDED(gDevice->CreateCommandAllocator(mType, IID_PPV_ARGS(&allocator)));
         wchar_t allocatorName[64];
-        swprintf(allocatorName, 64, L"CommandAllocator %u", mAllocatorPool.Count());
+        swprintf(allocatorName, 64, L"CommandAllocator %llu", mAllocatorPool.size());
         allocator->SetName(allocatorName);
-        mAllocatorPool.PushBack(allocator);
+        mAllocatorPool.push_back(allocator);
     }
 
     return allocator;
@@ -79,7 +79,7 @@ void CommandQueue::DiscardAllocator(ID3D12CommandAllocator *allocator, uint64_t 
     }
 
     UsedAllocator usedAlloctor = { fenceValue, allocator };
-    mUsedAllocators.Push(usedAlloctor);
+    mUsedAllocators.push(usedAlloctor);
 }
 
 uint64_t CommandQueue::ExecuteCommandList(ID3D12GraphicsCommandList* commandList) {

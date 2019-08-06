@@ -86,19 +86,19 @@ LinerAllocator::~LinerAllocator(void) {
 LinerAllocator::MemoryBlock LinerAllocator::AllocateLarge(size_t size) {
     ASSERT_PRINT((size > 0));
     MemoryPage *page = new MemoryPage(mType, size);
-    mLargePages.PushBack(page);
+    mLargePages.push_back(page);
     return { page, size, page->mOffset, page->mCPUAddress, page->GetGPUAddress() };
 }
 
 LinerAllocator::MemoryPage * LinerAllocator::AllocatePage(void) {
     MemoryPage *page = nullptr;
-    if (mPendingPages.Count() > 0) {
-        page = mPendingPages.Front();
-        mPendingPages.Pop();
+    if (mPendingPages.size() > 0) {
+        page = mPendingPages.front();
+        mPendingPages.pop();
         page->mOffset = 0;
     } else {
         page = new MemoryPage(mType, mPageSize);
-        mPagePool.PushBack(page);
+        mPagePool.push_back(page);
     }
 
     return page;
@@ -113,7 +113,7 @@ LinerAllocator::MemoryBlock LinerAllocator::Allocate(size_t size) {
     }
 
     if (mCurrentPage && mCurrentPage->LeftSize() < alignedSize) {
-        mUsingPages.PushBack(mCurrentPage);
+        mUsingPages.push_back(mCurrentPage);
         mCurrentPage = nullptr;
     }
 
@@ -129,51 +129,51 @@ LinerAllocator::MemoryBlock LinerAllocator::Allocate(size_t size) {
 
 void LinerAllocator::CleanupPages(uint64_t fenceValue, uint64_t completeValue) {
  
-    while (mUsedPages.Count() > 0 && mUsedPages.Front().fenceValue <= completeValue) {
-        mPendingPages.Push(mUsedPages.Front().page);
-        mUsedPages.Pop();
+    while (mUsedPages.size() > 0 && mUsedPages.front().fenceValue <= completeValue) {
+        mPendingPages.push(mUsedPages.front().page);
+        mUsedPages.pop();
     }
 
-    mUsingPages.PushBack(mCurrentPage);
+    mUsingPages.push_back(mCurrentPage);
     mCurrentPage = nullptr;
 
-    for (uint32_t i = 0; i < mUsingPages.Count(); ++i) {
-        mUsedPages.Push({fenceValue , mUsingPages.At(i)});
+    for (auto usingPage : mUsingPages) {
+        mUsedPages.push({fenceValue , usingPage});
     }
-    mUsingPages.Clear();
+    mUsingPages.clear();
 
     // handle large page
-    while (mUsedLargePages.Count() && mUsedLargePages.Front().fenceValue <= completeValue) {
-        delete mUsedLargePages.Front().page;
-        mUsedLargePages.Pop();
+    while (mUsedLargePages.size() && mUsedLargePages.front().fenceValue <= completeValue) {
+        delete mUsedLargePages.front().page;
+        mUsedLargePages.pop();
     }
 
-    for (uint32_t i = 0; i < mLargePages.Count(); ++i) {
-        MemoryPage *page = mLargePages.At(i);
+    for (auto page : mLargePages) {
         page->Unmap();
-        mUsedLargePages.Push({ fenceValue , page });
+        mUsedLargePages.push({ fenceValue , page });
     }
-    mLargePages.Clear();
+    mLargePages.clear();
 }
 
 void LinerAllocator::DestoryPages(void) {
-    for (uint32_t i = 0; i < mPagePool.Count(); ++i) {
-        delete mPagePool.At(i);
+    for (auto page : mPagePool) {
+        delete page;
     }
-    mPagePool.Clear();
+    mPagePool.clear();
     mCurrentPage = nullptr;
-    mUsingPages.Clear();
-    mPendingPages.Clear();
-    mUsedPages.Clear();
+    mUsingPages.clear();
 
-    while (mUsedLargePages.Count()) {
-        delete mUsedLargePages.Front().page;
-        mUsedLargePages.Pop();
+    while (!mPendingPages.empty()) { mPendingPages.pop(); }
+    while (!mUsedPages.empty()) { mUsedPages.pop(); }
+
+    while (!mUsedLargePages.empty()) {
+        delete mUsedLargePages.front().page;
+        mUsedLargePages.pop();
     }
-    for (uint32_t i = 0; i < mLargePages.Count(); ++i) {
-        delete mLargePages.At(i);
+    for (auto page : mLargePages) {
+        delete page;
     }
-    mLargePages.Clear();
+    mLargePages.clear();
 }
 
 }

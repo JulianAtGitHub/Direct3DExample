@@ -7,6 +7,41 @@ extern void * ReadFileData(const char *fileName, size_t &size);
 extern void SIMDMemCopy( void* __restrict Dest, const void* __restrict Source, size_t NumQuadwords );
 extern void SIMDMemFill( void* __restrict Dest, __m128 FillVector, size_t NumQuadwords );
 
+template <typename T>
+INLINE T AlignUpWithMask(T value, size_t mask) {
+    return (T)(((size_t)value + mask) & ~mask);
+}
+
+template <typename T> 
+INLINE T AlignDownWithMask(T value, size_t mask) {
+    return (T)((size_t)value & ~mask);
+}
+
+template <typename T> 
+INLINE T AlignUp(T value, size_t alignment) {
+    return AlignUpWithMask(value, alignment - 1);
+}
+
+template <typename T> 
+INLINE T AlignDown(T value, size_t alignment) {
+    return AlignDownWithMask(value, alignment - 1);
+}
+
+template <typename T> 
+INLINE bool IsAligned( T value, size_t alignment ) {
+    return 0 == ((size_t)value & (alignment - 1));
+}
+
+template <typename T> 
+INLINE bool IsPowerOfTwo(T value) {
+    return 0 == (value & (value - 1));
+}
+
+template <typename T> 
+INLINE T DivideByMultiple( T value, size_t alignment ) {
+    return (T)((value + alignment - 1) / alignment);
+}
+
 INLINE char * WStr2Str(const wchar_t *wstr) {
     if (!wstr) { return nullptr; }
     size_t len = wcslen(wstr) * 2 + 1;

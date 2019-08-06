@@ -27,7 +27,7 @@ private:
     Render::ConstantBuffer *mConstBuffer;
 
     Render::DescriptorHeap *mShaderResourceHeap;
-    CList<Render::PixelBuffer *> mTextures;
+    std::vector<Render::PixelBuffer *> mTextures;
 
     Render::DescriptorHeap *mSamplerHeap;
     Render::Sampler *mSampler;

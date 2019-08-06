@@ -38,8 +38,8 @@ void BottomLevelAccelerationStructure::AddTriangles(GPUBuffer *indices, uint64_t
     uint64_t indexOffsetBytes = (is16Bit ? sizeof(uint16_t) : sizeof(uint32_t)) * indexOffset;
     uint64_t vertexOffsetBytes = stride * vertexOffset;
 
-    mGeometryDescs.PushBack({});
-    D3D12_RAYTRACING_GEOMETRY_DESC &geometryDesc = mGeometryDescs.Last();
+    mGeometryDescs.push_back({});
+    D3D12_RAYTRACING_GEOMETRY_DESC &geometryDesc = mGeometryDescs.back();
     geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
     geometryDesc.Flags = flags;
     geometryDesc.Triangles.IndexBuffer = indices->GetGPUAddress() + indexOffsetBytes;
@@ -53,16 +53,16 @@ void BottomLevelAccelerationStructure::AddTriangles(GPUBuffer *indices, uint64_t
 }
 
 bool BottomLevelAccelerationStructure::PreBuild(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS flags) {
-    if (mGeometryDescs.Count() == 0) {
+    if (mGeometryDescs.size() == 0) {
         return false;
     }
 
     mInputs = {};
     mInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     mInputs.Flags = flags;
-    mInputs.NumDescs = mGeometryDescs.Count();
+    mInputs.NumDescs = static_cast<uint32_t>(mGeometryDescs.size());
     mInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-    mInputs.pGeometryDescs = mGeometryDescs.Data();
+    mInputs.pGeometryDescs = mGeometryDescs.data();
 
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
     gDXRDevice->GetRaytracingAccelerationStructurePrebuildInfo(&mInputs, &prebuildInfo);
@@ -101,8 +101,8 @@ void TopLevelAccelerationStructure::AddInstance(BottomLevelAccelerationStructure
         return;
     }
 
-    mInstanceDescs.PushBack({});
-    D3D12_RAYTRACING_INSTANCE_DESC &instance = mInstanceDescs.Last();
+    mInstanceDescs.push_back({});
+    D3D12_RAYTRACING_INSTANCE_DESC &instance = mInstanceDescs.back();
     XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instance.Transform), transform);
     instance.InstanceID = id;
     instance.InstanceMask = idMask;
@@ -112,14 +112,14 @@ void TopLevelAccelerationStructure::AddInstance(BottomLevelAccelerationStructure
 }
 
 bool TopLevelAccelerationStructure::PreBuild(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS flags) {
-    if (!mInstanceDescs.Count()) {
+    if (!mInstanceDescs.size()) {
         return false;
     }
 
     mInputs = {};
     mInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     mInputs.Flags = flags;
-    mInputs.NumDescs = mInstanceDescs.Count();
+    mInputs.NumDescs = static_cast<uint32_t>(mInstanceDescs.size());
     mInputs.pGeometryDescs = nullptr;
     mInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
@@ -139,12 +139,12 @@ bool TopLevelAccelerationStructure::PreBuild(D3D12_RAYTRACING_ACCELERATION_STRUC
     mResultData = new GPUBuffer(prebuildInfo.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     uint64_t stride = AlignUp(sizeof(D3D12_RAYTRACING_INSTANCE_DESC), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT);
-    mInstances = new UploadBuffer(mInstanceDescs.Count() * stride);
+    mInstances = new UploadBuffer(mInstanceDescs.size() * stride);
     if (stride == sizeof(D3D12_RAYTRACING_INSTANCE_DESC)) {
-        mInstances->UploadData(mInstanceDescs.Data(), mInstanceDescs.Count() * stride);
+        mInstances->UploadData(mInstanceDescs.data(), mInstanceDescs.size() * stride);
     } else {
-        for (uint32_t i = 0; i < mInstanceDescs.Count(); ++i) {
-            mInstances->UploadData(mInstanceDescs.Data() + i, sizeof(D3D12_RAYTRACING_INSTANCE_DESC), i * stride);
+        for (uint32_t i = 0; i < mInstanceDescs.size(); ++i) {
+            mInstances->UploadData(mInstanceDescs.data() + i, sizeof(D3D12_RAYTRACING_INSTANCE_DESC), i * stride);
         }
     }
     mInputs.InstanceDescs = mInstances->GetGPUAddress();

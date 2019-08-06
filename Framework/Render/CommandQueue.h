@@ -30,17 +30,17 @@ private:
         ID3D12CommandAllocator *allocator;
     };
 
-    const static uint32_t           FENCE_VALUE_MASK = 56;
+    const static uint32_t FENCE_VALUE_MASK = 56;
 
-    const D3D12_COMMAND_LIST_TYPE   mType;
-    ID3D12CommandQueue             *mQueue;
-    CList<ID3D12CommandAllocator *> mAllocatorPool;
-    CQueue<UsedAllocator>           mUsedAllocators;
+    const D3D12_COMMAND_LIST_TYPE           mType;
+    ID3D12CommandQueue                     *mQueue;
+    std::vector<ID3D12CommandAllocator *>   mAllocatorPool;
+    std::queue<UsedAllocator>               mUsedAllocators;
 
-    ID3D12Fence                    *mFence;
-    HANDLE                          mFenceEvent;
-    uint64_t                        mNextFenceValue;
-    uint64_t                        mLastCompleteValue;
+    ID3D12Fence                            *mFence;
+    HANDLE                                  mFenceEvent;
+    uint64_t                                mNextFenceValue;
+    uint64_t                                mLastCompleteValue;
 };
 
 INLINE uint64_t CommandQueue::UpdateCompleteFence(void) { 

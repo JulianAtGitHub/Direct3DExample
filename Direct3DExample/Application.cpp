@@ -45,7 +45,7 @@ int Application::Run(HINSTANCE hInstance, int nCmdShow) {
     // Create the window and store a handle to it.
     mHwnd = CreateWindow(
         windowClass.lpszClassName,
-        mTitle.Get(),
+        mTitle.c_str(),
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT,
         CW_USEDEFAULT,

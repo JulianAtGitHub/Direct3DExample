@@ -65,17 +65,17 @@ private:
     const static size_t GPU_MEMORY_PAGE_SIZE    = 0x10000;  // 64K
     const static size_t CPU_MEMORY_PAGE_SIZE    = 0x200000; // 2MB
 
-    MemoryType              mType;
-    size_t                  mPageSize;
+    MemoryType                  mType;
+    size_t                      mPageSize;
 
-    MemoryPage             *mCurrentPage;
-    CList<MemoryPage *>     mPagePool;      // all pages
-    CList<MemoryPage *>     mUsingPages;    // pages are using in current render loop
-    CQueue<MemoryPage *>    mPendingPages;  // pagea are created and ready for re-use
-    CQueue<UsedPage>        mUsedPages;     // pages are using in previous render loop which is not finished
+    MemoryPage                 *mCurrentPage;
+    std::vector<MemoryPage *>   mPagePool;      // all pages
+    std::vector<MemoryPage *>   mUsingPages;    // pages are using in current render loop
+    std::queue<MemoryPage *>    mPendingPages;  // pagea are created and ready for re-use
+    std::queue<UsedPage>        mUsedPages;     // pages are using in previous render loop which is not finished
 
-    CQueue<UsedPage>        mUsedLargePages;// pages are ready to destroy
-    CList<MemoryPage *>     mLargePages;    // pages are using in current render loop
+    std::queue<UsedPage>        mUsedLargePages;// pages are ready to destroy
+    std::vector<MemoryPage *>   mLargePages;    // pages are using in current render loop
 };
 
 }

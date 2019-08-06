@@ -17,6 +17,6 @@ private:
     HWND mHwnd;
     uint32_t mWidth;
     uint32_t mHeight;
-    CString mTitle;
+    std::string mTitle;
     Example *mExample;
 };

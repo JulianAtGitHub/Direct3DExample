@@ -30,10 +30,10 @@ public:
         XMFLOAT3 bitangent;
     };
 
-    CList<Vertex>   mVertices;
-    CList<uint32_t> mIndices;
-    CList<Shape>    mShapes;
-    CList<Image>    mImages;
+    std::vector<Vertex>     mVertices;
+    std::vector<uint32_t>   mIndices;
+    std::vector<Shape>      mShapes;
+    std::vector<Image>      mImages;
 };
 
 class Model {

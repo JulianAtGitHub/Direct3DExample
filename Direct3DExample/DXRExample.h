@@ -87,39 +87,39 @@ private:
         SlotCount
     };
 
-    CTimer                      mTimer;
-    Utils::Camera              *mCamera;
+    Utils::Timer    mTimer;
+    Utils::Camera  *mCamera;
     // jitter camera
     std::mt19937                            mRang;
     std::uniform_real_distribution<float>   mRangDist;
 
-    float                       mSpeedX;
-    float                       mSpeedZ;
-    bool                        mIsRotating;
-    int64_t                     mLastMousePos;
-    int64_t                     mCurrentMousePos;
+    float           mSpeedX;
+    float           mSpeedZ;
+    bool            mIsRotating;
+    int64_t         mLastMousePos;
+    int64_t         mCurrentMousePos;
 
-    uint32_t                    mWidth;
-    uint32_t                    mHeight;
-    uint32_t                    mFrameCount;
-    uint32_t                    mAccumCount;
-    uint32_t                    mCurrentFrame;
-    uint64_t                    mFenceValues[Render::FRAME_COUNT];
-    Utils::Scene               *mScene;
+    uint32_t        mWidth;
+    uint32_t        mHeight;
+    uint32_t        mFrameCount;
+    uint32_t        mAccumCount;
+    uint32_t        mCurrentFrame;
+    uint64_t        mFenceValues[Render::FRAME_COUNT];
+    Utils::Scene   *mScene;
 
-    Render::RootSignature      *mGlobalRootSignature;
-    Render::RootSignature      *mLocalRootSignature;
-    Render::RayTracingState    *mRayTracingState;
-    Render::DescriptorHeap     *mDescriptorHeap;
-    Render::GPUBuffer          *mVertices;
-    Render::GPUBuffer          *mIndices;
-    Render::GPUBuffer          *mGeometries;
-    Render::GPUBuffer          *mLights;
-    Render::PixelBuffer        *mRaytracingOutput;
-    Render::PixelBuffer        *mDisplayColor;
-    Render::DescriptorHeap     *mSamplerHeap;
-    Render::Sampler            *mSampler;
-    CList<Render::PixelBuffer*> mTextures;
+    Render::RootSignature              *mGlobalRootSignature;
+    Render::RootSignature              *mLocalRootSignature;
+    Render::RayTracingState            *mRayTracingState;
+    Render::DescriptorHeap             *mDescriptorHeap;
+    Render::GPUBuffer                  *mVertices;
+    Render::GPUBuffer                  *mIndices;
+    Render::GPUBuffer                  *mGeometries;
+    Render::GPUBuffer                  *mLights;
+    Render::PixelBuffer                *mRaytracingOutput;
+    Render::PixelBuffer                *mDisplayColor;
+    Render::DescriptorHeap             *mSamplerHeap;
+    Render::Sampler                    *mSampler;
+    std::vector<Render::PixelBuffer *>  mTextures;
 
     AppSettings                 mSettings;
     SceneConstants              mSceneConsts;
@@ -130,6 +130,6 @@ private:
 
     typedef Render::BottomLevelAccelerationStructure BLAS;
     typedef Render::TopLevelAccelerationStructure TLAS;
-    CList<BLAS *>               mBLASes;
+    std::vector<BLAS *>         mBLASes;
     TLAS                       *mTLAS;
 };

@@ -55,28 +55,28 @@ Scene * Model::LoadFromFile(const char *fileName) {
     uint32_t vertexCount = 0;
     uint32_t indexCount = 0;
 
-    auto AddImage = [](CList<CString> &images, aiString &newImage)->uint32_t {
-        uint32_t idx = images.Count();
-        for (uint32_t i = 0; i < images.Count(); ++i) {
-            if (images.At(i) == newImage.C_Str()) {
+    auto AddImage = [](std::vector<std::string> &images, aiString &newImage)->uint32_t {
+        uint32_t idx = static_cast<uint32_t>(images.size());
+        for (uint32_t i = 0; i < static_cast<uint32_t>(images.size()); ++i) {
+            if (images[i] == newImage.C_Str()) {
                 idx = i;
                 break;
             }
         }
-        if (idx == images.Count()) {
-            images.PushBack(newImage.C_Str());
+        if (idx == images.size()) {
+            images.push_back(newImage.C_Str());
         }
         return idx;
     };
-    CList<CString> images(scene->mNumMaterials * 3);
+    std::vector<std::string> images(scene->mNumMaterials * 3);
 
     Scene *out = new Scene;
-    out->mShapes.Resize(scene->mNumMeshes);
+    out->mShapes.resize(scene->mNumMeshes);
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[i];
         assert(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE);
 
-        Scene::Shape &shape = out->mShapes.At(i);
+        Scene::Shape &shape = out->mShapes[i];
         shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
 
@@ -99,10 +99,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
         }
     }
 
-    out->mVertices.Resize(vertexCount);
-    out->mIndices.Resize(indexCount);
-    Scene::Vertex *vertex = out->mVertices.Data();
-    uint32_t *index = out->mIndices.Data();
+    out->mVertices.resize(vertexCount);
+    out->mIndices.resize(indexCount);
+    Scene::Vertex *vertex = out->mVertices.data();
+    uint32_t *index = out->mIndices.data();
     uint32_t indexOffset = 0;
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[i];
@@ -162,14 +162,14 @@ Scene * Model::LoadFromFile(const char *fileName) {
     }
 
     // images
-    out->mImages.Resize(images.Count());
+    out->mImages.resize(images.size());
     char imagePath[MAX_PATH];
     stbi_set_flip_vertically_on_load(1);
-    for (uint32_t i = 0; i < images.Count(); ++i) {
+    for (uint32_t i = 0; i < images.size(); ++i) {
         strcpy(imagePath, resPath);
-        strcat(imagePath, images.At(i).Get());
+        strcat(imagePath, images[i].c_str());
 
-        Scene::Image &image = out->mImages.At(i);
+        Scene::Image &image = out->mImages[i];
 
         int width, height, channels;
         stbi_uc *pixels = stbi_load(imagePath, &width, &height, &channels, STBI_rgb_alpha);
@@ -216,21 +216,21 @@ Scene * Model::LoadFromMMB(const char *fileName) {
         uint32_t imageSize = head.imageCount * sizeof(Scene::Image);
 
         scene = new Scene;
-        scene->mVertices.Resize(head.vertexCount);
-        scene->mIndices.Resize(head.indexCount);
-        scene->mShapes.Resize(head.shapeCount);
-        scene->mImages.Resize(head.imageCount);
+        scene->mVertices.resize(head.vertexCount);
+        scene->mIndices.resize(head.indexCount);
+        scene->mShapes.resize(head.shapeCount);
+        scene->mImages.resize(head.imageCount);
         uint8_t *source = data;
-        memcpy(scene->mVertices.Data(), source, vertexSize);
+        memcpy(scene->mVertices.data(), source, vertexSize);
         source += vertexSize;
-        memcpy(scene->mIndices.Data(), source, indexSize);
+        memcpy(scene->mIndices.data(), source, indexSize);
         source += indexSize;
-        memcpy(scene->mShapes.Data(), source, shapeSize);
+        memcpy(scene->mShapes.data(), source, shapeSize);
         source += shapeSize;
-        memcpy(scene->mImages.Data(), source, imageSize);
+        memcpy(scene->mImages.data(), source, imageSize);
         source += imageSize;
-        for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
-            Scene::Image &image = scene->mImages.At(i);
+        for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
+            Scene::Image &image = scene->mImages[i];
             uint32_t copySize = image.width * image.height * image.channels;
             image.pixels = (uint8_t *)malloc(copySize);
             memcpy(image.pixels, source, copySize);
@@ -261,28 +261,28 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     }
 
     // Copy data
-    uint32_t vertexSize = scene->mVertices.Count() * sizeof(Scene::Vertex);
-    uint32_t indexSize = scene->mIndices.Count() * sizeof(uint32_t);
-    uint32_t shapeSize = scene->mShapes.Count() * sizeof(Scene::Shape);
-    uint32_t imageSize = scene->mImages.Count() * sizeof(Scene::Image);
+    uint32_t vertexSize = static_cast<uint32_t>(scene->mVertices.size() * sizeof(Scene::Vertex));
+    uint32_t indexSize = static_cast<uint32_t>(scene->mIndices.size() * sizeof(uint32_t));
+    uint32_t shapeSize = static_cast<uint32_t>(scene->mShapes.size() * sizeof(Scene::Shape));
+    uint32_t imageSize = static_cast<uint32_t>(scene->mImages.size() * sizeof(Scene::Image));
     uint32_t pixelSize = 0;
-    for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
-        const Scene::Image &image = scene->mImages.At(i);
+    for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
+        const Scene::Image &image = scene->mImages[i];
         pixelSize += image.width * image.height * image.channels;
     }
     uint32_t dataSize = vertexSize + indexSize + shapeSize + imageSize + pixelSize;
     uint8_t *data = (uint8_t *)malloc(dataSize);
     uint8_t *dest = data;
-    memcpy(dest, scene->mVertices.Data(), vertexSize);
+    memcpy(dest, scene->mVertices.data(), vertexSize);
     dest += vertexSize;
-    memcpy(dest, scene->mIndices.Data(), indexSize);
+    memcpy(dest, scene->mIndices.data(), indexSize);
     dest += indexSize;
-    memcpy(dest, scene->mShapes.Data(), shapeSize);
+    memcpy(dest, scene->mShapes.data(), shapeSize);
     dest += shapeSize;
-    memcpy(dest, scene->mImages.Data(), imageSize);
+    memcpy(dest, scene->mImages.data(), imageSize);
     dest += imageSize;
-    for (uint32_t i = 0; i < scene->mImages.Count(); ++i) {
-        const Scene::Image &image = scene->mImages.At(i);
+    for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
+        const Scene::Image &image = scene->mImages[i];
         uint32_t copySize = image.width * image.height * image.channels;
         memcpy(dest, image.pixels, copySize);
         dest += copySize;
@@ -294,10 +294,10 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
 
     Header head = {
         {'m', 'm', 'b', '\0'},
-        scene->mVertices.Count(),
-        scene->mIndices.Count(),
-        scene->mShapes.Count(),
-        scene->mImages.Count(),
+        static_cast<uint32_t>(scene->mVertices.size()),
+        static_cast<uint32_t>(scene->mIndices.size()),
+        static_cast<uint32_t>(scene->mShapes.size()),
+        static_cast<uint32_t>(scene->mImages.size()),
         dataSize,
         compressedSize
     };
