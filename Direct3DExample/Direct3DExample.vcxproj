@@ -244,6 +244,7 @@
     <None Include="Shaders\inputs.hlsli" />
     <None Include="Shaders\RayTracing\AORay.hlsli" />
     <None Include="Shaders\RayTracing\Common.hlsli" />
+    <None Include="Shaders\RayTracing\ShadowRay.hlsli" />
     <None Include="Shaders\RayTracing\Utils.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

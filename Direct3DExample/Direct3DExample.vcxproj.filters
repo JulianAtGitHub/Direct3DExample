@@ -74,5 +74,8 @@
     <None Include="Shaders\RayTracing\Utils.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
+    <None Include="Shaders\RayTracing\ShadowRay.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
   </ItemGroup>
 </Project>
