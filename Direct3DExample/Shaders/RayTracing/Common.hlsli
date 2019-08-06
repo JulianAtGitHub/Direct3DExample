@@ -20,6 +20,23 @@ struct Geometry {
     uint4 texInfo;  // x: diffuse, y: specular, z: normal
 };
 
+struct Light {
+    uint   type;
+    float  openAngle;
+    float  penumbraAngle;
+    float  cosOpenAngle;
+    float3 position;
+    float3 direction;
+    float3 intensity;
+};
+
+struct LightSample {
+    float3 L;
+    float3 diffuse;
+    float3 specular;
+    float3 position;
+};
+
 struct CameraConstants {
     float3 pos;
     float3 u;
@@ -32,6 +49,7 @@ struct CameraConstants {
 
 struct SceneConstants {
     float4 bgColor;
+    uint   lightCount;
     uint   frameCount;
     uint   accumCount;
     float  aoRadius;
@@ -42,24 +60,36 @@ struct PrimaryRayPayload {
     uint randSeed;
 };
 
-struct AORayPayload {
+struct RayHitPayload {
     float value;
 };
+
+typedef RayHitPayload AORayPayload;
+
+typedef RayHitPayload ShadowRayPayload;
 
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 static const float M_PI = 3.14159265f;
+static const float FLT_MAX = 3.402823466e+38f;
 
 namespace RayTraceParams {
     enum RayType {
         PrimaryRay = 0,
         AORay,
+        ShadowRay,
         RayTypeCount
     };
 
+    enum LightType {
+        DirectLight = 0,
+        PointLight,     // include spot light
+        LightTypeCount
+    };
+
     static const uint InstanceMask = 0xff;   // Everything is visible.
-    static const uint HitGroupIndex[RayTypeCount] = { 0, 1 };
-    static const uint MissIndex[RayTypeCount] = { 0, 1 };
+    static const uint HitGroupIndex[RayTypeCount] = { 0, 1, 2 };
+    static const uint MissIndex[RayTypeCount] = { 0, 1, 2 };
 
     static const float AlphaThreshold = 0.5f;
 }
@@ -71,7 +101,8 @@ RaytracingAccelerationStructure gRtScene : register(t0, space0);
 ByteAddressBuffer gIndices : register(t1, space0);
 StructuredBuffer<Vertex> gVertices : register(t2, space0);
 StructuredBuffer<Geometry> gGeometries : register(t3, space0);
-Texture2D<float4> gMatTextures[] : register(t4);
+StructuredBuffer<Light> gLights : register(t4, space0);
+Texture2D<float4> gMatTextures[] : register(t5);
 // constant values
 ConstantBuffer<AppSettings> gSettingsCB : register(b0);
 ConstantBuffer<SceneConstants> gSceneCB : register(b1);

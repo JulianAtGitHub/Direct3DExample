@@ -2,6 +2,7 @@
 #include "Common.hlsli"
 #include "Utils.hlsli"
 #include "AORay.hlsli"
+#include "ShadowRay.hlsli"
 
 inline void WriteToOutput(in PrimaryRayPayload payload, in uint2 index) {
     if (gSettingsCB.enableAccumulate) {
@@ -137,12 +138,25 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     //gOutputs[RayTraceParams::MatEmissive][launchIndex] = float4(0, 0, 0, 0);
     //gOutputs[RayTraceParams::MatExtra][launchIndex] = float4(1, 0, 0, 0);
 
-    // calculate AO
-    uint randSeed = payload.randSeed;
-    float ambientOcclusion = AORayGen(hitPosition, hitNormal, randSeed);
+    float3 dirColor = float3(0.0, 0.0, 0.0);
+    // Iterate over the lights
+    for (int i = 0; i < gSceneCB.lightCount; ++ i) {
+        LightSample ls;
+        EvaluateLight(gLights[i], hitPosition, ls);
 
-    payload.randSeed = randSeed;
-    payload.color.rgb = ambientOcclusion;
-    payload.color.a = 1;
+        float shadowFactor = ShadowRayGen(hitPosition, ls.L, length(ls.position - hitPosition));
+
+        float LdotN = saturate(dot(hitNormal, ls.L));
+        dirColor += shadowFactor * LdotN * ls.diffuse; 
+    }
+
+    // Modulate based on the physically based Lambertian term (albedo/pi)
+    dirColor *= diffColor.rgb / M_PI;
+
+    payload.color = float4(dirColor, 1);
+
+    // calculate AO
+    // uint randSeed = payload.randSeed;
+    // float ambientOcclusion = AORayGen(hitPosition, hitNormal, randSeed);
 }
 
