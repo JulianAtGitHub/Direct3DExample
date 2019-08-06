@@ -35,6 +35,27 @@ private:
         uint32_t enableLensCamera;
     };
 
+    struct Geometry {
+        XMUINT4 indexInfo; // x: index offset, y: index count;
+        XMUINT4 texInfo;  // x: diffuse, y: specular, z: normal
+    };
+
+    enum LightType {
+        DirectLight = 0,
+        PointLight,     // include spot light
+        AreaLight,
+    };
+
+    struct Light {
+        uint32_t  type; // LightType
+        float     openAngle;
+        float     penumbraAngle;
+        float     cosOpenAngle;
+        XMFLOAT3  position;
+        XMFLOAT3  direction;
+        XMFLOAT3  intensity;
+    };
+
     struct CameraConstants {
         XMFLOAT4 pos;
         XMFLOAT4 u;
@@ -47,14 +68,10 @@ private:
 
     struct SceneConstants {
         XMFLOAT4 bgColor;
+        uint32_t lightCount;
         uint32_t frameCount;
         uint32_t accumCount;
         float    aoRadius;
-    };
-
-    struct Geometry {
-        XMUINT4 indexInfo; // x: index offset, y: index count;
-        XMUINT4 texInfo;  // x: diffuse, y: specular, z: normal
     };
 
     enum GlobalRootSignatureParams {
@@ -64,7 +81,7 @@ private:
         AppSettingsSlot,
         SceneConstantsSlot,
         CameraConstantsSlot,
-        VertexBuffersSlot,
+        BuffersSlot,
         TexturesSlot,
         SamplerSlot,
         SlotCount
@@ -97,6 +114,7 @@ private:
     Render::GPUBuffer          *mVertices;
     Render::GPUBuffer          *mIndices;
     Render::GPUBuffer          *mGeometries;
+    Render::GPUBuffer          *mLights;
     Render::PixelBuffer        *mRaytracingOutput;
     Render::PixelBuffer        *mDisplayColor;
     Render::DescriptorHeap     *mSamplerHeap;
@@ -109,7 +127,6 @@ private:
     Render::ConstantBuffer     *mSettingsCB;
     Render::ConstantBuffer     *mSceneCB;
     Render::ConstantBuffer     *mCameraCB;
-    Render::UploadBuffer       *mMeshCB;
 
     typedef Render::BottomLevelAccelerationStructure BLAS;
     typedef Render::TopLevelAccelerationStructure TLAS;

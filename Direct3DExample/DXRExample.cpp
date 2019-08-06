@@ -14,6 +14,11 @@ const static wchar_t *AOHitGroupName = L"AOHitGroup";
 const static wchar_t *AOAnyHitName = L"AOAnyHit";
 const static wchar_t *AOClosetHitName = L"AOClosestHit";
 
+const static wchar_t *ShadowMissName = L"ShadowMiss";
+const static wchar_t *ShadowHitGroupName = L"ShadowHitGroup";
+const static wchar_t *ShadowAnyHitName = L"ShadowAnyHit";
+const static wchar_t *ShadowClosetHitName = L"ShadowClosestHit";
+
 DXRExample::DXRExample(HWND hwnd)
 : Example(hwnd)
 , mCamera(nullptr)
@@ -32,13 +37,13 @@ DXRExample::DXRExample(HWND hwnd)
 , mVertices(nullptr)
 , mIndices(nullptr)
 , mGeometries(nullptr)
+, mLights(nullptr)
 , mRaytracingOutput(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
 , mSettingsCB(nullptr)
 , mSceneCB(nullptr)
 , mCameraCB(nullptr)
-, mMeshCB(nullptr)
 , mScene(nullptr)
 , mTLAS(nullptr)
 {
@@ -135,6 +140,7 @@ void DXRExample::Update(void) {
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
     mSceneConsts.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    mSceneConsts.lightCount = 3;
     mSceneConsts.frameCount = mFrameCount ++;
     mSceneConsts.accumCount = mAccumCount ++;
     mSceneConsts.aoRadius = 0.63f;
@@ -160,7 +166,7 @@ void DXRExample::Render(void) {
     Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     // Set index and successive vertex buffer decriptor tables
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, mIndices->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures.At(0)->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
@@ -196,13 +202,13 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mDisplayColor);
     DeleteAndSetNull(mRaytracingOutput);
-    DeleteAndSetNull(mMeshCB);
     DeleteAndSetNull(mSettingsCB);
     DeleteAndSetNull(mSceneCB);
     DeleteAndSetNull(mCameraCB);
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mGeometries);
+    DeleteAndSetNull(mLights);
     DeleteAndSetNull(mDescriptorHeap);
     DeleteAndSetNull(mRayTracingState);
     DeleteAndSetNull(mLocalRootSignature);
@@ -267,7 +273,7 @@ void DXRExample::InitScene(void) {
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
     mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
     mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3 + 2 + mScene->mImages.Count());
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 + 2 + mScene->mImages.Count());
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
@@ -294,8 +300,8 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AppSettingsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::CameraConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 4);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::BuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, mScene->mImages.Count(), 5);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mGlobalRootSignature->Create();
 
@@ -305,19 +311,21 @@ void DXRExample::CreateRootSignature(void) {
 
 void DXRExample::CreateRayTracingPipelineState(void) {
 
-    mRayTracingState = new Render::RayTracingState(8);
+    mRayTracingState = new Render::RayTracingState(9);
 
-    const wchar_t *shaderFuncs[] = { RayGenerationName, 
-                                     PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
-                                     AOMissName, AOAnyHitName, AOClosetHitName};
+    const wchar_t *shaderFuncs[] = {RayGenerationName, 
+                                    PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
+                                    AOMissName, AOAnyHitName, AOClosetHitName,
+                                    ShadowMissName, ShadowAnyHitName, ShadowClosetHitName};
     mRayTracingState->AddDXILLibrary("RayTracer.cso", shaderFuncs, _countof(shaderFuncs));
 
     mRayTracingState->AddRayTracingShaderConfig(2 * sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
     mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
     mRayTracingState->AddHitGroup(AOHitGroupName, AOClosetHitName, AOAnyHitName);
+    mRayTracingState->AddHitGroup(ShadowHitGroupName, ShadowClosetHitName, ShadowAnyHitName);
 
-    const wchar_t *hitGroups[] = { PrimaryHitGroupName, AOHitGroupName };
+    const wchar_t *hitGroups[] = { PrimaryHitGroupName, AOHitGroupName, ShadowHitGroupName };
     uint32_t lrsIdx = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
     mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx, hitGroups, _countof(hitGroups));
 
@@ -329,9 +337,13 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 }
 
 void DXRExample::BuildGeometry(void) {
+    constexpr uint32_t lightCount = 3;
+
     mIndices = new Render::GPUBuffer(mScene->mIndices.Count() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.Count() * sizeof(Utils::Scene::Vertex));
     mGeometries = new Render::GPUBuffer(mScene->mShapes.Count() * sizeof(Geometry));
+    mLights = new Render::GPUBuffer(lightCount * sizeof(Light));
+
     Geometry *geometries = new Geometry[mScene->mShapes.Count()];
     for (uint32_t i = 0; i < mScene->mShapes.Count(); ++i) {
         auto &shape = mScene->mShapes.At(i);
@@ -340,15 +352,24 @@ void DXRExample::BuildGeometry(void) {
         geometries[i].texInfo = { shape.diffuseTex, shape.specularTex, shape.normalTex, 0 };
     }
 
+    Light lights[3] = {
+        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.3642265796661377f, -0.5452651977539063f, 0.7549999952316284f}, {1.0f, 1.0f, 1.0f} },
+        { PointLight, 180.0f, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+        { PointLight, 180.0f, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+    };
+
+
     Render::gCommand->Begin();
 
     Render::gCommand->UploadBuffer(mIndices, 0, mScene->mIndices.Data(), mIndices->GetBufferSize());
     Render::gCommand->UploadBuffer(mVertices, 0, mScene->mVertices.Data(), mVertices->GetBufferSize());
     Render::gCommand->UploadBuffer(mGeometries, 0, geometries, mGeometries->GetBufferSize());
+    Render::gCommand->UploadBuffer(mLights, 0, lights, mLights->GetBufferSize());
 
     mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), mScene->mIndices.Count());
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mVertices.Count(), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mScene->mShapes.Count(), sizeof(Geometry));
+    mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), lightCount, sizeof(Light));
 
     Render::gCommand->End(true);
 
@@ -389,8 +410,8 @@ void DXRExample::BuildAccelerationStructure(void) {
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
     const wchar_t *rayGens[] = { RayGenerationName };
-    const wchar_t *misses[] = { PrimaryMissName, AOMissName };
-    const wchar_t *hipGroups[] = { PrimaryHitGroupName, AOHitGroupName };
+    const wchar_t *misses[] = { PrimaryMissName, AOMissName, ShadowMissName };
+    const wchar_t *hipGroups[] = { PrimaryHitGroupName, AOHitGroupName, ShadowHitGroupName };
     mRayTracingState->BuildShaderTable(rayGens, _countof(rayGens), misses, _countof(misses), hipGroups, _countof(hipGroups));
 }
 
