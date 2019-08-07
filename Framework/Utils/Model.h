@@ -2,6 +2,8 @@
 
 namespace Utils {
 
+class Image;
+
 class Scene {
 public:
     struct Shape {
@@ -13,15 +15,6 @@ public:
         uint32_t normalTex;
     };
 
-    struct Image {
-        Image(void): width(0), height(0), channels(0), pixels(nullptr) { }
-        ~Image(void) { if (pixels) { free(pixels); } }
-        uint32_t width;
-        uint32_t height;
-        uint32_t channels;
-        uint8_t *pixels;
-    };
-
     struct Vertex {
         XMFLOAT3 position;
         XMFLOAT2 texCoord;
@@ -30,16 +23,16 @@ public:
         XMFLOAT3 bitangent;
     };
 
+    ~Scene(void);
+
     std::vector<Vertex>     mVertices;
     std::vector<uint32_t>   mIndices;
     std::vector<Shape>      mShapes;
-    std::vector<Image>      mImages;
+    std::vector<Image *>    mImages;
 };
 
 class Model {
 public:
-
-
     static Scene * LoadFromFile(const char *fileName);
     static Scene * LoadFromMMB(const char *fileName);
     static void SaveToMMB(const Scene *scene, const char *fileName);

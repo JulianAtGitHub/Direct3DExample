@@ -1,14 +1,17 @@
 #include "stdafx.h"
 #include "Model.h"
+#include "Image.h"
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 #include "zlib.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 namespace Utils {
+
+Scene::~Scene(void) {
+    for (auto image : mImages) { delete image; }
+    mImages.clear();
+}
 
 Scene * Model::LoadFromFile(const char *fileName) {
     Assimp::Importer aiImporter;
@@ -165,28 +168,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
     // images
     out->mImages.resize(images.size());
     char imagePath[MAX_PATH];
-    stbi_set_flip_vertically_on_load(1);
     for (uint32_t i = 0; i < images.size(); ++i) {
         strcpy(imagePath, resPath);
         strcat(imagePath, images[i].c_str());
-
-        Scene::Image &image = out->mImages[i];
-
-        int width, height, channels;
-        stbi_uc *pixels = stbi_load(imagePath, &width, &height, &channels, STBI_rgb_alpha);
-        if (!pixels) {
-            Print("Loader: load image file failed!\n");
-            continue;
-        }
-
-        image.width = width;
-        image.height = height;
-        image.channels = 4;
-        size_t dataSize = width * height * 4;
-        image.pixels = (uint8_t *)malloc(dataSize);
-        memcpy(image.pixels, pixels, dataSize);
-
-        stbi_image_free(pixels);
+        out->mImages[i] = Image::CreateFromFile(imagePath);
     }
 
     return out;
@@ -214,7 +199,7 @@ Scene * Model::LoadFromMMB(const char *fileName) {
         uint32_t vertexSize = head.vertexCount * sizeof(Scene::Vertex);
         uint32_t indexSize = head.indexCount * sizeof(uint32_t);
         uint32_t shapeSize = head.shapeCount * sizeof(Scene::Shape);
-        uint32_t imageSize = head.imageCount * sizeof(Scene::Image);
+        uint32_t imageSize = head.imageCount * sizeof(Image);
 
         scene = new Scene;
         scene->mVertices.resize(head.vertexCount);
@@ -228,16 +213,18 @@ Scene * Model::LoadFromMMB(const char *fileName) {
         source += indexSize;
         memcpy(scene->mShapes.data(), source, shapeSize);
         source += shapeSize;
-        memcpy(scene->mImages.data(), source, imageSize);
-        source += imageSize;
-        for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
-            Scene::Image &image = scene->mImages[i];
-            uint32_t copySize = image.width * image.height * image.channels;
-            image.pixels = (uint8_t *)malloc(copySize);
-            memcpy(image.pixels, source, copySize);
-            source += copySize;
-        }
 
+        void *imageHead = malloc(sizeof(Image));
+        uint8_t *heads = source;
+        uint8_t *pixels = source + imageSize;
+        for (uint32_t i = 0; i < head.imageCount; ++i) {
+            memcpy(imageHead, heads, sizeof(Image));
+            heads += sizeof(Image);
+            Image *image = Image::LoadFromBinary(imageHead, pixels);
+            pixels += image->GetPixelsSize();
+            scene->mImages[i] = image;
+        }
+        free(imageHead);
         free(compressedData);
         free(data);
     } else {
@@ -265,11 +252,10 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     uint32_t vertexSize = static_cast<uint32_t>(scene->mVertices.size() * sizeof(Scene::Vertex));
     uint32_t indexSize = static_cast<uint32_t>(scene->mIndices.size() * sizeof(uint32_t));
     uint32_t shapeSize = static_cast<uint32_t>(scene->mShapes.size() * sizeof(Scene::Shape));
-    uint32_t imageSize = static_cast<uint32_t>(scene->mImages.size() * sizeof(Scene::Image));
+    uint32_t imageSize = static_cast<uint32_t>(scene->mImages.size() * sizeof(Image));
     uint32_t pixelSize = 0;
-    for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
-        const Scene::Image &image = scene->mImages[i];
-        pixelSize += image.width * image.height * image.channels;
+    for (auto image : scene->mImages) {
+        pixelSize += image->GetPixelsSize();
     }
     uint32_t dataSize = vertexSize + indexSize + shapeSize + imageSize + pixelSize;
     uint8_t *data = (uint8_t *)malloc(dataSize);
@@ -280,12 +266,13 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     dest += indexSize;
     memcpy(dest, scene->mShapes.data(), shapeSize);
     dest += shapeSize;
-    memcpy(dest, scene->mImages.data(), imageSize);
-    dest += imageSize;
-    for (uint32_t i = 0; i < scene->mImages.size(); ++i) {
-        const Scene::Image &image = scene->mImages[i];
-        uint32_t copySize = image.width * image.height * image.channels;
-        memcpy(dest, image.pixels, copySize);
+    for (Image *image : scene->mImages) {
+        memcpy(dest, image, sizeof(Image));
+        dest += sizeof(Image);
+    }
+    for (Image *image : scene->mImages) {
+        uint32_t copySize = image->GetPixelsSize();
+        memcpy(dest, image->GetPixels(), copySize);
         dest += copySize;
     }
     // Compress data
