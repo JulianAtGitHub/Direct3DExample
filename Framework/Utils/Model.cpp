@@ -68,7 +68,8 @@ Scene * Model::LoadFromFile(const char *fileName) {
         }
         return idx;
     };
-    std::vector<std::string> images(scene->mNumMaterials * 3);
+    std::vector<std::string> images;
+    images.reserve(scene->mNumMaterials * 3);
 
     Scene *out = new Scene;
     out->mShapes.resize(scene->mNumMeshes);
