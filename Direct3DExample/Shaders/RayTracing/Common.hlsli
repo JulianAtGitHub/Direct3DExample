@@ -71,6 +71,7 @@ typedef RayHitPayload ShadowRayPayload;
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 static const float M_PI = 3.14159265f;
+static const float M_1_PI = 0.318309886f;
 static const float FLT_MAX = 3.402823466e+38f;
 
 namespace RayTraceParams {
@@ -102,7 +103,8 @@ ByteAddressBuffer gIndices : register(t1, space0);
 StructuredBuffer<Vertex> gVertices : register(t2, space0);
 StructuredBuffer<Geometry> gGeometries : register(t3, space0);
 StructuredBuffer<Light> gLights : register(t4, space0);
-Texture2D<float4> gMatTextures[] : register(t5);
+Texture2D<float4> gEnvTexture : register(t5);
+Texture2D<float4> gMatTextures[] : register(t6);
 // constant values
 ConstantBuffer<AppSettings> gSettingsCB : register(b0);
 ConstantBuffer<SceneConstants> gSceneCB : register(b1);

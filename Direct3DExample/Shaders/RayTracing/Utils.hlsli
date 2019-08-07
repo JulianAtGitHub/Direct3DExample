@@ -128,4 +128,12 @@ inline bool AlphaTestFailed(float threshold, Attributes attribs) {
     return false;
 }
 
+// Convert our world space direction to a (u,v) coord in a latitude-longitude spherical map
+inline float2 ToLatLong(float3 dir) {
+    float3 p = normalize(dir);
+    float u = (1.f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
+    float v = acos(p.y) * M_1_PI; //  acos => [1, -1]
+    return float2(u, v);
+}
+
 #endif // _RAYTRACING_UTILS_H_
