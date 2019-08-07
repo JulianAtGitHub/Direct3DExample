@@ -281,10 +281,9 @@ void DXRExample::InitScene(void) {
     Render::gCommand->Begin();
 
     mTextures.reserve(mScene->mImages.size());
-    for (uint32_t i = 0; i < mScene->mImages.size(); ++i) {
-        auto &image = mScene->mImages[i];
-        Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
-        Render::gCommand->UploadTexture(texture, image.pixels);
+    for (auto image : mScene->mImages) {
+        Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetDXGIFormat());
+        Render::gCommand->UploadTexture(texture, image->GetPixels());
         texture->CreateSRV(mDescriptorHeap->Allocate());
         mTextures.push_back(texture);
     }
@@ -422,10 +421,10 @@ void DXRExample::CreateRaytracingOutput(void) {
     uint32_t height = Render::gRenderTarget[0]->GetHeight();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    mRaytracingOutput = new Render::PixelBuffer(width, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mRaytracingOutput = new Render::PixelBuffer(width * (Render::BitsPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT) >> 3), width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
 
-    mDisplayColor = new Render::PixelBuffer(width, width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mDisplayColor = new Render::PixelBuffer(width * (Render::BitsPerPixel(format) >> 3), width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mDisplayColor->CreateUAV(mDescriptorHeap->Allocate());
 }
 

@@ -146,10 +146,9 @@ void D3DExample::LoadAssets(void) {
     }
 
     mTextures.reserve(mScene->mImages.size());
-    for (uint32_t i = 0; i < mScene->mImages.size(); ++i) {
-        Utils::Scene::Image &image = mScene->mImages[i];
-        Render::PixelBuffer *texture = new Render::PixelBuffer(image.width, image.width, image.height, DXGI_FORMAT_R8G8B8A8_UNORM);
-        Render::gCommand->UploadTexture(texture, image.pixels);
+    for (auto image : mScene->mImages) {
+        Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetDXGIFormat());
+        Render::gCommand->UploadTexture(texture, image->GetPixels());
         texture->CreateSRV(mShaderResourceHeap->Allocate());
         mTextures.push_back(texture);
     }
