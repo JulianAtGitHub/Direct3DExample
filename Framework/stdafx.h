@@ -58,13 +58,13 @@
 
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
-#include "DirectX/d3dx12.h"
+
+#include "Utils/d3dx12.h"
+#include "Utils/Common.h"
+#include "Render/RenderCore.h"
 
 #ifdef __cplusplus
 using namespace Microsoft;
 using namespace DirectX;
 #endif
-
-#include "Common/Common.h"
-#include "Render/RenderCore.h"
 

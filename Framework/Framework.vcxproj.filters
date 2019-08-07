@@ -103,6 +103,9 @@
     <ClInclude Include="Utils\Timer.hpp">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\Image.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -167,6 +170,9 @@
     </ClCompile>
     <ClCompile Include="Render\Resource\ConstantBuffer.cpp">
       <Filter>Sources\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Image.cpp">
+      <Filter>Sources\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

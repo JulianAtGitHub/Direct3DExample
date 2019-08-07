@@ -20,3 +20,4 @@
 #include "Utils/Timer.hpp"
 #include "Utils/Camera.hpp"
 #include "Utils/Model.h"
+#include "Utils/Image.h"
