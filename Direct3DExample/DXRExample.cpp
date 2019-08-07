@@ -41,6 +41,7 @@ DXRExample::DXRExample(HWND hwnd)
 , mRaytracingOutput(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
+, mEnvTexture(nullptr)
 , mSettingsCB(nullptr)
 , mSceneCB(nullptr)
 , mCameraCB(nullptr)
@@ -129,7 +130,7 @@ void DXRExample::Update(void) {
 
     mSettings.enableAccumulate = 1;
     mSettings.enableJitterCamera = 1;
-    mSettings.enableLensCamera = 1;
+    mSettings.enableLensCamera = 0;
 
     XMStoreFloat4(&mCameraConsts.pos, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
@@ -167,6 +168,7 @@ void DXRExample::Render(void) {
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     // Set index and successive vertex buffer decriptor tables
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
@@ -196,6 +198,7 @@ void DXRExample::Destroy(void) {
     for (auto texture : mTextures) { delete texture; }
     mTextures.clear();
 
+    DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mScene);
@@ -273,12 +276,18 @@ void DXRExample::InitScene(void) {
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
     mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
     mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(4 + 2 + mScene->mImages.size()));
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(4 + 2 + 1 + mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
 
+    Utils::Image *envImage = Utils::Image::CreateFromFile("Models\\dirt_road.hdr");
+
     Render::gCommand->Begin();
+
+    mEnvTexture = new Render::PixelBuffer(envImage->GetPitch(), envImage->GetWidth(), envImage->GetHeight(), envImage->GetDXGIFormat());
+    Render::gCommand->UploadTexture(mEnvTexture, envImage->GetPixels());
+    mEnvTexture->CreateSRV(mDescriptorHeap->Allocate());
 
     mTextures.reserve(mScene->mImages.size());
     for (auto image : mScene->mImages) {
@@ -289,6 +298,8 @@ void DXRExample::InitScene(void) {
     }
 
     Render::gCommand->End(true);
+
+    delete envImage;
 }
 
 void DXRExample::CreateRootSignature(void) {
@@ -300,7 +311,8 @@ void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::CameraConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::BuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<uint32_t>(mScene->mImages.size()), 5);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<uint32_t>(mScene->mImages.size()), 6);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mGlobalRootSignature->Create();
 

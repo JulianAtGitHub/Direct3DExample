@@ -82,6 +82,7 @@ private:
         SceneConstantsSlot,
         CameraConstantsSlot,
         BuffersSlot,
+        EnvTexturesSlot,
         TexturesSlot,
         SamplerSlot,
         SlotCount
@@ -119,6 +120,7 @@ private:
     Render::PixelBuffer                *mDisplayColor;
     Render::DescriptorHeap             *mSamplerHeap;
     Render::Sampler                    *mSampler;
+    Render::PixelBuffer                *mEnvTexture;
     std::vector<Render::PixelBuffer *>  mTextures;
 
     AppSettings                 mSettings;
