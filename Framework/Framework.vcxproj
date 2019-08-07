@@ -88,8 +88,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Common\Common.h" />
-    <ClInclude Include="DirectX\d3dx12.h" />
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Render\AccelerationStructure.h" />
     <ClInclude Include="Render\CommandContext.h" />
@@ -111,13 +109,14 @@
     <ClInclude Include="Render\Sampler.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Utils\Camera.hpp" />
+    <ClInclude Include="Utils\Common.h" />
+    <ClInclude Include="Utils\d3dx12.h" />
     <ClInclude Include="Utils\Image.h" />
     <ClInclude Include="Utils\Model.h" />
     <ClInclude Include="Utils\stb_image.h" />
     <ClInclude Include="Utils\Timer.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Common\Common.cpp" />
     <ClCompile Include="Render\AccelerationStructure.cpp" />
     <ClCompile Include="Render\CommandContext.cpp" />
     <ClCompile Include="Render\CommandQueue.cpp" />
@@ -140,6 +139,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Utils\Common.cpp" />
     <ClCompile Include="Utils\Image.cpp" />
     <ClCompile Include="Utils\Model.cpp" />
   </ItemGroup>
