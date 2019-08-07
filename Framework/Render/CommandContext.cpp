@@ -148,7 +148,7 @@ void CommandContext::UploadTexture(PixelBuffer *resource, const void *data) {
 
     D3D12_SUBRESOURCE_DATA texRes;
     texRes.pData = data;
-    texRes.RowPitch = resource->GetPitch() * (BitsPerPixel(resource->GetFormat()) >> 3);
+    texRes.RowPitch = resource->GetPitch();
     texRes.SlicePitch = texRes.RowPitch * resource->GetHeight();
 
     UploadTexture(resource, &texRes, 1);

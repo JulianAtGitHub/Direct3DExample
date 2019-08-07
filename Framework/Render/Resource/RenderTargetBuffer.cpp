@@ -23,9 +23,9 @@ void RenderTargetBuffer::Initialize(ID3D12Resource *resource) {
     mResource = resource;
 
     D3D12_RESOURCE_DESC desc = mResource->GetDesc();
-    mPitch = static_cast<uint32_t>(desc.Width);
     mWidth = static_cast<uint32_t>(desc.Width);
     mHeight = static_cast<uint32_t>(desc.Height);
+    mPitch = mWidth * BitsPerPixel(desc.Format) >> 3;
     mFormat = desc.Format;
 }
 
