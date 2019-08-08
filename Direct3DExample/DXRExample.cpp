@@ -131,6 +131,7 @@ void DXRExample::Update(void) {
     mSettings.enableAccumulate = 1;
     mSettings.enableJitterCamera = 1;
     mSettings.enableLensCamera = 0;
+    mSettings.enableEnvironmentMap = 1;
 
     XMStoreFloat4(&mCameraConsts.pos, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
@@ -433,10 +434,10 @@ void DXRExample::CreateRaytracingOutput(void) {
     uint32_t height = Render::gRenderTarget[0]->GetHeight();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    mRaytracingOutput = new Render::PixelBuffer(width * (Render::BitsPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT) >> 3), width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT), width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
 
-    mDisplayColor = new Render::PixelBuffer(width * (Render::BitsPerPixel(format) >> 3), width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mDisplayColor = new Render::PixelBuffer(width * Render::BytesPerPixel(format), width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mDisplayColor->CreateUAV(mDescriptorHeap->Allocate());
 }
 

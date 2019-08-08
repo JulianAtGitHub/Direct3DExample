@@ -33,6 +33,7 @@ private:
         uint32_t enableAccumulate;
         uint32_t enableJitterCamera;
         uint32_t enableLensCamera;
+        uint32_t enableEnvironmentMap;
     };
 
     struct Geometry {
