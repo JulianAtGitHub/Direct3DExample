@@ -88,9 +88,9 @@ void EvaluatePointLight(in Light light, in float3 hitPos, inout LightSample ls) 
 
 void EvaluateLight(in Light light, in float3 hitPos, inout LightSample ls) {
     switch(light.type) {
-        case RayTraceParams::DirectLight:	return EvaluateDirectLight(light, hitPos, ls);
-        case RayTraceParams::PointLight: 	return EvaluatePointLight(light, hitPos, ls);
-        default: 							return;
+        case RayTraceParams::DirectLight:   return EvaluateDirectLight(light, hitPos, ls);
+        case RayTraceParams::PointLight:    return EvaluatePointLight(light, hitPos, ls);
+        default:                            return;
     }
 }
 
@@ -134,6 +134,13 @@ inline float2 DirToLatLong(float3 dir) {
     float u = (1.f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
     float v = acos(p.y) * M_1_PI; //  acos => [1, -1]
     return float2(u, v);
+}
+
+inline float3 HdrToLdr(float3 hdr) {
+    // Tone mapping
+    float3 mapped = hdr / (hdr + 1.0f);
+    // Gamma correction 
+    return pow(mapped, float3(M_1_GAMMA, M_1_GAMMA, M_1_GAMMA));
 }
 
 #endif // _RAYTRACING_UTILS_H_

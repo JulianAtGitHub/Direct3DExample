@@ -73,6 +73,10 @@ typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 static const float M_PI = 3.14159265f;
 static const float M_1_PI = 0.318309886f;
+
+static const float M_GAMMA = 2.2f;
+static const float M_1_GAMMA = 0.45454545456f;
+
 static const float FLT_MAX = 3.402823466e+38f;
 
 namespace RayTraceParams {

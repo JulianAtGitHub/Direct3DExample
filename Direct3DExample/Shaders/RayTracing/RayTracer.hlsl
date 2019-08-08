@@ -78,7 +78,8 @@ void RayGener() {
 void PrimaryMiss(inout PrimaryRayPayload payload) {
     if (gSettingsCB.enableEnvironmentMap) {
         float2 uv = DirToLatLong( WorldRayDirection() );
-        payload.color = gEnvTexture.SampleLevel(gSampler, uv, 0);
+        float3 hdr = gEnvTexture.SampleLevel(gSampler, uv, 0).rgb;
+        payload.color = float4(HdrToLdr(hdr), 1.0);
     } else {
         payload.color = gSceneCB.bgColor;
     }
