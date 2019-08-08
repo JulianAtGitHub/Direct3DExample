@@ -7,7 +7,7 @@ namespace Render {
 Sampler::Sampler(void)
 {
     mDesc = {};
-    mDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    mDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
     mDesc.MipLODBias = 0;
     mDesc.MaxAnisotropy = 0;
     mDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;

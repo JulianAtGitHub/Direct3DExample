@@ -12,6 +12,7 @@ public:
     INLINE D3D12_SAMPLER_DESC & GetDesc(void) { return mDesc; }
     INLINE DescriptorHandle & GetHandle(void) { return mHandle; }
 
+    void SetFilter(D3D12_FILTER filter);
     void SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE mode);
     void SetBorderColor(const XMFLOAT4 &color);
 
@@ -22,6 +23,10 @@ private:
     DescriptorHandle    mHandle;
 
 };
+
+INLINE void Sampler::SetFilter(D3D12_FILTER filter) {
+    mDesc.Filter = filter;
+}
 
 INLINE void Sampler::SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE mode) {
     mDesc.AddressU = mode;
