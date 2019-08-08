@@ -76,10 +76,12 @@ void RayGener() {
 
 [shader("miss")]
 void PrimaryMiss(inout PrimaryRayPayload payload) {
-    float2 dims;
-    gEnvTexture.GetDimensions(dims.x, dims.y);
-    float2 uv = ToLatLong( WorldRayDirection() );
-    payload.color = gEnvTexture.SampleLevel(gSampler, uv, 0);
+    if (gSettingsCB.enableEnvironmentMap) {
+        float2 uv = DirToLatLong( WorldRayDirection() );
+        payload.color = gEnvTexture.SampleLevel(gSampler, uv, 0);
+    } else {
+        payload.color = gSceneCB.bgColor;
+    }
 }
 
 [shader("anyhit")]

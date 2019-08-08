@@ -5,6 +5,7 @@ struct AppSettings {
     uint enableAccumulate;
     uint enableJitterCamera;
     uint enableLensCamera;
+    uint enableEnvironmentMap;
 };
 
 struct Vertex {
