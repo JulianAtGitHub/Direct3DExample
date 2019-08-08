@@ -241,6 +241,10 @@ void Terminate(void) {
     ReleaseAndSetNull(gDXRDevice);
 }
 
+uint32_t BytesPerPixel(DXGI_FORMAT format) {
+    return (BitsPerPixel(format) >> 3);
+}
+
 uint32_t BitsPerPixel(DXGI_FORMAT format) {
     switch (format) {
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:

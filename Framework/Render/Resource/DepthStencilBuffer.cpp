@@ -8,7 +8,7 @@ DepthStencilBuffer::DepthStencilBuffer(uint32_t width, uint32_t height, DXGI_FOR
 , mClearedDepth(1.0f)
 , mClearedStencil(0)
 {
-    mPitch = width * (BitsPerPixel(format) >> 3);
+    mPitch = width * BytesPerPixel(format);
     mWidth = width;
     mHeight = height;
     Initialize(format);
