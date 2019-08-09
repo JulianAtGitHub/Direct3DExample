@@ -43,8 +43,8 @@ private:
 
     enum LightType {
         DirectLight = 0,
-        PointLight,     // include spot light
-        AreaLight,
+        PointLight,
+        SpotLight,
     };
 
     struct Light {

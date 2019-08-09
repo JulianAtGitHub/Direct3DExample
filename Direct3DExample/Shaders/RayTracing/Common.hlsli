@@ -89,7 +89,8 @@ namespace RayTraceParams {
 
     enum LightType {
         DirectLight = 0,
-        PointLight,     // include spot light
+        PointLight,
+        SpotLight,
         LightTypeCount
     };
 

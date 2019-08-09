@@ -128,8 +128,8 @@ void DXRExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    mSettings.enableAccumulate = 1;
-    mSettings.enableJitterCamera = 1;
+    mSettings.enableAccumulate = 0;
+    mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
     mSettings.enableEnvironmentMap = 1;
 
@@ -366,8 +366,8 @@ void DXRExample::BuildGeometry(void) {
 
     Light lights[3] = {
         { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.3642265796661377f, -0.5452651977539063f, 0.7549999952316284f}, {1.0f, 1.0f, 1.0f} },
-        { PointLight, 180.0f, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
-        { PointLight, 180.0f, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+        { PointLight, XM_2PI, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+        { PointLight, XM_2PI, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
     };
 
 

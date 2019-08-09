@@ -108,7 +108,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     // normal
     float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
     float3 hitNormal = LerpFloat3Attributes(normals, attribs);
-    hitNormal = normalize(mul((float3x3) ObjectToWorld3x4(), hitNormal));
+    hitNormal = normalize(mul((float3x3)ObjectToWorld3x4(), hitNormal));
     //float4 wsNormal = float4(hitNormal, length(hitPosition - gCameraCB.pos));
     //gOutputs[RayTraceParams::WsNormal][launchIndex] = wsNormal;
 
@@ -153,7 +153,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
         float shadowFactor = ShadowRayGen(hitPosition, ls.L, length(ls.position - hitPosition));
 
         float LdotN = saturate(dot(hitNormal, ls.L));
-        dirColor += shadowFactor * LdotN * ls.diffuse; 
+        dirColor += shadowFactor * LdotN * ls.diffuse;
     }
 
     // Modulate based on the physically based Lambertian term (albedo/pi)

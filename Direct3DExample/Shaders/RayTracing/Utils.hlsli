@@ -8,21 +8,21 @@
 // Generates a seed for a random number generator from 2 inputs plus a backoff
 // https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
 uint InitRand(uint val0, uint val1, uint backoff = 16) {
-	uint v0 = val0, v1 = val1, s0 = 0;
+    uint v0 = val0, v1 = val1, s0 = 0;
 
-	[unroll]
-	for (uint n = 0; n < backoff; n++) {
-		s0 += 0x9e3779b9;
-		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
-		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
-	}
-	return v0;
+    [unroll]
+    for (uint n = 0; n < backoff; n++) {
+        s0 += 0x9e3779b9;
+        v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+        v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+    }
+    return v0;
 }
 
 // Takes our seed, updates it, and returns a pseudorandom float in [0..1]
 inline float NextRand(inout uint s) {
-	s = (1664525u * s + 1013904223u);
-	return float(s & 0x00FFFFFF) / float(0x01000000);
+    s = (1664525u * s + 1013904223u);
+    return float(s & 0x00FFFFFF) / float(0x01000000);
 }
 
 /**Hemi-Sphere Sampler***********************************************************/
@@ -30,27 +30,27 @@ inline float NextRand(inout uint s) {
 // Utility function to get a vector perpendicular to an input vector 
 //    (from "Efficient Construction of Perpendicular Vectors Without Branching")
 inline float3 PerpendicularVector(float3 u) {
-	float3 a = abs(u);
-	uint xm = ((a.x - a.y) < 0 && (a.x - a.z) < 0) ? 1 : 0;
-	uint ym = (a.y - a.z) < 0 ? (1 ^ xm) : 0;
-	uint zm = 1 ^ (xm | ym);
-	return cross(u, float3(xm, ym, zm));
+    float3 a = abs(u);
+    uint xm = ((a.x - a.y) < 0 && (a.x - a.z) < 0) ? 1 : 0;
+    uint ym = (a.y - a.z) < 0 ? (1 ^ xm) : 0;
+    uint zm = 1 ^ (xm | ym);
+    return cross(u, float3(xm, ym, zm));
 }
 
 // Get a cosine-weighted random vector centered around a specified normal direction.
 // https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
 float3 CosHemisphereSample(inout uint randSeed, float3 hitNorm) {
-	// Get 2 random numbers to select our sample with
-	float2 randVal = float2(NextRand(randSeed), NextRand(randSeed));
+    // Get 2 random numbers to select our sample with
+    float2 randVal = float2(NextRand(randSeed), NextRand(randSeed));
 
-	// Cosine weighted hemisphere sample from RNG
-	float3 bitangent = PerpendicularVector(hitNorm);
-	float3 tangent = cross(bitangent, hitNorm);
-	float r = sqrt(randVal.x);
-	float phi = 2.0f * 3.14159265f * randVal.y;
+    // Cosine weighted hemisphere sample from RNG
+    float3 bitangent = PerpendicularVector(hitNorm);
+    float3 tangent = cross(bitangent, hitNorm);
+    float r = sqrt(randVal.x);
+    float phi = 2.0f * 3.14159265f * randVal.y;
 
-	// Get our cosine-weighted hemisphere lobe sample direction
-	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
+    // Get our cosine-weighted hemisphere lobe sample direction
+    return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
 }
 
 /**Light Sampler***********************************************************/
@@ -73,12 +73,29 @@ void EvaluatePointLight(in Light light, in float3 hitPos, inout LightSample ls) 
     // float falloff = 1 / ((0.01 * 0.01) + distSquared);
     float falloff = 1; // assume no fall off 
 
+    ls.diffuse = light.intensity * falloff;
+    ls.specular = ls.diffuse;
+}
+
+void EvaluateSpotLight(in Light light, in float3 hitPos, inout LightSample ls) {
+    ls.position = light.position;
+
+    ls.L = light.position - hitPos;
+    // Avoid NaN
+    float distSquared = dot(ls.L, ls.L);
+    ls.L = (distSquared > 1e-5f) ? normalize(ls.L) : 0;
+
+    // The 0.01 is to avoid infs when the light source is close to the shading point
+    // float falloff = 1 / ((0.01 * 0.01) + distSquared);
+    float falloff = 1; // assume no fall off 
+
     // Calculate the falloff for spot-lights
-    float cosTheta = -dot(ls.L, light.direction); // cos of angle of light orientation
-    if(cosTheta < light.cosOpenAngle) {
+    float cosTheta = dot(-ls.L, light.direction); // cos of angle of light orientation
+    float theta = acos(cosTheta);
+    if(theta > light.openAngle * 0.5) {
         falloff = 0;
     } else if(light.penumbraAngle > 0) {
-        float deltaAngle = light.openAngle - acos(cosTheta);
+        float deltaAngle = light.openAngle - theta;
         falloff *= saturate((deltaAngle - light.penumbraAngle) / light.penumbraAngle);
     }
 
@@ -90,6 +107,7 @@ void EvaluateLight(in Light light, in float3 hitPos, inout LightSample ls) {
     switch(light.type) {
         case RayTraceParams::DirectLight:   return EvaluateDirectLight(light, hitPos, ls);
         case RayTraceParams::PointLight:    return EvaluatePointLight(light, hitPos, ls);
+        case RayTraceParams::SpotLight:     return EvaluateSpotLight(light, hitPos, ls);
         default:                            return;
     }
 }
@@ -132,7 +150,7 @@ inline bool AlphaTestFailed(float threshold, Attributes attribs) {
 inline float2 DirToLatLong(float3 dir) {
     float3 p = normalize(dir);
     float u = (1.f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
-    float v = acos(p.y) * M_1_PI; //  acos => [1, -1]
+    float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
     return float2(u, v);
 }
 
