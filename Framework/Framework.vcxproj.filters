@@ -22,9 +22,6 @@
     <ClInclude Include="stdafx.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\stb_image.h">
-      <Filter>Sources\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Model.h">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
