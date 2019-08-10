@@ -65,9 +65,6 @@
     <None Include="Shaders\inputs.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Shaders\RayTracing\AORay.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
     <None Include="Shaders\RayTracing\Common.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
@@ -75,6 +72,9 @@
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
     <None Include="Shaders\RayTracing\ShadowRay.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\IndirectRay.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
   </ItemGroup>
