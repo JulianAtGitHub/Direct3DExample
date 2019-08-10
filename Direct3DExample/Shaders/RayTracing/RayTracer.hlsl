@@ -1,18 +1,18 @@
 
 #include "Common.hlsli"
 #include "Utils.hlsli"
-#include "AORay.hlsli"
+#include "IndirectRay.hlsli"
 #include "ShadowRay.hlsli"
 
 inline void WriteToOutput(in PrimaryRayPayload payload, in uint2 index) {
     if (gSettingsCB.enableAccumulate) {
         float4 lastFrameColor = gRenderTarget[index];
-        float4 finalColor = (lastFrameColor * gSceneCB.accumCount + payload.color) / (gSceneCB.accumCount + 1);
-        gRenderTarget[index] = finalColor;
-        gRenderDisplay[index] = finalColor;
+        float3 finalColor = (lastFrameColor.rgb * gSceneCB.accumCount + payload.color) / (gSceneCB.accumCount + 1);
+        gRenderTarget[index] = float4(finalColor, 1);
+        gRenderDisplay[index] = float4(finalColor, 1);
     } else {
-        gRenderTarget[index] = payload.color;
-        gRenderDisplay[index] = payload.color;
+        gRenderTarget[index] = float4(payload.color, 1);
+        gRenderDisplay[index] = float4(payload.color, 1);
     }
 }
 
@@ -60,7 +60,7 @@ void RayGener() {
         PinholdCameraRay(pixel, ray);
     }
 
-    PrimaryRayPayload payload = { float4(0, 0, 0, 1), randSeed };
+    PrimaryRayPayload payload = { float3(0, 0, 0), randSeed };
 
     TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
@@ -76,13 +76,7 @@ void RayGener() {
 
 [shader("miss")]
 void PrimaryMiss(inout PrimaryRayPayload payload) {
-    if (gSettingsCB.enableEnvironmentMap) {
-        float2 uv = DirToLatLong( WorldRayDirection() );
-        float3 hdr = gEnvTexture.SampleLevel(gSampler, uv, 0).rgb;
-        payload.color = float4(HdrToLdr(hdr), 1.0);
-    } else {
-        payload.color = gSceneCB.bgColor;
-    }
+    payload.color = EnvironmentColor(WorldRayDirection());
 }
 
 [shader("anyhit")]
@@ -95,74 +89,36 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
-    uint2 launchIndex = DispatchRaysIndex().xy;
-    uint2 launchDim = DispatchRaysDimensions().xy;
-    uint3 idx = HitTriangle();
-    Geometry geo = gGeometries[InstanceID()];
+    HitSample hs;
+    EvaluateHit(attribs, hs);
 
-    // position
-    float3 hitPosition = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
-    //float4 wsPosition = float4(hitPosition, 1.0f);
-    //gOutputs[RayTraceParams::WsPosition][launchIndex] = wsPosition;
+    // Random select a light 
+    uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(payload.seed)), gSceneCB.lightCount - 1);
 
-    // normal
-    float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
-    float3 hitNormal = LerpFloat3Attributes(normals, attribs);
-    hitNormal = normalize(mul((float3x3)ObjectToWorld3x4(), hitNormal));
-    //float4 wsNormal = float4(hitNormal, length(hitPosition - gCameraCB.pos));
-    //gOutputs[RayTraceParams::WsNormal][launchIndex] = wsNormal;
+    // direct color from light
+    LightSample ls;
+    EvaluateLight(gLights[lightIdx], hs.position, ls);
 
-    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
-    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
+    float factor = gSceneCB.lightCount;
 
-    /**
-    BaseColor
-        - RGB - Base Color
-        - A   - Transparency
-    Specular
-        - R - Occlusion
-        - G - Metalness
-        - B - Roughness
-        - A - Reserved
-    Emissive
-        - RGB - Emissive Color
-        - A   - Unused
-    */
-    float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
-    float4 spec = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0);
-
-    // diffuse 
-    float4 diffColor = float4(lerp(baseColor.rgb, float3(0, 0, 0), spec.b), baseColor.a);
-    //gOutputs[RayTraceParams::MatDiffuse][launchIndex] = diffColor;
-
-    // specular UE4 uses 0.08 multiplied by a default specular value of 0.5 as a base, hence the 0.04
-    // Clamp the roughness so that the BRDF won't explode
-    float4 specColor = float4(lerp(float3(0.04f, 0.04f, 0.04f), baseColor.rgb, spec.b), max(0.08, spec.g));
-    //gOutputs[RayTraceParams::MatSpecular][launchIndex] = specColor;
-
-    // other mats
-    //gOutputs[RayTraceParams::MatEmissive][launchIndex] = float4(0, 0, 0, 0);
-    //gOutputs[RayTraceParams::MatExtra][launchIndex] = float4(1, 0, 0, 0);
-
-    float3 dirColor = float3(0.0, 0.0, 0.0);
-    // Iterate over the lights
-    for (int i = 0; i < gSceneCB.lightCount; ++ i) {
-        LightSample ls;
-        EvaluateLight(gLights[i], hitPosition, ls);
-
-        float shadowFactor = ShadowRayGen(hitPosition, ls.L, length(ls.position - hitPosition));
-
-        float LdotN = saturate(dot(hitNormal, ls.L));
-        dirColor += shadowFactor * LdotN * ls.diffuse;
-    }
+    // direct shadow
+    factor *= ShadowRayGen(hs.position, ls.L, length(ls.position - hs.position));
+    float LdotN = saturate(dot(hs.normal, ls.L));
 
     // Modulate based on the physically based Lambertian term (albedo/pi)
-    dirColor *= diffColor.rgb / M_PI;
+    float3 shadeColor = ls.diffuse * hs.diffuse.rgb; 
+    shadeColor *= factor * LdotN * M_1_PI;
 
-    payload.color = float4(dirColor, 1);
+    // Indirect light
+    if (gSettingsCB.enableIndirectLight) {
+        float3 indirectDir = CosHemisphereSample(payload.seed, hs.normal);
+        float3 indirectColor = IndirectRayGen(hs.position, indirectDir, payload.seed);
 
-    // calculate AO
-    // uint randSeed = payload.randSeed;
-    // float ambientOcclusion = AORayGen(hitPosition, hitNormal, randSeed);
+        // Get NdotL for our selected ray direction
+        float NdotL = saturate(dot(hs.position, indirectDir));
+        shadeColor += indirectColor * hs.diffuse.rgb;
+    }
+
+    payload.color = shadeColor;
 }
 

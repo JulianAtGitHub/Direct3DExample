@@ -9,10 +9,10 @@ const static wchar_t *PrimaryHitGroupName = L"PrimaryHitGroup";
 const static wchar_t *PrimaryAnyHitName = L"PrimaryAnyHit";
 const static wchar_t *PrimaryClosetHitName = L"PrimaryClosestHit";
 
-const static wchar_t *AOMissName = L"AOMiss";
-const static wchar_t *AOHitGroupName = L"AOHitGroup";
-const static wchar_t *AOAnyHitName = L"AOAnyHit";
-const static wchar_t *AOClosetHitName = L"AOClosestHit";
+const static wchar_t *IndirectMissName = L"IndirectMiss";
+const static wchar_t *IndirectHitGroupName = L"IndirectHitGroup";
+const static wchar_t *IndirectAnyHitName = L"IndirectAnyHit";
+const static wchar_t *IndirectClosetHitName = L"IndirectClosestHit";
 
 const static wchar_t *ShadowMissName = L"ShadowMiss";
 const static wchar_t *ShadowHitGroupName = L"ShadowHitGroup";
@@ -128,10 +128,11 @@ void DXRExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    mSettings.enableAccumulate = 0;
-    mSettings.enableJitterCamera = 0;
-    mSettings.enableLensCamera = 0;
+    mSettings.enableAccumulate = 1;
+    mSettings.enableJitterCamera = 1;
+    mSettings.enableLensCamera = 1;
     mSettings.enableEnvironmentMap = 1;
+    mSettings.enableIndirectLight = 1;
 
     XMStoreFloat4(&mCameraConsts.pos, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
@@ -141,11 +142,11 @@ void DXRExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    mSceneConsts.bgColor = { 0.5f, 0.5f, 0.8f, 1.0f };
     mSceneConsts.lightCount = 3;
     mSceneConsts.frameCount = mFrameCount ++;
     mSceneConsts.accumCount = mAccumCount ++;
-    mSceneConsts.aoRadius = 0.63f;
+    mSceneConsts.lightSeed = 0x1337u + mFrameCount;
 }
 
 void DXRExample::Render(void) {
@@ -327,23 +328,23 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     const wchar_t *shaderFuncs[] = {RayGenerationName, 
                                     PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
-                                    AOMissName, AOAnyHitName, AOClosetHitName,
+                                    IndirectMissName, IndirectAnyHitName, IndirectClosetHitName,
                                     ShadowMissName, ShadowAnyHitName, ShadowClosetHitName};
     mRayTracingState->AddDXILLibrary("RayTracer.cso", shaderFuncs, _countof(shaderFuncs));
 
-    mRayTracingState->AddRayTracingShaderConfig(2 * sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
+    mRayTracingState->AddRayTracingShaderConfig(sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
     mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
-    mRayTracingState->AddHitGroup(AOHitGroupName, AOClosetHitName, AOAnyHitName);
+    mRayTracingState->AddHitGroup(IndirectHitGroupName, IndirectClosetHitName, IndirectAnyHitName);
     mRayTracingState->AddHitGroup(ShadowHitGroupName, ShadowClosetHitName, ShadowAnyHitName);
 
-    const wchar_t *hitGroups[] = { PrimaryHitGroupName, AOHitGroupName, ShadowHitGroupName };
+    const wchar_t *hitGroups[] = { PrimaryHitGroupName, IndirectHitGroupName, ShadowHitGroupName };
     uint32_t lrsIdx = mRayTracingState->AddLocalRootSignature(mLocalRootSignature);
     mRayTracingState->AddSubObjectToExportsAssociation(lrsIdx, hitGroups, _countof(hitGroups));
 
     mRayTracingState->AddGlobalRootSignature(mGlobalRootSignature);
 
-    mRayTracingState->AddRayTracingPipelineConfig(2);
+    mRayTracingState->AddRayTracingPipelineConfig(4);
 
     mRayTracingState->Create();
 }
@@ -422,8 +423,8 @@ void DXRExample::BuildAccelerationStructure(void) {
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void DXRExample::BuildShaderTables(void) {
     const wchar_t *rayGens[] = { RayGenerationName };
-    const wchar_t *misses[] = { PrimaryMissName, AOMissName, ShadowMissName };
-    const wchar_t *hipGroups[] = { PrimaryHitGroupName, AOHitGroupName, ShadowHitGroupName };
+    const wchar_t *misses[] = { PrimaryMissName, IndirectMissName, ShadowMissName };
+    const wchar_t *hipGroups[] = { PrimaryHitGroupName, IndirectHitGroupName, ShadowHitGroupName };
     mRayTracingState->BuildShaderTable(rayGens, _countof(rayGens), misses, _countof(misses), hipGroups, _countof(hipGroups));
 }
 

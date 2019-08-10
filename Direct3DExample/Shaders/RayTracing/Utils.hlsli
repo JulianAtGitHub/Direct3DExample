@@ -6,7 +6,6 @@
 /**Random Functions***********************************************************/
 
 // Generates a seed for a random number generator from 2 inputs plus a backoff
-// https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
 uint InitRand(uint val0, uint val1, uint backoff = 16) {
     uint v0 = val0, v1 = val1, s0 = 0;
 
@@ -26,6 +25,7 @@ inline float NextRand(inout uint s) {
 }
 
 /**Hemi-Sphere Sampler***********************************************************/
+// https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
 
 // Utility function to get a vector perpendicular to an input vector 
 //    (from "Efficient Construction of Perpendicular Vectors Without Branching")
@@ -38,7 +38,6 @@ inline float3 PerpendicularVector(float3 u) {
 }
 
 // Get a cosine-weighted random vector centered around a specified normal direction.
-// https://blog.thomaspoulet.fr/uniform-sampling-on-unit-hemisphere/
 float3 CosHemisphereSample(inout uint randSeed, float3 hitNorm) {
     // Get 2 random numbers to select our sample with
     float2 randVal = float2(NextRand(randSeed), NextRand(randSeed));
@@ -51,6 +50,21 @@ float3 CosHemisphereSample(inout uint randSeed, float3 hitNorm) {
 
     // Get our cosine-weighted hemisphere lobe sample direction
     return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
+}
+
+// Get a uniform weighted random vector centered around a specified normal direction.
+float3 UniformHemisphereSample(inout uint randSeed, float3 hitNorm) {
+    // Get 2 random numbers to select our sample with
+    float2 randVal = float2(NextRand(randSeed), NextRand(randSeed));
+
+    // Cosine weighted hemisphere sample from RNG
+    float3 bitangent = PerpendicularVector(hitNorm);
+    float3 tangent = cross(bitangent, hitNorm);
+    float r = sqrt(max(0.0f,1.0f - randVal.x*randVal.x));
+    float phi = 2.0f * 3.14159265f * randVal.y;
+
+    // Get our cosine-weighted hemisphere lobe sample direction
+    return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
 }
 
 /**Light Sampler***********************************************************/
@@ -70,8 +84,8 @@ void EvaluatePointLight(in Light light, in float3 hitPos, inout LightSample ls) 
     ls.L = (distSquared > 1e-5f) ? normalize(ls.L) : 0;
 
     // The 0.01 is to avoid infs when the light source is close to the shading point
-    // float falloff = 1 / ((0.01 * 0.01) + distSquared);
-    float falloff = 1; // assume no fall off 
+    float falloff = 1 / ((0.01 * 0.01) + distSquared);
+    // float falloff = 1; // assume no fall off 
 
     ls.diffuse = light.intensity * falloff;
     ls.specular = ls.diffuse;
@@ -159,6 +173,55 @@ inline float3 HdrToLdr(float3 hdr) {
     float3 mapped = hdr / (hdr + 1.0f);
     // Gamma correction 
     return pow(mapped, float3(M_1_GAMMA, M_1_GAMMA, M_1_GAMMA));
+}
+
+void EvaluateHit(in Attributes attribs, inout HitSample hs) {
+    uint3 idx = HitTriangle();
+    Geometry geo = gGeometries[InstanceID()];
+
+    // position
+    hs.position = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+
+    // normal
+    float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
+    float3 hitNormal = LerpFloat3Attributes(normals, attribs);
+    hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
+    hs.normal = normalize(hitNormal);
+
+    /**
+    BaseColor
+        - RGB - Base Color
+        - A   - Transparency
+    Specular
+        - R - Occlusion
+        - G - Metalness
+        - B - Roughness
+        - A - Reserved
+    Emissive
+        - RGB - Emissive Color
+        - A   - Unused
+    */
+    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
+    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
+    float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
+    float4 specColor = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0);
+
+    // diffuse
+    hs.diffuse = float4(lerp(baseColor.rgb, float3(0, 0, 0), specColor.b), baseColor.a);
+
+    // specular UE4 uses 0.08 multiplied by a default specular value of 0.5 as a base, hence the 0.04
+    // Clamp the roughness so that the BRDF won't explode
+    hs.specular = float4(lerp(float3(0.04f, 0.04f, 0.04f), baseColor.rgb, specColor.b), max(0.08, specColor.g));
+}
+
+float3 EnvironmentColor(float3 dir) {
+    if (gSettingsCB.enableEnvironmentMap) {
+        float2 uv = DirToLatLong(dir);
+        float3 hdr = gEnvTexture.SampleLevel(gSampler, uv, 0).rgb;
+        return HdrToLdr(hdr);
+    } else {
+        return gSceneCB.bgColor.rgb;
+    }
 }
 
 #endif // _RAYTRACING_UTILS_H_

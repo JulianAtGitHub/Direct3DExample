@@ -34,6 +34,7 @@ private:
         uint32_t enableJitterCamera;
         uint32_t enableLensCamera;
         uint32_t enableEnvironmentMap;
+        uint32_t enableIndirectLight;
     };
 
     struct Geometry {
@@ -72,7 +73,7 @@ private:
         uint32_t lightCount;
         uint32_t frameCount;
         uint32_t accumCount;
-        float    aoRadius;
+        uint32_t lightSeed;
     };
 
     enum GlobalRootSignatureParams {

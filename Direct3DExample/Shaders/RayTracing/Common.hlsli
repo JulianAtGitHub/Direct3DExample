@@ -6,6 +6,7 @@ struct AppSettings {
     uint enableJitterCamera;
     uint enableLensCamera;
     uint enableEnvironmentMap;
+    uint enableIndirectLight;
 };
 
 struct Vertex {
@@ -19,6 +20,13 @@ struct Vertex {
 struct Geometry {
     uint4 indexInfo; // x: index offset, y: index count;
     uint4 texInfo;  // x: diffuse, y: specular, z: normal
+};
+
+struct HitSample {
+    float3 position;
+    float3 normal;
+    float4 diffuse;
+    float4 specular;
 };
 
 struct Light {
@@ -53,19 +61,19 @@ struct SceneConstants {
     uint   lightCount;
     uint   frameCount;
     uint   accumCount;
-    float  aoRadius;
+    uint   lightSeed;
 };
 
 struct PrimaryRayPayload {
-    float4 color;
-    uint randSeed;
+    float3 color;
+    uint   seed;
 };
 
 struct RayHitPayload {
     float value;
 };
 
-typedef RayHitPayload AORayPayload;
+typedef PrimaryRayPayload IndirectRayPayload;
 
 typedef RayHitPayload ShadowRayPayload;
 
@@ -82,7 +90,7 @@ static const float FLT_MAX = 3.402823466e+38f;
 namespace RayTraceParams {
     enum RayType {
         PrimaryRay = 0,
-        AORay,
+        IndirectRay,
         ShadowRay,
         RayTypeCount
     };
