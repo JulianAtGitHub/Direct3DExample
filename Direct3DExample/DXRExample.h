@@ -59,7 +59,7 @@ private:
     };
 
     struct CameraConstants {
-        XMFLOAT4 pos;
+        XMFLOAT4 position;
         XMFLOAT4 u;
         XMFLOAT4 v;
         XMFLOAT4 w;
@@ -73,7 +73,7 @@ private:
         uint32_t lightCount;
         uint32_t frameCount;
         uint32_t accumCount;
-        uint32_t lightSeed;
+        uint32_t maxPayDepth;
     };
 
     enum GlobalRootSignatureParams {
@@ -106,6 +106,7 @@ private:
     uint32_t        mHeight;
     uint32_t        mFrameCount;
     uint32_t        mAccumCount;
+    uint32_t        mMaxRayDepth;
     uint32_t        mCurrentFrame;
     uint64_t        mFenceValues[Render::FRAME_COUNT];
     Utils::Scene   *mScene;

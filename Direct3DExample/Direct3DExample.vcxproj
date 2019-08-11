@@ -141,7 +141,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\RayTracing\RayTracer.hlsl">
+    <FxCompile Include="Shaders\RayTracing\RtMain.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
@@ -157,8 +157,11 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\inputs.hlsli" />
+    <None Include="Shaders\RayTracing\GGXShading.hlsli" />
     <None Include="Shaders\RayTracing\IndirectRay.hlsli" />
     <None Include="Shaders\RayTracing\Common.hlsli" />
+    <None Include="Shaders\RayTracing\PrimaryRay.hlsli" />
+    <None Include="Shaders\RayTracing\RayGener.hlsli" />
     <None Include="Shaders\RayTracing\ShadowRay.hlsli" />
     <None Include="Shaders\RayTracing\Utils.hlsli" />
   </ItemGroup>

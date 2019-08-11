@@ -29,6 +29,7 @@ DXRExample::DXRExample(HWND hwnd)
 , mCurrentMousePos(0)
 , mFrameCount(0)
 , mAccumCount(0)
+, mMaxRayDepth(4)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
@@ -130,11 +131,11 @@ void DXRExample::Update(void) {
 
     mSettings.enableAccumulate = 1;
     mSettings.enableJitterCamera = 1;
-    mSettings.enableLensCamera = 1;
+    mSettings.enableLensCamera = 0;
     mSettings.enableEnvironmentMap = 1;
     mSettings.enableIndirectLight = 1;
 
-    XMStoreFloat4(&mCameraConsts.pos, mCamera->GetPosition());
+    XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
     XMStoreFloat4(&mCameraConsts.v, mCamera->GetV());
     XMStoreFloat4(&mCameraConsts.w, mCamera->GetW());
@@ -146,7 +147,7 @@ void DXRExample::Update(void) {
     mSceneConsts.lightCount = 3;
     mSceneConsts.frameCount = mFrameCount ++;
     mSceneConsts.accumCount = mAccumCount ++;
-    mSceneConsts.lightSeed = 0x1337u + mFrameCount;
+    mSceneConsts.maxPayDepth = mMaxRayDepth;
 }
 
 void DXRExample::Render(void) {
@@ -330,9 +331,9 @@ void DXRExample::CreateRayTracingPipelineState(void) {
                                     PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
                                     IndirectMissName, IndirectAnyHitName, IndirectClosetHitName,
                                     ShadowMissName, ShadowAnyHitName, ShadowClosetHitName};
-    mRayTracingState->AddDXILLibrary("RayTracer.cso", shaderFuncs, _countof(shaderFuncs));
+    mRayTracingState->AddDXILLibrary("RtMain.cso", shaderFuncs, _countof(shaderFuncs));
 
-    mRayTracingState->AddRayTracingShaderConfig(sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
+    mRayTracingState->AddRayTracingShaderConfig(2 * sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
     mRayTracingState->AddHitGroup(PrimaryHitGroupName, PrimaryClosetHitName, PrimaryAnyHitName);
     mRayTracingState->AddHitGroup(IndirectHitGroupName, IndirectClosetHitName, IndirectAnyHitName);
@@ -344,7 +345,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     mRayTracingState->AddGlobalRootSignature(mGlobalRootSignature);
 
-    mRayTracingState->AddRayTracingPipelineConfig(4);
+    mRayTracingState->AddRayTracingPipelineConfig(mMaxRayDepth);
 
     mRayTracingState->Create();
 }

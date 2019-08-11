@@ -56,7 +56,7 @@
     <FxCompile Include="Shaders\color.ps.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\RayTracing\RayTracer.hlsl">
+    <FxCompile Include="Shaders\RayTracing\RtMain.hlsl">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </FxCompile>
   </ItemGroup>
@@ -75,6 +75,15 @@
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
     <None Include="Shaders\RayTracing\IndirectRay.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\GGXShading.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\RayGener.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\PrimaryRay.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
   </ItemGroup>
