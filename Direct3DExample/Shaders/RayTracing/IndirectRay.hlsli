@@ -1,29 +1,7 @@
 #ifndef _RAYTRACING_INDIRECTRAY_H_
 #define _RAYTRACING_INDIRECTRAY_H_
 
-#include "Utils.hlsli"
-#include "ShadowRay.hlsli"
-
-float3 IndirectRayGen(float3 origin, float3 direction, inout uint seed) {
-    RayDesc ray;
-    ray.Origin = origin;
-    ray.Direction = normalize(direction);
-    ray.TMin = 1e-4f;
-    ray.TMax = 1e+38f;
-
-    IndirectRayPayload payload = { float3(0, 0, 0), seed };
-
-    TraceRay(gRtScene, 
-             RAY_FLAG_NONE, 
-             RayTraceParams::InstanceMask, 
-             RayTraceParams::HitGroupIndex[RayTraceParams::IndirectRay], 
-             0, 
-             RayTraceParams::MissIndex[RayTraceParams::IndirectRay], 
-             ray, 
-             payload);
-
-    return payload.color;
-}
+#include "GGXShading.hlsli"
 
 [shader("miss")]
 void IndirectMiss(inout IndirectRayPayload payload) {
@@ -43,22 +21,18 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
     HitSample hs;
     EvaluateHit(attribs, hs);
 
-    uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(payload.seed)), gSceneCB.lightCount - 1);
+    float roughness = hs.specular.a * hs.specular.a;
+    float3 viewDir = normalize(gCameraCB.position - hs.position);
 
-    // direct color from light
-    LightSample ls;
-    EvaluateLight(gLights[lightIdx], hs.position, ls);
+    payload.color = GGXDirect(payload.seed, hs.position, hs.normal, viewDir, hs.diffuse.rgb, hs.specular.rgb, roughness);
 
-    float factor = gSceneCB.lightCount;
-
-    // direct shadow
-    factor *= ShadowRayGen(hs.position, ls.L, length(ls.position - hs.position));
-    float LdotN = saturate(dot(hs.normal, ls.L));
-
-    // Return the Lambertian shading color using the physically based Lambertian term (albedo / pi)
-    float3 color = ls.diffuse * hs.diffuse.rgb;
-    color *= factor * LdotN * M_1_PI;
-    payload.color = color;
+    // Do indirect illumination at this hit location (if we haven't traversed too far)
+    if (payload.depth < gSceneCB.maxPayDepth - 1) {
+        // Use the same normal for the normal-mapped and non-normal mapped vectors... This means we could get light
+        //     leaks at secondary surfaces with normal maps due to indirect rays going below the surface.  This
+        //     isn't a huge issue, but this is a (TODO: fix)
+        payload.color += GGXIndirect(payload.seed, hs.position, hs.normal, viewDir, hs.diffuse.rgb, hs.specular.rgb, roughness, payload.depth);
+    }
 }
 
 #endif // _RAYTRACING_INDIRECTRAY_H_

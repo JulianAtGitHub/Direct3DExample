@@ -68,6 +68,7 @@ float3 UniformHemisphereSample(inout uint randSeed, float3 hitNorm) {
 }
 
 /**Light Sampler***********************************************************/
+
 void EvaluateDirectLight(in Light light, in float3 hitPos, inout LightSample ls) {
     ls.L = -normalize(light.direction);
     ls.diffuse = light.intensity;
@@ -175,6 +176,12 @@ inline float3 HdrToLdr(float3 hdr) {
     return pow(mapped, float3(M_1_GAMMA, M_1_GAMMA, M_1_GAMMA));
 }
 
+// Returns a relative luminance of an input linear RGB color in the ITU-R BT.709 color space
+//  param RGBColor linear HDR RGB color in the ITU-R BT.709 color space
+inline float Luminance(float3 rgb) {
+    return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
+}
+
 void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
@@ -192,7 +199,7 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     BaseColor
         - RGB - Base Color
         - A   - Transparency
-    Specular
+    specColor
         - R - Occlusion
         - G - Metalness
         - B - Roughness

@@ -47,7 +47,7 @@ struct LightSample {
 };
 
 struct CameraConstants {
-    float3 pos;
+    float3 position;
     float3 u;
     float3 v;
     float3 w;
@@ -61,12 +61,13 @@ struct SceneConstants {
     uint   lightCount;
     uint   frameCount;
     uint   accumCount;
-    uint   lightSeed;
+    uint   maxPayDepth;
 };
 
 struct PrimaryRayPayload {
     float3 color;
     uint   seed;
+    uint   depth;
 };
 
 struct RayHitPayload {
