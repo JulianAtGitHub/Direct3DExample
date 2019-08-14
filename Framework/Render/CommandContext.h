@@ -13,6 +13,7 @@ class DepthStencilBuffer;
 class RootSignature;
 class AccelerationStructure;
 class RayTracingState;
+class PipelineState;
 
 class CommandContext {
 public:
@@ -23,8 +24,10 @@ public:
     INLINE ID3D12GraphicsCommandList * GetCommandList(void) const { return mCommandList; }
     INLINE ID3D12GraphicsCommandList4 * GetDXRCommandList(void) const { return mDXRCommandList; }
 
-    void Begin(ID3D12PipelineState *pipeline = nullptr);
+    void Begin(PipelineState *pipeline = nullptr);
     uint64_t End(bool waitUtilComplete = false);
+
+    void SetPipelineState(PipelineState *pipeline);
 
     void TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState);
     void InsertUAVBarrier(GPUResource *resource);
@@ -59,8 +62,10 @@ public:
     void SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
 
     void SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType);
+    void SetVertices(const D3D12_VERTEX_BUFFER_VIEW &vertices);
     void SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices);
     void DrawIndexed(uint32_t indexCount, uint32_t indexOffset);
+    void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount = 1);
 
     void BuildAccelerationStructure(AccelerationStructure *as);
     void SetRayTracingState(RayTracingState *state);
@@ -135,13 +140,21 @@ INLINE void CommandContext::SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveTyp
     mCommandList->IASetPrimitiveTopology(primitiveType);
 }
 
-INLINE void CommandContext::SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices) {
+INLINE void CommandContext::SetVertices(const D3D12_VERTEX_BUFFER_VIEW &vertices) {
     mCommandList->IASetVertexBuffers(0, 1, &vertices);
+}
+
+INLINE void CommandContext::SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices) {
+    SetVertices(vertices);
     mCommandList->IASetIndexBuffer(&indices);
 }
 
 INLINE void CommandContext::DrawIndexed(uint32_t indexCount, uint32_t indexOffset) {
     mCommandList->DrawIndexedInstanced(indexCount, 1, indexOffset, 0, 0);
+}
+
+INLINE void CommandContext::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount) {
+    mCommandList->DrawInstanced(vertexCount, instanceCount, 0, 0);
 }
 
 INLINE void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {

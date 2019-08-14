@@ -5,6 +5,7 @@
 #include "LinerAllocator.h"
 #include "RootSignature.h"
 #include "DescriptorHeap.h"
+#include "PipelineState.h"
 #include "AccelerationStructure.h"
 #include "RayTracingState.h"
 #include "Resource/GPUBuffer.h"
@@ -52,12 +53,13 @@ void CommandContext::Destroy(void) {
     DeleteAndSetNull(mGpuAllocator);
 }
 
-void CommandContext::Begin(ID3D12PipelineState *pipeline) {
+void CommandContext::Begin(PipelineState *pipeline) {
+    ID3D12PipelineState *pipelineState = pipeline ? pipeline->GetPipelineState() : nullptr;
     mCommandAlloctor = mQueue->QueryAllocator();
     if (mCommandList) {
-        mCommandList->Reset(mCommandAlloctor, pipeline);
+        mCommandList->Reset(mCommandAlloctor, pipelineState);
     } else {
-        ASSERT_SUCCEEDED(gDevice->CreateCommandList(1, mType, mCommandAlloctor, pipeline, IID_PPV_ARGS(&mCommandList)));
+        ASSERT_SUCCEEDED(gDevice->CreateCommandList(1, mType, mCommandAlloctor, pipelineState, IID_PPV_ARGS(&mCommandList)));
         if (gRayTracingSupport && gDXRDevice) {
             ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mDXRCommandList)));
         }
@@ -82,6 +84,10 @@ uint64_t CommandContext::End(bool waitUtilComplete) {
     }
 
     return fenceValue;
+}
+
+void CommandContext::SetPipelineState(PipelineState *pipeline) {
+    mCommandList->SetPipelineState(pipeline ? pipeline->GetPipelineState() : nullptr);
 }
 
 void CommandContext::TransitResource(GPUResource *resource, D3D12_RESOURCE_STATES newState) {
@@ -174,25 +180,29 @@ void CommandContext::CopyResource(GPUResource *dest, GPUResource *src) {
 }
 
 void CommandContext::ClearColor(RenderTargetBuffer *resource) {
-    mCommandList->ClearRenderTargetView(resource->GetHandle().cpu, resource->GetClearedColorData(), 0, nullptr);
+    mCommandList->ClearRenderTargetView(resource->GetSRVHandle().cpu, resource->GetClearedColorData(), 0, nullptr);
 }
 
 void CommandContext::ClearDepth(DepthStencilBuffer *resource) {
-    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_DEPTH, resource->GetClearedDepth(), 0, 0, nullptr);
+    mCommandList->ClearDepthStencilView(resource->GetSRVHandle().cpu, D3D12_CLEAR_FLAG_DEPTH, resource->GetClearedDepth(), 0, 0, nullptr);
 }
 
 void CommandContext::ClearStencil(DepthStencilBuffer *resource) {
-    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_STENCIL, 0.0f, resource->GetClearedStencil(), 0, nullptr);
+    mCommandList->ClearDepthStencilView(resource->GetSRVHandle().cpu, D3D12_CLEAR_FLAG_STENCIL, 0.0f, resource->GetClearedStencil(), 0, nullptr);
 }
 
 void CommandContext::ClearDepthAndStencil(DepthStencilBuffer *resource) {
-    mCommandList->ClearDepthStencilView(resource->GetHandle().cpu, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, resource->GetClearedDepth(), resource->GetClearedStencil(), 0, nullptr);
+    mCommandList->ClearDepthStencilView(resource->GetSRVHandle().cpu, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, resource->GetClearedDepth(), resource->GetClearedStencil(), 0, nullptr);
 }
 
 void CommandContext::SetRenderTarget(RenderTargetBuffer *renderTarget, DepthStencilBuffer *depthStencil) {
-    const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTarget->GetHandle().cpu;
-    const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = depthStencil->GetHandle().cpu;
-    mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+    const D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTarget->GetSRVHandle().cpu;
+    if (depthStencil) {
+        const D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = depthStencil->GetSRVHandle().cpu;
+        mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+    } else {
+        mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    }
 }
 
 void CommandContext::SetRootSignature(RootSignature *rootSignature) {
