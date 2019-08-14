@@ -56,7 +56,7 @@ void D3DExample::Update(void) {
 }
 
 void D3DExample::Render(void) {
-    Render::gCommand->Begin(mGraphicsState->GetPipelineState());
+    Render::gCommand->Begin(mGraphicsState);
     PopulateCommandList();
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
     ASSERT_SUCCEEDED(Render::gSwapChain->Present(1, 0));
@@ -123,7 +123,7 @@ void D3DExample::LoadAssets(void) {
     mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
     mGraphicsState->LoadVertexShader("color.vs.cso");
     mGraphicsState->LoadPixelShader("color.ps.cso");
-    mGraphicsState->Create(mRootSignature->Get());
+    mGraphicsState->Create(mRootSignature);
 
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
@@ -175,7 +175,7 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
     for (uint32_t j = 0; j < mScene->mShapes.size(); ++j) {
         const Utils::Scene::Shape &shape = mScene->mShapes[j];
-        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.diffuseTex]->GetHandle());
+        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.diffuseTex]->GetSRVHandle());
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }
 
