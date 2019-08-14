@@ -59,6 +59,12 @@
     <FxCompile Include="Shaders\RayTracing\RtMain.hlsl">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\RayTracing\Display.ps.hlsl">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\RayTracing\Display.vs.hlsl">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -84,6 +90,9 @@
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
     <None Include="Shaders\RayTracing\PrimaryRay.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\Display.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
   </ItemGroup>
