@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "PipelineState.h"
+#include "RootSignature.h"
 #include "RenderCore.h"
 
 namespace Render {
@@ -50,11 +51,11 @@ void GraphicsState::LoadShaderByteCode(const char *fileName, D3D12_SHADER_BYTECO
     byteCode.pShaderBytecode = ReadFileData(fileName, byteCode.BytecodeLength);
 }
 
-void GraphicsState::Create(ID3D12RootSignature *rootSignature) {
-    ASSERT_PRINT((rootSignature != nullptr));
+void GraphicsState::Create(RootSignature *rootSignature) {
+    ASSERT_PRINT((rootSignature != nullptr && rootSignature->Get() != nullptr));
     ReleaseAndSetNull(mPipelineState);
 
-    mDesc.pRootSignature = rootSignature;
+    mDesc.pRootSignature = rootSignature->Get();
     ASSERT_SUCCEEDED(gDevice->CreateGraphicsPipelineState(&mDesc, IID_PPV_ARGS(&mPipelineState)));
 }
 

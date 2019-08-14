@@ -2,13 +2,15 @@
 
 namespace Render {
 
+class RootSignature;
+
 class PipelineState {
 public:
     PipelineState(void);
     virtual ~PipelineState( void);
 
     INLINE ID3D12PipelineState * GetPipelineState(void) const { return mPipelineState; }
-    virtual void Create(ID3D12RootSignature *rootSignature) = 0;
+    virtual void Create(RootSignature *rootSignature) = 0;
 
 protected:
     ID3D12PipelineState        *mPipelineState;
@@ -44,7 +46,7 @@ public:
     INLINE DXGI_FORMAT GetDepthStencilFormat(void) const { return mDesc.DSVFormat; }
     INLINE void SetDepthStencilFormat(DXGI_FORMAT format) { mDesc.DSVFormat = format; }
 
-    void Create(ID3D12RootSignature *rootSignature);
+    void Create(RootSignature *rootSignature);
 
 private:
     void Initialize(void);
