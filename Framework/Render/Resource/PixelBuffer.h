@@ -16,7 +16,8 @@ public:
     INLINE uint32_t GetWidth(void) const { return mWidth; }
     INLINE uint32_t GetHeight(void) const { return mHeight; }
     INLINE DXGI_FORMAT GetFormat(void) const { return mFormat; }
-    INLINE const DescriptorHandle & GetHandle(void) const { return mHandle; }
+    INLINE const DescriptorHandle & GetSRVHandle(void) const { return mSRVHandle; }
+    INLINE const DescriptorHandle & GetUAVHandle(void) const { return mUAVHandle; }
 
     void CreateSRV(DescriptorHandle &handle);
     void CreateUAV(DescriptorHandle &handle);
@@ -29,7 +30,8 @@ protected:
     uint32_t                mHeight;
     DXGI_FORMAT             mFormat;
     D3D12_RESOURCE_FLAGS    mFlag;
-    DescriptorHandle        mHandle;
+    DescriptorHandle        mSRVHandle;
+    DescriptorHandle        mUAVHandle;
 };
 
 }

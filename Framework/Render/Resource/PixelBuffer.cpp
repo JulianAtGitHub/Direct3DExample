@@ -72,7 +72,7 @@ void PixelBuffer::CreateSRV(DescriptorHandle &handle) {
     srvDesc.Texture2D.MostDetailedMip = 0;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 
-    mHandle = handle;
+    mSRVHandle = handle;
 }
 
 void PixelBuffer::CreateUAV(DescriptorHandle &handle) {
@@ -86,7 +86,7 @@ void PixelBuffer::CreateUAV(DescriptorHandle &handle) {
 
     gDevice->CreateUnorderedAccessView(mResource, nullptr, &uavDesc, handle.cpu);
 
-    mHandle = handle;
+    mUAVHandle = handle;
 }
 
 }

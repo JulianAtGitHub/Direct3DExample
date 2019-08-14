@@ -35,7 +35,7 @@ void RenderTargetBuffer::CreateView(const DescriptorHandle &handle) {
     }
 
     gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
-    mHandle = handle;
+    mSRVHandle = handle;
 }
 
 }

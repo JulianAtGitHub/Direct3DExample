@@ -39,7 +39,7 @@ void DepthStencilBuffer::CreateView(const DescriptorHandle &handle) {
     depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
     gDevice->CreateDepthStencilView(mResource, &depthStencilDesc, handle.cpu);
-    mHandle = handle;
+    mSRVHandle = handle;
 }
 
 }
