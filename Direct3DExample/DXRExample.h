@@ -28,6 +28,7 @@ private:
     void BuildAccelerationStructure(void);
     void BuildShaderTables(void);
     void CreateRaytracingOutput(void);
+    void PrepareScreenPass(void);
 
     struct AppSettings {
         uint32_t enableAccumulate;
@@ -78,7 +79,6 @@ private:
 
     enum GlobalRootSignatureParams {
         OutputViewSlot = 0,
-        OutputColorSlot,
         AccelerationStructureSlot,
         AppSettingsSlot,
         SceneConstantsSlot,
@@ -88,6 +88,12 @@ private:
         TexturesSlot,
         SamplerSlot,
         SlotCount
+    };
+
+    enum SPRootSignatureParams {
+        SPTextureSlot = 0,
+        SPSamplerSlot,
+        SPSlotCount
     };
 
     Utils::Timer    mTimer;
@@ -120,7 +126,6 @@ private:
     Render::GPUBuffer                  *mGeometries;
     Render::GPUBuffer                  *mLights;
     Render::PixelBuffer                *mRaytracingOutput;
-    Render::PixelBuffer                *mDisplayColor;
     Render::DescriptorHeap             *mSamplerHeap;
     Render::Sampler                    *mSampler;
     Render::PixelBuffer                *mEnvTexture;
@@ -137,4 +142,10 @@ private:
     typedef Render::TopLevelAccelerationStructure TLAS;
     std::vector<BLAS *>         mBLASes;
     TLAS                       *mTLAS;
+
+    // screen pass
+    Render::RootSignature      *mSPRootSignature;
+    Render::GraphicsState      *mSPGraphicsState;
+    Render::GPUBuffer          *mSPVertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW    mSPVertexBufferView;
 };

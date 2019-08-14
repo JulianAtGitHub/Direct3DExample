@@ -48,6 +48,9 @@ DXRExample::DXRExample(HWND hwnd)
 , mCameraCB(nullptr)
 , mScene(nullptr)
 , mTLAS(nullptr)
+, mSPRootSignature(nullptr)
+, mSPGraphicsState(nullptr)
+, mSPVertexBuffer(nullptr)
 {
     for (auto &fence : mFenceValues) {
         fence = 1;
@@ -78,6 +81,7 @@ void DXRExample::Init(void) {
     BuildAccelerationStructure();
     BuildShaderTables();
     CreateRaytracingOutput();
+    PrepareScreenPass();
 
     mTimer.Reset();
 }
@@ -153,7 +157,6 @@ void DXRExample::Update(void) {
 void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
-    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
     Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
     // Copy the updated scene constant buffer to GPU.
@@ -171,19 +174,30 @@ void DXRExample::Render(void) {
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     // Set index and successive vertex buffer decriptor tables
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetSRVHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetSRVHandle());
     Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, mDisplayColor->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetUAVHandle());
     Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
     Render::gCommand->SetRayTracingState(mRayTracingState);
     Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
 
-    Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mDisplayColor);
+    // screen pass
+    Render::gCommand->SetPipelineState(mSPGraphicsState);
+    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+    Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
+    Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], nullptr);
+    Render::gCommand->SetRootSignature(mSPRootSignature);
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+    Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPTextureSlot, mRaytracingOutput->GetSRVHandle());
+    Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPSamplerSlot, mSampler->GetHandle());
+    Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Render::gCommand->SetVertices(mSPVertexBufferView);
+    Render::gCommand->DrawInstanced(6);
+
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
-    Render::gCommand->TransitResource(mDisplayColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
 
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
@@ -201,12 +215,14 @@ void DXRExample::Destroy(void) {
     for (auto texture : mTextures) { delete texture; }
     mTextures.clear();
 
+    DeleteAndSetNull(mSPVertexBuffer);
+    DeleteAndSetNull(mSPRootSignature);
+    DeleteAndSetNull(mSPGraphicsState);
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mScene);
     DeleteAndSetNull(mTLAS);
-    DeleteAndSetNull(mDisplayColor);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mSettingsCB);
     DeleteAndSetNull(mSceneCB);
@@ -279,6 +295,9 @@ void DXRExample::InitScene(void) {
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
     mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
     mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
+    // 4: vertexBuf, indexBuf, GeometryBuf, lightBuf
+    // 2: rtOutput SRV + UAV
+    // 1: evtTex
     mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(4 + 2 + 1 + mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
@@ -308,7 +327,6 @@ void DXRExample::InitScene(void) {
 void DXRExample::CreateRootSignature(void) {
     mGlobalRootSignature = new Render::RootSignature(Render::RootSignature::Compute, GlobalRootSignatureParams::SlotCount);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::OutputColorSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AccelerationStructureSlot, D3D12_ROOT_PARAMETER_TYPE_SRV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AppSettingsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
@@ -438,8 +456,45 @@ void DXRExample::CreateRaytracingOutput(void) {
     // Create the output resource. The dimensions and format should match the swap-chain.
     mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT), width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
+    mRaytracingOutput->CreateSRV(mDescriptorHeap->Allocate());
+}
 
-    mDisplayColor = new Render::PixelBuffer(width * Render::BytesPerPixel(format), width, height, format, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mDisplayColor->CreateUAV(mDescriptorHeap->Allocate());
+void DXRExample::PrepareScreenPass(void) {
+    mSPRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, SPRootSignatureParams::SPSlotCount, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    mSPRootSignature->SetDescriptorTable(SPRootSignatureParams::SPTextureSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+    mSPRootSignature->SetDescriptorTable(SPRootSignatureParams::SPSamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
+    mSPRootSignature->Create();
+
+    // input layout
+    D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 8,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    mSPGraphicsState = new Render::GraphicsState();
+    mSPGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
+    mSPGraphicsState->SetDepthStencilFormat(DXGI_FORMAT_UNKNOWN);
+    mSPGraphicsState->LoadVertexShader("Display.vs.cso");
+    mSPGraphicsState->LoadPixelShader("Display.ps.cso");
+    mSPGraphicsState->Create(mSPRootSignature);
+
+    float vertices[] = {
+        // triangle 1
+        -1.0f, 1.0f, 0.0f, 0.0f,
+         1.0f, 1.0f, 1.0f, 0.0f,
+         1.0f,-1.0f, 1.0f, 1.0f,
+        // triangle 2
+        -1.0f, 1.0f, 0.0f, 0.0f,
+         1.0f,-1.0f, 1.0f, 1.0f,
+        -1.0f,-1.0f, 0.0f, 1.0f
+    };
+
+    mSPVertexBuffer = new Render::GPUBuffer(sizeof(vertices));
+
+    Render::gCommand->Begin();
+    Render::gCommand->UploadBuffer(mSPVertexBuffer, 0, vertices, sizeof(vertices));
+    Render::gCommand->End(true);
+
+    mSPVertexBufferView = mSPVertexBuffer->FillVertexBufferView(0, sizeof(vertices), 16);
 }
 

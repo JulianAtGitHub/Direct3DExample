@@ -4,7 +4,7 @@
 #include "Common.hlsli"
 
 inline void PinholdCameraRay(in float2 pixel, out RayDesc ray) {
-    float2 ndc = float2(2, -2) * pixel + float2(-1, 1);                    
+    float2 ndc = float2(2, -2) * pixel + float2(-1, 1);
     ray.Origin = gCameraCB.position;
     ray.Direction = normalize(ndc.x * gCameraCB.u + ndc.y * gCameraCB.v + gCameraCB.w);
     ray.TMin = 1e-4f;

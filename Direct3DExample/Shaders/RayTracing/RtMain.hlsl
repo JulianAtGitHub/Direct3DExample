@@ -13,10 +13,8 @@ void RayGener() {
         float4 lastFrameColor = gRenderTarget[launchIdx];
         float3 finalColor = (lastFrameColor.rgb * gSceneCB.accumCount + color) / (gSceneCB.accumCount + 1);
         gRenderTarget[launchIdx] = float4(finalColor, 1);
-        gRenderDisplay[launchIdx] = float4(finalColor, 1);
     } else {
         gRenderTarget[launchIdx] = float4(color, 1);
-        gRenderDisplay[launchIdx] = float4(color, 1);
     }
 }
 

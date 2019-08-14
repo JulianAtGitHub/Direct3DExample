@@ -128,7 +128,6 @@ ConstantBuffer<CameraConstants> gCameraCB : register(b2);
 SamplerState gSampler : register(s0);
 // output
 RWTexture2D<float4> gRenderTarget : register(u0);
-RWTexture2D<float4> gRenderDisplay : register(u1);
 
 
 #endif // _RAYTRACING_COMMMON_H_
