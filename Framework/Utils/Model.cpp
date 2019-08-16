@@ -299,4 +299,241 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     free(compressedData);
 }
 
+Scene * Model::CreateUnitQuad(void) {
+    Scene *scene = new Scene;
+    scene->mVertices.reserve(4);
+    scene->mIndices.reserve(6);
+    scene->mShapes.resize(1);
+
+    scene->mVertices.push_back({ {-1.0f, 0.0f,-1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 0.0f,-1.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    
+    scene->mIndices.push_back(0);
+    scene->mIndices.push_back(3);
+    scene->mIndices.push_back(2);
+    scene->mIndices.push_back(0);
+    scene->mIndices.push_back(2);
+    scene->mIndices.push_back(1);
+
+    auto &shape = scene->mShapes[0];
+    shape.indexOffset = 0;
+    shape.indexCount = 6;
+    shape.diffuseTex = ~0;
+    shape.specularTex = ~0;
+    shape.normalTex = ~0;
+
+    return scene;
+}
+
+Scene * Model::CreateUnitCube(void) {
+    Scene *scene = new Scene;
+    scene->mVertices.reserve(24);
+    scene->mIndices.reserve(36);
+    scene->mShapes.resize(1);
+
+    // Top
+    scene->mVertices.push_back({ {-1.0f, 1.0f,-1.0f}, {0.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 1.0f,-1.0f}, {1.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, { 0.0f, 1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, { 0.0f, 1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    // Front
+    scene->mVertices.push_back({ {-1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, { 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, { 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f, 1.0f}, {1.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f,-1.0f, 1.0f}, {0.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    // Back
+    scene->mVertices.push_back({ {-1.0f, 1.0f,-1.0f}, {0.0f, 1.0f}, { 0.0f, 0.0f,-1.0f}, { 0.0f,-1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 1.0f,-1.0f}, {1.0f, 1.0f}, { 0.0f, 0.0f,-1.0f}, { 0.0f,-1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f,-1.0f}, {1.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, { 0.0f,-1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f,-1.0f,-1.0f}, {0.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, { 0.0f,-1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    // Left
+    scene->mVertices.push_back({ {-1.0f, 1.0f,-1.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f,-1.0f, 1.0f}, {1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f,-1.0f,-1.0f}, {0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f,-1.0f}, {0.0f, 0.0f, 0.0f} });
+    // Right
+    scene->mVertices.push_back({ { 1.0f, 1.0f,-1.0f}, {0.0f, 1.0f}, { 1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, { 1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f, 1.0f}, {1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f,-1.0f}, {0.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} });
+    // Bottom
+    scene->mVertices.push_back({ {-1.0f,-1.0f,-1.0f}, {0.0f, 1.0f}, { 0.0f,-1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f,-1.0f}, {1.0f, 1.0f}, { 0.0f,-1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ { 1.0f,-1.0f, 1.0f}, {1.0f, 0.0f}, { 0.0f,-1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    scene->mVertices.push_back({ {-1.0f,-1.0f, 1.0f}, {0.0f, 0.0f}, { 0.0f,-1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+    // Top
+    scene->mIndices.push_back(0);
+    scene->mIndices.push_back(3);
+    scene->mIndices.push_back(2);
+    scene->mIndices.push_back(0);
+    scene->mIndices.push_back(2);
+    scene->mIndices.push_back(1);
+    // Front
+    scene->mIndices.push_back(4);
+    scene->mIndices.push_back(7);
+    scene->mIndices.push_back(6);
+    scene->mIndices.push_back(4);
+    scene->mIndices.push_back(6);
+    scene->mIndices.push_back(5);
+    // Back
+    scene->mIndices.push_back(9);
+    scene->mIndices.push_back(10);
+    scene->mIndices.push_back(11);
+    scene->mIndices.push_back(9);
+    scene->mIndices.push_back(11);
+    scene->mIndices.push_back(8);
+    // Left
+    scene->mIndices.push_back(12);
+    scene->mIndices.push_back(15);
+    scene->mIndices.push_back(14);
+    scene->mIndices.push_back(12);
+    scene->mIndices.push_back(14);
+    scene->mIndices.push_back(13);
+    // Right
+    scene->mIndices.push_back(17);
+    scene->mIndices.push_back(18);
+    scene->mIndices.push_back(19);
+    scene->mIndices.push_back(17);
+    scene->mIndices.push_back(19);
+    scene->mIndices.push_back(16);
+    // Bottom
+    scene->mIndices.push_back(21);
+    scene->mIndices.push_back(22);
+    scene->mIndices.push_back(23);
+    scene->mIndices.push_back(21);
+    scene->mIndices.push_back(23);
+    scene->mIndices.push_back(20);
+
+    auto &shape = scene->mShapes[0];
+    shape.indexOffset = 0;
+    shape.indexCount = 36;
+    shape.diffuseTex = ~0;
+    shape.specularTex = ~0;
+    shape.normalTex = ~0;
+
+    return scene;
+}
+
+Scene * Model::CreateUnitSphere(void) {
+    Scene *scene = new Scene;
+    scene->mShapes.resize(1);
+
+    constexpr uint32_t sectorCount = 64;
+    constexpr uint32_t stackCount = 32;
+
+    float x, y, z, xy;  // vertex position
+    float s, t;         // vertex texCoord
+
+    float sectorStep = XM_2PI / sectorCount;
+    float stackStep = XM_PI / stackCount;
+    float sectorAngle, stackAngle;
+
+    for(uint32_t i = 0; i <= stackCount; ++i) {
+        stackAngle = XM_PIDIV2 - i * stackStep; // starting from pi/2 to -pi/2
+        xy = cosf(stackAngle);                  // r * cos(u)
+        z = sinf(stackAngle);                   // r * sin(u)
+
+        // add (sectorCount+1) vertices per stack
+        // the first and last vertices have same position and normal, but different tex coords
+        for(uint32_t j = 0; j <= sectorCount; ++j) {
+            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+            // vertex position (x, y, z)
+            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+
+            // normalized vertex normal (x, y, z)
+
+            // vertex tex coord (s, t) range between [0, 1]
+            s = (float)j / sectorCount;
+            t = (float)i / stackCount;
+            scene->mVertices.push_back({ {x, y, z}, {s, t}, {x, y, z}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+        }
+    }
+
+    // generate CCW index list of sphere triangles
+    uint32_t k1, k2;
+    for(uint32_t i = 0; i < stackCount; ++i) {
+        k1 = i * (sectorCount + 1);     // beginning of current stack
+        k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+        for(int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+            // 2 triangles per sector excluding first and last stacks
+            // k1 => k2 => k1+1
+            if(i != 0) {
+                scene->mIndices.push_back(k1);
+                scene->mIndices.push_back(k2);
+                scene->mIndices.push_back(k1 + 1);
+            }
+
+            // k1+1 => k2 => k2+1
+            if(i != (stackCount-1)) {
+                scene->mIndices.push_back(k1 + 1);
+                scene->mIndices.push_back(k2);
+                scene->mIndices.push_back(k2 + 1);
+            }
+        }
+    }
+
+    for (size_t i = 0; i < scene->mIndices.size(); i += 3) {
+        uint32_t i0 = scene->mIndices[i + 0];
+        uint32_t i1 = scene->mIndices[i + 1];
+        uint32_t i2 = scene->mIndices[i + 2];
+
+        Scene::Vertex &vertex0 = scene->mVertices[i0];
+        Scene::Vertex &vertex1 = scene->mVertices[i1];
+        Scene::Vertex &vertex2 = scene->mVertices[i2];
+
+        // Shortcuts for vertices
+        XMFLOAT3 &v0 = vertex0.position;
+        XMFLOAT3 &v1 = vertex1.position;
+        XMFLOAT3 &v2 = vertex2.position;
+
+        // Shortcuts for UVs
+        XMFLOAT2 &uv0 = vertex0.texCoord;
+        XMFLOAT2 &uv1 = vertex1.texCoord;
+        XMFLOAT2 &uv2 = vertex2.texCoord;
+
+        // Edges of the triangle : position delta
+        XMFLOAT3 deltaPos1(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z);
+        XMFLOAT3 deltaPos2(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z);
+
+        // UV delta
+        XMFLOAT2 deltaUV1(v1.x - v0.x, v1.y - v0.y);
+        XMFLOAT2 deltaUV2(v2.x - v0.x, v2.y - v0.y);
+
+        float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+
+        XMFLOAT3 tangent((deltaPos1.x * deltaUV2.y   - deltaPos2.x * deltaUV1.y) * r,
+                         (deltaPos1.y * deltaUV2.y   - deltaPos2.y * deltaUV1.y) * r,
+                         (deltaPos1.z * deltaUV2.y   - deltaPos2.z * deltaUV1.y) * r);
+
+        XMFLOAT3 bitangent((deltaPos2.x * deltaUV1.x   - deltaPos1.x * deltaUV2.x) * r,
+                           (deltaPos2.y * deltaUV1.x   - deltaPos1.y * deltaUV2.x) * r,
+                           (deltaPos2.z * deltaUV1.x   - deltaPos1.z * deltaUV2.x) * r);
+
+        // Set the same tangent for all three vertices of the triangle.
+        // They will be merged later, in vboindexer.cpp
+        vertex0.tangent = tangent;
+        vertex1.tangent = tangent;
+        vertex2.tangent = tangent;
+
+        // Same thing for bitangents
+        vertex0.bitangent = bitangent;
+        vertex1.bitangent = bitangent;
+        vertex2.bitangent = bitangent;
+    }
+
+    auto &shape = scene->mShapes[0];
+    shape.indexOffset = 0;
+    shape.indexCount = static_cast<uint32_t>(scene->mIndices.size());
+    shape.diffuseTex = ~0;
+    shape.specularTex = ~0;
+    shape.normalTex = ~0;
+
+    return scene;
+}
+
 }

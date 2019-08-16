@@ -37,6 +37,10 @@ public:
     static Scene * LoadFromMMB(const char *fileName);
     static void SaveToMMB(const Scene *scene, const char *fileName);
 
+    static Scene * CreateUnitQuad(void);
+    static Scene * CreateUnitCube(void);
+    static Scene * CreateUnitSphere(void);
+
 private:
     struct Header {
         char     tag[4];
