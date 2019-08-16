@@ -477,55 +477,6 @@ Scene * Model::CreateUnitSphere(void) {
         }
     }
 
-    for (size_t i = 0; i < scene->mIndices.size(); i += 3) {
-        uint32_t i0 = scene->mIndices[i + 0];
-        uint32_t i1 = scene->mIndices[i + 1];
-        uint32_t i2 = scene->mIndices[i + 2];
-
-        Scene::Vertex &vertex0 = scene->mVertices[i0];
-        Scene::Vertex &vertex1 = scene->mVertices[i1];
-        Scene::Vertex &vertex2 = scene->mVertices[i2];
-
-        // Shortcuts for vertices
-        XMFLOAT3 &v0 = vertex0.position;
-        XMFLOAT3 &v1 = vertex1.position;
-        XMFLOAT3 &v2 = vertex2.position;
-
-        // Shortcuts for UVs
-        XMFLOAT2 &uv0 = vertex0.texCoord;
-        XMFLOAT2 &uv1 = vertex1.texCoord;
-        XMFLOAT2 &uv2 = vertex2.texCoord;
-
-        // Edges of the triangle : position delta
-        XMFLOAT3 deltaPos1(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z);
-        XMFLOAT3 deltaPos2(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z);
-
-        // UV delta
-        XMFLOAT2 deltaUV1(v1.x - v0.x, v1.y - v0.y);
-        XMFLOAT2 deltaUV2(v2.x - v0.x, v2.y - v0.y);
-
-        float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-
-        XMFLOAT3 tangent((deltaPos1.x * deltaUV2.y   - deltaPos2.x * deltaUV1.y) * r,
-                         (deltaPos1.y * deltaUV2.y   - deltaPos2.y * deltaUV1.y) * r,
-                         (deltaPos1.z * deltaUV2.y   - deltaPos2.z * deltaUV1.y) * r);
-
-        XMFLOAT3 bitangent((deltaPos2.x * deltaUV1.x   - deltaPos1.x * deltaUV2.x) * r,
-                           (deltaPos2.y * deltaUV1.x   - deltaPos1.y * deltaUV2.x) * r,
-                           (deltaPos2.z * deltaUV1.x   - deltaPos1.z * deltaUV2.x) * r);
-
-        // Set the same tangent for all three vertices of the triangle.
-        // They will be merged later, in vboindexer.cpp
-        vertex0.tangent = tangent;
-        vertex1.tangent = tangent;
-        vertex2.tangent = tangent;
-
-        // Same thing for bitangents
-        vertex0.bitangent = bitangent;
-        vertex1.bitangent = bitangent;
-        vertex2.bitangent = bitangent;
-    }
-
     auto &shape = scene->mShapes[0];
     shape.indexOffset = 0;
     shape.indexCount = static_cast<uint32_t>(scene->mIndices.size());
