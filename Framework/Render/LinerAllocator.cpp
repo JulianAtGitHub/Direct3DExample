@@ -134,8 +134,10 @@ void LinerAllocator::CleanupPages(uint64_t fenceValue, uint64_t completeValue) {
         mUsedPages.pop();
     }
 
-    mUsingPages.push_back(mCurrentPage);
-    mCurrentPage = nullptr;
+    if (!mCurrentPage) {
+        mUsingPages.push_back(mCurrentPage);
+        mCurrentPage = nullptr;
+    }
 
     for (auto usingPage : mUsingPages) {
         mUsedPages.push({fenceValue , usingPage});
