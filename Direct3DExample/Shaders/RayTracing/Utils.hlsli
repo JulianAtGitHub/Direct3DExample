@@ -85,8 +85,7 @@ void EvaluatePointLight(in Light light, in float3 hitPos, inout LightSample ls) 
     ls.L = (distSquared > 1e-5f) ? normalize(ls.L) : 0;
 
     // The 0.01 is to avoid infs when the light source is close to the shading point
-    float falloff = 1 / ((0.01 * 0.01) + distSquared);
-    // float falloff = 1; // assume no fall off 
+    float falloff = 1 / (0.0001 /*0.01 * 0.01*/ + distSquared);
 
     ls.diffuse = light.intensity * falloff;
     ls.specular = ls.diffuse;
@@ -101,8 +100,7 @@ void EvaluateSpotLight(in Light light, in float3 hitPos, inout LightSample ls) {
     ls.L = (distSquared > 1e-5f) ? normalize(ls.L) : 0;
 
     // The 0.01 is to avoid infs when the light source is close to the shading point
-    // float falloff = 1 / ((0.01 * 0.01) + distSquared);
-    float falloff = 1; // assume no fall off 
+    float falloff = 1 / (0.0001 /*0.01 * 0.01*/ + distSquared);
 
     // Calculate the falloff for spot-lights
     float cosTheta = dot(-ls.L, light.direction); // cos of angle of light orientation
@@ -166,14 +164,15 @@ inline float2 DirToLatLong(float3 dir) {
     float3 p = normalize(dir);
     float u = (1.f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
     float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, v);
+    return float2(u, 1.0 - v);
 }
 
-inline float3 HdrToLdr(float3 hdr) {
-    // Tone mapping
-    float3 mapped = hdr / (hdr + 1.0f);
-    // Gamma correction 
-    return pow(mapped, float3(M_1_GAMMA, M_1_GAMMA, M_1_GAMMA));
+inline float3 HDRToneMapping(float3 color) {
+    return color / (color + 1.0f);
+}
+
+inline float3 GammaCorrect(float3 color) {
+    return pow(color, 1.0f / 2.2f);
 }
 
 // Returns a relative luminance of an input linear RGB color in the ITU-R BT.709 color space
@@ -197,35 +196,33 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
 
     /**
     BaseColor
-        - RGB - Base Color
-        - A   - Transparency
+    - RGB - Base Color
+    - A   - Transparency
     specColor
-        - R - Occlusion
-        - G - Metalness
-        - B - Roughness
-        - A - Reserved
+    - R - Occlusion
+    - G - Roughness
+    - B - Metalness
+    - A - Reserved
     Emissive
-        - RGB - Emissive Color
-        - A   - Unused
-    */
+    - RGB - Emissive Color
+    - A   - Unused
+    **/
+
     float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
     float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
     float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
     float4 specColor = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0);
 
-    // diffuse
-    hs.diffuse = float4(lerp(baseColor.rgb, float3(0, 0, 0), specColor.b), baseColor.a);
-
-    // specular UE4 uses 0.08 multiplied by a default specular value of 0.5 as a base, hence the 0.04
-    // Clamp the roughness so that the BRDF won't explode
-    hs.specular = float4(lerp(float3(0.04f, 0.04f, 0.04f), baseColor.rgb, specColor.b), max(0.08, specColor.g));
+    hs.baseColor = baseColor;
+    hs.metalic = specColor.b;
+    hs.roughness = max(0.08, specColor.g);
+    hs.occlusion = specColor.a;
 }
 
 float3 EnvironmentColor(float3 dir) {
     if (gSettingsCB.enableEnvironmentMap) {
         float2 uv = DirToLatLong(dir);
-        float3 hdr = gEnvTexture.SampleLevel(gSampler, uv, 0).rgb;
-        return HdrToLdr(hdr);
+        return gEnvTexture.SampleLevel(gSampler, uv, 0).rgb;
     } else {
         return gSceneCB.bgColor.rgb;
     }

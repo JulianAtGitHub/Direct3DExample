@@ -21,15 +21,15 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     HitSample hs;
     EvaluateHit(attribs, hs);
 
-    float roughness = hs.specular.a * hs.specular.a;
+    // float roughness = hs.specular.a * hs.specular.a;
     float3 viewDir = normalize(gCameraCB.position - hs.position);
 
     // do explicit direct lighting to a random light in the scene
-    float3 shadeColor = GGXDirect(payload.seed, hs.position, hs.normal, viewDir, hs.diffuse.rgb, hs.specular.rgb, roughness);
+    float3 shadeColor = GGXDirect(payload.seed, viewDir, hs);
 
     // do indirect lighting for global illumination
     if (payload.depth < gSceneCB.maxPayDepth) {
-        shadeColor += GGXIndirect(payload.seed, hs.position, hs.normal, viewDir, hs.diffuse.rgb, hs.specular.rgb, roughness, payload.depth);
+        shadeColor += GGXIndirect(payload.seed, viewDir, hs, payload.depth);
     }
 
     // Since we didn't do a good job above catching NaN's, div by 0, infs, etc.,
