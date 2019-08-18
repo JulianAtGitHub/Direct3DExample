@@ -23,12 +23,14 @@ Image * Image::LoadFromBinary(const void *head, void *pixels) {
     return image;
 }
 
-Image * Image::CreateFromFile(const char *filePath) {
+Image * Image::CreateFromFile(const char *filePath, bool hdr2ldr) {
     if (!filePath) {
         return nullptr;
     }
 
-    if (stbi_is_hdr(filePath)) {
+    stbi_set_flip_vertically_on_load(1);
+
+    if (!hdr2ldr && stbi_is_hdr(filePath)) {
         return CreateHDRImage(filePath);
     } else {
         return CreateBitmapImage(filePath);
@@ -36,7 +38,6 @@ Image * Image::CreateFromFile(const char *filePath) {
 }
 
 Image * Image::CreateBitmapImage(const char *filePath) {
-    stbi_set_flip_vertically_on_load(1);
     int width, height, channels;
     stbi_uc *pixels = stbi_load(filePath, &width, &height, &channels, STBI_rgb_alpha);
     if (!pixels) {
@@ -59,7 +60,6 @@ Image * Image::CreateBitmapImage(const char *filePath) {
 }
 
 Image * Image::CreateHDRImage(const char *filePath) {
-    stbi_set_flip_vertically_on_load(0);
     int width, height, channels;
     float *pixels = stbi_loadf(filePath, &width, &height, &channels, STBI_default);
     if (!pixels) {

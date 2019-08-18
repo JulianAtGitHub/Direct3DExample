@@ -12,7 +12,7 @@ public:
     };
 
     static Image * LoadFromBinary(const void *head, void *pixels);
-    static Image * CreateFromFile(const char *filePath);
+    static Image * CreateFromFile(const char *filePath, bool hdr2ldr = true);
 
     ~Image(void);
 
