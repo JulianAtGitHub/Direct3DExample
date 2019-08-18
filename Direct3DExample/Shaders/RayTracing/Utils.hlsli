@@ -46,7 +46,7 @@ float3 CosHemisphereSample(inout uint randSeed, float3 hitNorm) {
     float3 bitangent = PerpendicularVector(hitNorm);
     float3 tangent = cross(bitangent, hitNorm);
     float r = sqrt(randVal.x);
-    float phi = 2.0f * 3.14159265f * randVal.y;
+    float phi = 2.0f * M_PI * randVal.y;
 
     // Get our cosine-weighted hemisphere lobe sample direction
     return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
@@ -61,7 +61,7 @@ float3 UniformHemisphereSample(inout uint randSeed, float3 hitNorm) {
     float3 bitangent = PerpendicularVector(hitNorm);
     float3 tangent = cross(bitangent, hitNorm);
     float r = sqrt(max(0.0f,1.0f - randVal.x*randVal.x));
-    float phi = 2.0f * 3.14159265f * randVal.y;
+    float phi = 2.0f * M_PI * randVal.y;
 
     // Get our cosine-weighted hemisphere lobe sample direction
     return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
@@ -188,11 +188,34 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     // position
     hs.position = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 
+    // texcoord
+    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
+    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
+
     // normal
     float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
     float3 hitNormal = LerpFloat3Attributes(normals, attribs);
     hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
-    hs.normal = normalize(hitNormal);
+
+    if (geo.texInfo.z != ~0) {
+        float3 tangents[3] = { gVertices[idx.x].tangent, gVertices[idx.y].tangent, gVertices[idx.z].tangent };
+        float3 hitTangent = LerpFloat3Attributes(tangents, attribs);
+        hitTangent = mul((float3x3)ObjectToWorld3x4(), hitTangent);
+
+        float3 bitangents[3] = { gVertices[idx.x].bitangent, gVertices[idx.y].bitangent, gVertices[idx.z].bitangent };
+        float3 hitBitangent = LerpFloat3Attributes(bitangents, attribs);
+        hitBitangent = mul((float3x3)ObjectToWorld3x4(), hitBitangent);
+
+        float3x3 TBN = float3x3(normalize(hitTangent), normalize(hitBitangent), normalize(hitNormal));
+        TBN = transpose(TBN);
+
+        float3 normal = gMatTextures[geo.texInfo.z].SampleLevel(gSampler, hitTexCoord, 0).rgb;
+        normal = normalize(normal * 2.0f - 1.0f);
+        normal = mul(TBN, normal);
+        hs.normal = normalize(normal);
+    } else {
+        hs.normal = normalize(hitNormal);
+    }
 
     /**
     BaseColor
@@ -207,9 +230,6 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     - RGB - Emissive Color
     - A   - Unused
     **/
-
-    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
-    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
     float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
     float4 specColor = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0);
 
