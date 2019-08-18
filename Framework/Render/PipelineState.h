@@ -21,6 +21,9 @@ public:
     GraphicsState(void);
     virtual ~GraphicsState(void);
 
+    INLINE void EnableDepth(bool enable) { mDesc.DepthStencilState.DepthEnable = enable; }
+    INLINE void EnableStencil(bool enable) { mDesc.DepthStencilState.StencilEnable = enable; }
+
     INLINE D3D12_SHADER_BYTECODE & GetVertexShader(void) { return mDesc.VS; }
     INLINE D3D12_SHADER_BYTECODE & GetPixelShader(void) { return mDesc.PS; }
     INLINE D3D12_SHADER_BYTECODE & GetGeometryShader(void) { return mDesc.GS; }

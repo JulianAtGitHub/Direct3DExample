@@ -473,7 +473,7 @@ void DXRExample::PrepareScreenPass(void) {
 
     mSPGraphicsState = new Render::GraphicsState();
     mSPGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
-    mSPGraphicsState->SetDepthStencilFormat(DXGI_FORMAT_UNKNOWN);
+    mSPGraphicsState->EnableDepth(false);
     mSPGraphicsState->LoadVertexShader("Display.vs.cso");
     mSPGraphicsState->LoadPixelShader("Display.ps.cso");
     mSPGraphicsState->Create(mSPRootSignature);
