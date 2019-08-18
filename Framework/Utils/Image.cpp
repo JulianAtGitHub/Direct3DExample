@@ -87,6 +87,52 @@ Image * Image::CreateHDRImage(const char *filePath) {
     return image;
 }
 
+Image * Image::CombineImages(const char *aoFile, const char *roughnessFile, const char *metalicFile) {
+    if (!aoFile || !roughnessFile || !metalicFile) {
+        return nullptr;
+    }
+
+    int channels;
+    int aoW, aoH;
+    int roughnessW, roughnessH;
+    int metalicW, metalicH;
+
+    stbi_uc *aoPixels = stbi_load(aoFile, &aoW, &aoH, &channels, STBI_rgb_alpha);
+    stbi_uc *roughnessPixels = stbi_load(roughnessFile, &roughnessW, &roughnessH, &channels, STBI_rgb_alpha);
+    stbi_uc *metalicPixels = stbi_load(metalicFile, &metalicW, &metalicH, &channels, STBI_rgb_alpha);
+
+    ASSERT_PRINT((aoPixels && roughnessPixels && metalicPixels));
+    ASSERT_PRINT((aoW == roughnessW && roughnessW == metalicW && aoH == roughnessH && roughnessH == metalicH));
+
+    constexpr uint32_t bpp = 4;
+    uint32_t width = aoW;
+    uint32_t height = aoH;
+
+    Image *image = new Image();
+    image->mWidth = width;
+    image->mHeight = height;
+    image->mPitch = width * bpp;
+    image->mPixels = malloc(image->mPitch * image->mHeight);
+    image->mFormat = R8_G8_B8_A8;
+
+    stbi_uc *pixels = (stbi_uc *)(image->mPixels);
+    for (uint32_t i = 0; i < width; ++i) {
+        for (uint32_t j = 0; j < height; ++j) {
+            uint32_t offset = width * bpp * i + bpp * j;
+            pixels[offset + 0] = aoPixels[offset];
+            pixels[offset + 1] = roughnessPixels[offset];
+            pixels[offset + 2] = metalicPixels[offset];
+            pixels[offset + 3] = 0;
+        }
+    }
+
+    stbi_image_free(aoPixels);
+    stbi_image_free(roughnessPixels);
+    stbi_image_free(metalicPixels);
+
+    return image;
+}
+
 
 Image * Image::CreateCompressedImage(const char *filePath) {
     return nullptr;

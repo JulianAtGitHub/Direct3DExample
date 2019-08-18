@@ -13,6 +13,7 @@ public:
 
     static Image * LoadFromBinary(const void *head, void *pixels);
     static Image * CreateFromFile(const char *filePath, bool hdr2ldr = true);
+    static Image * CombineImages(const char *aoFile, const char *roughnessFile, const char *metalicFile);
 
     ~Image(void);
 
