@@ -4,31 +4,26 @@
 #include "Sphere.h"
 #include "HitableList.h"
 #include "Camera.h"
-
-static std::mt19937 rang;
-static std::uniform_real_distribution<float> rangDist(0.0f); // dist from [0.0 ~ 1.0)
+#include "Lambertian.h"
+#include "Metal.h"
 
 static constexpr int nx = 400;
 static constexpr int ny = 200;
 static constexpr int ns = 100;
+static constexpr int maxDepth = 50;
 
-XMVECTOR RandomInUnitSphere(void) {
-    static XMVECTOR one = {1.0f, 1.0f, 1.0f, 0.0f};
-    XMVECTOR p;
-    do {
-        p = {rangDist(rang), rangDist(rang), rangDist(rang), 0.0f};
-        p = p * 2.0f - one;
-    } while(XMVectorGetX(XMVector3Dot(p, p)) >= 1.0f);
-    return p;
-}
-
-XMVECTOR CalculateColor(const Ray& ray, Hitable *world) {
+XMVECTOR CalculateColor(const Ray& ray, Hitable *world, int depth) {
     static XMVECTOR white = {1.0f, 1.0f, 1.0f, 0.0f};
     static XMVECTOR blue = {0.5f, 0.7f, 1.0f, 0.0f};
     Hitable::Record record;
     if (world->Hit(ray, 0.001f, 1e+38f, record)) {
-        XMVECTOR target = record.p + record.n + RandomInUnitSphere();
-        return 0.5f * CalculateColor(Ray(record.p, target - record.p), world);
+        XMVECTOR attenuation;
+        Ray scatter;
+        if (depth < maxDepth && record.mat->Scatter(ray, record, attenuation, scatter)) {
+            return attenuation * CalculateColor(scatter, world, depth + 1);
+        } else {
+            return { 0.0f, 0.0f, 0.0f };
+        }
     } else {
         XMVECTOR direction = XMVector3Normalize(ray.Direction());
         float t = (XMVectorGetY(direction) + 1.0f) * 0.5f;
@@ -37,11 +32,20 @@ XMVECTOR CalculateColor(const Ray& ray, Hitable *world) {
 }
 
 int main(int argc, char *argv[]) {
-    Hitable* list[2] = {
-        new Sphere({0.0f, 0.0f, -1.0f}, 0.5f),
-        new Sphere({0, -100.5f, -1.0f}, 100.0f)
+    std::vector<Material *> materials {
+        new Lambertian({0.8f, 0.3f, 0.3f}),
+        new Lambertian({0.8f, 0.8f, 0.0f}),
+        new Metal({0.8f, 0.6f, 0.2f}, 0.2f),
+        new Metal({0.8f, 0.8f, 0.8f}, 0.8f)
     };
-    HitableList world(list, 2);
+    std::vector<Hitable *> hitables {
+        new Sphere({0.0f, 0.0f, -1.0f}, 0.5f, materials[0]),
+        new Sphere({0.0f, -100.5f, -1.0f}, 100.0f, materials[1]),
+        new Sphere({1.0f, 0.0f, -1.0f}, 0.5f, materials[2]),
+        new Sphere({-1.0f, 0.0f, -1.0f}, 0.5f, materials[3])
+    };
+
+    HitableList world(hitables.data(), static_cast<int>(hitables.size()));
     Camera camera;
 
     std::stringstream ss;
@@ -50,9 +54,9 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < nx; ++i) {
             XMVECTOR col = {0.0f, 0.0f, 0.0f};
             for (int s = 0; s < ns; ++s) {
-                float u = (i + rangDist(rang) - 0.5f) / float(nx);
-                float v = (j + rangDist(rang) - 0.5f) / float(ny);
-                col += CalculateColor(camera.GenRay(u, v), &world);
+                float u = (i + RandomUnit() - 0.5f) / float(nx);
+                float v = (j + RandomUnit() - 0.5f) / float(ny);
+                col += CalculateColor(camera.GenRay(u, v), &world, 0);
             }
             col /= float(ns);
             // gamma correct
@@ -64,9 +68,15 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    for (int i = 0; i < 2; ++i) {
-        delete list[i];
+    for (auto material : materials) {
+        delete material;
     }
+    materials.clear();
+
+    for (auto hitable : hitables) {
+        delete hitable;
+    }
+    hitables.clear();
 
     // write to file
     std::string file("output.ppm");

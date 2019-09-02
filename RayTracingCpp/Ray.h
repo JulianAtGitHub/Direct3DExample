@@ -8,6 +8,9 @@ public:
         mOrigin = origin;
         mDirection = XMVector3Normalize(direction);
     }
+    Ray(void) {
+
+    }
     ~Ray(void) {
 
     }

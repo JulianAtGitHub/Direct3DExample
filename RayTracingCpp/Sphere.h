@@ -2,10 +2,13 @@
 
 #include "Hitable.h"
 
+class Material;
+
 class Sphere : public Hitable {
 public:
-    Sphere(const XMVECTOR& center, float radius)
+    Sphere(const XMVECTOR& center, float radius, Material *material)
     : mRadius(radius)
+    , mMaterial(material)
     {
         mCenter = center;
     }
@@ -22,12 +25,14 @@ public:
 private:
     XMVECTOR    mCenter;
     float       mRadius;
+    Material   *mMaterial;
 };
 
 INLINE void Sphere::RecordHit(const Ray& ray, float t, Record& record) {
     record.t = t;
     record.p = ray.PointAt(t);
-    record.n = (record.p - mCenter) / mRadius;
+    record.n = XMVector3Normalize(record.p - mCenter);
+    record.mat = mMaterial;
 }
 
 INLINE bool Sphere::Hit(const Ray& ray, float tMin, float tMax, Record& record) {
@@ -37,7 +42,7 @@ INLINE bool Sphere::Hit(const Ray& ray, float tMin, float tMax, Record& record) 
     float c = XMVectorGetX(XMVector3Dot(oc, oc)) - mRadius * mRadius;
     float discriminant = b * b - a * c;
     if (discriminant > 0.0f) {
-        discriminant = sqrt(discriminant);
+        discriminant = std::sqrt(discriminant);
         float t = (-b - discriminant) / a;
         if (t < tMax && t > tMin) {
             RecordHit(ray, t, record);

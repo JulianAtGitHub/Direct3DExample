@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include <random>
+#include <vector>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -23,5 +24,9 @@
 using namespace DirectX;
 
 #define INLINE __forceinline
+
+// random value from [0.0 ~ 1.0)
+extern float RandomUnit(void);
+extern XMVECTOR RandomInUnitSphere(void);
 
 #endif //PCH_H
