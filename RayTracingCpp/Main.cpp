@@ -6,9 +6,10 @@
 #include "Camera.h"
 #include "Lambertian.h"
 #include "Metal.h"
+#include "Dielectric.h"
 
-static constexpr int nx = 400;
-static constexpr int ny = 200;
+static constexpr int nx = 200;
+static constexpr int ny = 100;
 static constexpr int ns = 100;
 static constexpr int maxDepth = 50;
 
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
         new Lambertian({0.8f, 0.3f, 0.3f}),
         new Lambertian({0.8f, 0.8f, 0.0f}),
         new Metal({0.8f, 0.6f, 0.2f}, 0.2f),
-        new Metal({0.8f, 0.8f, 0.8f}, 0.8f)
+        new Dielectric(1.5f)
     };
     std::vector<Hitable *> hitables {
         new Sphere({0.0f, 0.0f, -1.0f}, 0.5f, materials[0]),

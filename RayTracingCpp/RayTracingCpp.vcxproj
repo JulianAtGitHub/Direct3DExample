@@ -85,6 +85,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Dielectric.h" />
     <ClInclude Include="Hitable.h" />
     <ClInclude Include="HitableList.h" />
     <ClInclude Include="Lambertian.h" />

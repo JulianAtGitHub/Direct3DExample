@@ -45,5 +45,8 @@
     <ClInclude Include="Metal.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="Dielectric.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
