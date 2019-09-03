@@ -4,12 +4,18 @@
 
 class Camera {
 public:
-    Camera(void) 
+    Camera(XMVECTOR lookFrom, XMVECTOR lookAt, XMVECTOR vup, float vFov, float aspect) 
     {
-        mBottomLeft = {-2.0f, -1.0f, -1.0f, 0.0f};
-        mHorizontal = {4.0f, 0.0f, 0.0f, 0.0f};
-        mVertical = {0.0f, 2.0f, 0.0f, 0.0f};
-        mOrigin = {0.0f, 0.0f, 0.0f, 0.0f};
+        XMVECTOR u, v, w;
+        float halfHeight = std::tanf(vFov / 2.0f);
+        float halfWidth = aspect * halfHeight;
+        mOrigin = lookFrom;
+        w = XMVector3Normalize(lookFrom - lookAt);
+        u = XMVector3Normalize(XMVector3Cross(vup, w));
+        v = XMVector3Normalize(XMVector3Cross(w, u));
+        mBottomLeft = (mOrigin - w) - (u * halfWidth) - (v * halfHeight);
+        mHorizontal = u * (halfWidth * 2.0f);
+        mVertical = v * (halfHeight * 2.0f);
     }
     ~Camera(void) {
     

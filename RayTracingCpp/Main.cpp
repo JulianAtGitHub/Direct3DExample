@@ -8,8 +8,8 @@
 #include "Metal.h"
 #include "Dielectric.h"
 
-static constexpr int nx = 200;
-static constexpr int ny = 100;
+static constexpr int nx = 400;
+static constexpr int ny = 200;
 static constexpr int ns = 100;
 static constexpr int maxDepth = 50;
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     };
 
     HitableList world(hitables.data(), static_cast<int>(hitables.size()));
-    Camera camera;
+    Camera camera({-2.0f, 2.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, XM_PIDIV4, float(nx) / float(ny));
 
     std::stringstream ss;
     ss << "P3\n" << nx << " " << ny << "\n255\n";
