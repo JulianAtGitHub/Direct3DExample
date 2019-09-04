@@ -27,6 +27,11 @@ using namespace DirectX;
 
 // random value from [0.0 ~ 1.0)
 extern float RandomUnit(void);
+
+// (-1.0 ~ 1.0)
+extern XMVECTOR RandomInUnitDisk(void);
+
+// (-1.0 ~ 1.0)
 extern XMVECTOR RandomInUnitSphere(void);
 
 #endif //PCH_H
