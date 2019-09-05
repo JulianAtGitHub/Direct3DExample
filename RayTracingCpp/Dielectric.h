@@ -27,7 +27,7 @@ private:
 
 INLINE bool Dielectric::Scatter(const Ray &in, const Hitable::Record &record, XMVECTOR &attenuation, Ray &scatter) {
     XMVECTOR reflected = XMVector3Reflect(in.Direction(), record.n);
-    attenuation = {0.9f, 0.9f, 0.9f};
+    attenuation = {0.90f, 0.99f, 0.99f};
 
     XMVECTOR outwardNormal;
     float refractionIndex;

@@ -24,6 +24,6 @@ bool Metal::Scatter(const Ray &in, const Hitable::Record &record, XMVECTOR &atte
     XMVECTOR reflected = XMVector3Reflect(in.Direction(), record.n);
     scatter = Ray(record.p, reflected + (RandomInUnitSphere() * mFuzz));
     attenuation = mAlbedo;
-    return (XMVectorGetX(XMVector3Dot(reflected, record.n)) > 0.0f);
+    return (XMVectorGetX(XMVector3Dot(scatter.Direction(), record.n)) > 0.0f);
 }
 

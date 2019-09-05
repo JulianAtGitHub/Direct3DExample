@@ -8,7 +8,7 @@
 #include "Metal.h"
 #include "Dielectric.h"
 
-static constexpr int nx = 800;
+static constexpr int nx = 600;
 static constexpr int ny = 400;
 static constexpr int ns = 100;
 static constexpr int maxDepth = 50;
@@ -32,25 +32,68 @@ XMVECTOR CalculateColor(const Ray& ray, Hitable *world, int depth) {
     }
 }
 
-int main(int argc, char *argv[]) {
-    std::vector<Material *> materials {
-        new Lambertian({0.8f, 0.3f, 0.3f}),
-        new Lambertian({0.8f, 0.8f, 0.0f}),
-        new Metal({0.8f, 0.6f, 0.2f}, 0.2f),
-        new Dielectric(1.5f)
-    };
-    std::vector<Hitable *> hitables {
-        new Sphere({0.0f, 0.0f, -1.0f}, 0.5f, materials[0]),
-        new Sphere({0.0f, -100.5f, -1.0f}, 100.0f, materials[1]),
-        new Sphere({1.0f, 0.0f, -1.0f}, 0.5f, materials[2]),
-        new Sphere({-1.0f, 0.0f, -1.0f}, 0.5f, materials[3])
-    };
+void RandomScene(std::vector<Hitable *> &hitables, std::vector<Material *> &materials) {
+    Material *mat;
+    Hitable *obj;
 
+    {
+        mat = new Lambertian({ 0.5f, 0.5f, 0.5f });
+        obj = new Sphere({ 0.0f, -1000.0f, 0.0f }, 1000.0f, mat);
+        hitables.push_back(obj);
+        materials.push_back(mat);
+    }
+
+    for (int a = -11; a < 11; ++a) {
+        for (int b = -11; b < 11; ++b) {
+            float chooseMat = RandomUnit();
+            XMVECTOR center = { float(a) + 0.9f * RandomUnit(), 0.2f, float(b) + 0.9f * RandomUnit() };
+            XMVECTOR x = { 4.0f, 0.2f, 0.0f };
+            if (XMVectorGetX(XMVector3Length(center - x)) > 0.9f) {
+                if (chooseMat < 0.8f) { // lambertian
+                    mat = new Lambertian({ RandomUnit() * RandomUnit(), RandomUnit() * RandomUnit(), RandomUnit() * RandomUnit() });
+                } else if (chooseMat < 0.95f) { // metal
+                    mat = new Metal({ 0.5f * (1.0f + RandomUnit()), 0.5f * (1.0f + RandomUnit()), 0.5f * (1.0f + RandomUnit()) }, 0.5f * RandomUnit());
+                } else { // glass
+                    mat = new Dielectric(1.5f);
+                }
+                obj = new Sphere(center, 0.2f, mat);
+                hitables.push_back(obj);
+                materials.push_back(mat);
+            }
+        }
+    }
+
+    {
+        mat = new Dielectric(1.5f);
+        obj = new Sphere({ 0.0f, 1.0f, 0.0f }, 1.0f, mat);
+        hitables.push_back(obj);
+        materials.push_back(mat);
+    }
+
+    {
+        mat = new Lambertian({ 0.4f, 0.2f, 0.1f });
+        obj = new Sphere({ -4.0f, 1.0f, 0.0f }, 1.0f, mat);
+        hitables.push_back(obj);
+        materials.push_back(mat);
+    }
+
+    {
+        mat = new Metal({ 0.7f, 0.6f, 0.5f }, 0.0f);
+        obj = new Sphere({ 4.0f, 1.0f, 0.0f }, 1.0f, mat);
+        hitables.push_back(obj);
+        materials.push_back(mat);
+    }
+}
+
+int main(int argc, char *argv[]) {
+    std::vector<Material *> materials;
+    std::vector<Hitable *> hitables;
+    RandomScene(hitables, materials);
     HitableList world(hitables.data(), static_cast<int>(hitables.size()));
-    XMVECTOR lookFrom = {3.0f, 3.0f, 2.0f, 0.0f};
-    XMVECTOR lookAt = {0.0f, 0.0f, -1.0f, 0.0f};
-    float focalLength = XMVectorGetX(XMVector3Length(lookFrom - lookAt));
-    Camera camera(lookFrom, lookAt, {0.0f, 1.0f, 0.0f, 0.0f}, XM_PIDIV4 * 0.5f, float(nx) / float(ny), 2.0f, focalLength);
+
+    XMVECTOR lookFrom = {13.0f, 2.0f, 3.0f, 0.0f};
+    XMVECTOR lookAt = {0.0f, 0.0f, 0.0f, 0.0f};
+    Camera camera(lookFrom, lookAt, {0.0f, 1.0f, 0.0f, 0.0f}, XM_PIDIV4 * 0.5f, float(nx) / float(ny), 0.1f, 10.0f);
 
     std::stringstream ss;
     ss << "P3\n" << nx << " " << ny << "\n255\n";
