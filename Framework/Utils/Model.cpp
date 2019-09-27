@@ -8,6 +8,29 @@
 
 namespace Utils {
 
+static void PrintMaterialInfo(aiMaterial *material) {
+    if (material == nullptr) {
+        return;
+    }
+
+    aiString name;
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_NAME, name)) { DEBUG_PRINT("Material: %s", name.C_Str()); }
+
+    aiString tex;
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_DIFFUSE, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_SPECULAR, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_AMBIENT, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_EMISSIVE, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_EMISSIVE, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_HEIGHT, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_NORMALS, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_SHININESS, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_OPACITY, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DISPLACEMENT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_DISPLACEMENT, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_LIGHTMAP, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_LIGHTMAP, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_REFLECTION, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_REFLECTION, tex.C_Str()) }
+    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_UNKNOWN, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_UNKNOWN, tex.C_Str()) }
+}
+
 Scene::~Scene(void) {
     for (auto image : mImages) { delete image; }
     mImages.clear();
@@ -88,17 +111,23 @@ Scene * Model::LoadFromFile(const char *fileName) {
         indexCount += shape.indexCount;
 
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+        //PrintMaterialInfo(material);
 
+        aiString ambientTex;
         aiString diffuseTex;
         aiString specularTex;
         aiString normalTex;
+
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), ambientTex)) {
+            shape.ambientTex = AddImage(images, ambientTex);
+        }
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseTex)) {
             shape.diffuseTex = AddImage(images, diffuseTex);
         }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), specularTex)) {
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), specularTex)) {
             shape.specularTex = AddImage(images, specularTex);
         }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0), normalTex)) {
             shape.normalTex = AddImage(images, normalTex);
         }
     }

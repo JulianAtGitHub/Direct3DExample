@@ -7,12 +7,13 @@ class Image;
 class Scene {
 public:
     struct Shape {
-        Shape(void): indexOffset(0), indexCount(0), diffuseTex(~0), specularTex(~0), normalTex(~0) { }
+        Shape(void): indexOffset(0), indexCount(0), ambientTex(~0), diffuseTex(~0), specularTex(~0), normalTex(~0) { }
         uint32_t indexOffset;
         uint32_t indexCount;
-        uint32_t diffuseTex;
-        uint32_t specularTex;
-        uint32_t normalTex;
+        uint32_t ambientTex;    // metallic
+        uint32_t diffuseTex;    // albedo
+        uint32_t specularTex;   // roughness
+        uint32_t normalTex;     // normal
     };
 
     struct Vertex {
