@@ -39,19 +39,27 @@ Image * Image::CreateFromFile(const char *filePath, bool hdr2ldr) {
 
 Image * Image::CreateBitmapImage(const char *filePath) {
     int width, height, channels;
-    stbi_uc *pixels = stbi_load(filePath, &width, &height, &channels, STBI_rgb_alpha);
+    stbi_uc *pixels = stbi_load(filePath, &width, &height, &channels, STBI_default);
     if (!pixels) {
         return nullptr;
     }
 
-    constexpr uint32_t bpp = 4;
+    if (channels == 3) {
+        stbi_image_free(pixels);
+        pixels = stbi_load(filePath, &width, &height, &channels, STBI_rgb_alpha);
+        channels = 4;
+    }
 
     Image *image = new Image();
     image->mWidth = width;
     image->mHeight = height;
-    image->mPitch = width * bpp;
+    image->mPitch = width * channels;
     image->mPixels = malloc(image->mPitch * image->mHeight);
-    image->mFormat = R8_G8_B8_A8;
+    switch (channels) {
+        case 1: image->mFormat = R8; break;
+        case 2: image->mFormat = R8_G8; break;
+        default: image->mFormat = R8_G8_B8_A8; break;
+    }
     memcpy(image->mPixels, pixels, image->mPitch * image->mHeight);
 
     stbi_image_free(pixels);
@@ -156,6 +164,10 @@ Image::~Image(void) {
 
 DXGI_FORMAT Image::GetDXGIFormat(void) {
     switch (mFormat) {
+        case R8:
+            return DXGI_FORMAT_R8_UNORM;
+        case R8_G8:
+            return DXGI_FORMAT_R8G8_UNORM;
         case R8_G8_B8_A8:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
         case R32_G32_B32_FLOAT:

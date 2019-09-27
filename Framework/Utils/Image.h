@@ -6,6 +6,8 @@ class Image {
 public:
     enum Format {
         Unknown,
+        R8,
+        R8_G8,
         R8_G8_B8_A8,
         R32_G32_B32_FLOAT,
         R32_G32_B32_A32_FLOAT,
