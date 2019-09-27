@@ -14,6 +14,7 @@ D3DExample::D3DExample(HWND hwnd)
 , mShaderResourceHeap(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
+, mCamera(nullptr)
 , mCurrentFrame(0)
 {
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
@@ -38,18 +39,12 @@ void D3DExample::Init(void) {
 }
 
 void D3DExample::Update(void) {
-    static float y = 0.0f;
-    y += 0.01f;
-    XMVECTOR cameraPos = { -2.706775665283203f, 0.85294109582901f, -3.112438678741455f, 1.0f };//::XMVectorSet(0.0f, 1.0f, 5.0f, 0.0f);
-    XMVECTOR cameraFocus = {-2.347264528274536f, 0.7383297681808472f, -2.1863629817962648f, 1.0f};//::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    XMVECTOR cameraUp = { 0.038521841168403628f, 0.9933950304985046f, 0.1079813688993454f, 0.0f }; //::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    float cameraFOV = XM_PIDIV4;
     ConstBuffer constBuffer;
 
-    XMMATRIX model = ::XMMatrixIdentity();
-    //XMMATRIX model = ::XMMatrixRotationY(y);
-    XMMATRIX view = ::XMMatrixLookAtRH(cameraPos, cameraFocus, cameraUp);
-    XMMATRIX proj = ::XMMatrixPerspectiveFovRH(cameraFOV, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 100.0f);
+    mCamera->UpdateMatrixs();
+    XMMATRIX model = XMMatrixIdentity();
+    XMMATRIX view = mCamera->GetViewMatrix();
+    XMMATRIX proj = mCamera->GetProjectMatrix();
     XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
 
     mConstBuffer->CopyData(&constBuffer, sizeof(constBuffer), 0, mCurrentFrame);
@@ -66,6 +61,7 @@ void D3DExample::Render(void) {
 void D3DExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
 
+    DeleteAndSetNull(mCamera);
     DeleteAndSetNull(mScene);
 
     for (auto texture : mTextures) { delete texture; }
@@ -92,12 +88,14 @@ void D3DExample::LoadPipeline(void) {
 }
 
 void D3DExample::LoadAssets(void) {
-    mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
-    assert(mScene);
+    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 10000.0f, XMFLOAT4(1098.72424f, 651.495361f, -38.6905518f, 0.0f));
 
-    //mScene = Utils::Model::LoadFromFile("Models\\pink_room\\pink_room.fbx");
+    //mScene = Utils::Model::LoadFromMMB("Models\\sponza.mmb");
     //assert(mScene);
-    //Utils::Model::SaveToMMB(mScene, "Models\\pink_room\\pink_room.mmb");
+
+    mScene = Utils::Model::LoadFromFile("Models\\sponza\\sponza.obj");
+    assert(mScene);
+    //Utils::Model::SaveToMMB(mScene, "Models\\sponza.mmb");
 
     mShaderResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
@@ -175,6 +173,9 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
     for (uint32_t j = 0; j < mScene->mShapes.size(); ++j) {
         const Utils::Scene::Shape &shape = mScene->mShapes[j];
+        if (shape.diffuseTex >= mTextures.size()) {
+            continue;
+        }
         Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.diffuseTex]->GetSRVHandle());
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }

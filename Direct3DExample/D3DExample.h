@@ -32,6 +32,8 @@ private:
     Render::DescriptorHeap *mSamplerHeap;
     Render::Sampler *mSampler;
 
+    Utils::Camera *mCamera;
+
     uint64_t mFenceValues[Render::FRAME_COUNT];
     uint32_t mCurrentFrame;
 
