@@ -4,27 +4,14 @@ namespace Utils {
 
 class Camera {
 public:
-    Camera(float fov, float aspectRatio, float near, float far, const XMFLOAT4 &eye, const XMFLOAT4 &lookAt)
+    Camera( const float fov, const float aspectRatio, const float near, const float far, 
+            const XMFLOAT4 eye, 
+            const XMFLOAT4 lookAt = { 0.0f, 0.0f, 0.0f, 0.0f }, 
+            const XMFLOAT4 up = { 0.0f, 1.0f, 0.0f, 0.0f })
     : mFov(fov)
     , mAspectRatio(aspectRatio)
     , mNear(near)
-    , mFar(near)
-    , mFocalLength(0.0f)
-    , mFNumber(0.0f)
-    {
-        mPosition = XMLoadFloat4(&eye);
-        mDirection = XMVector3Normalize(XMLoadFloat4(&lookAt) - mPosition);
-        mUp = { 0.0f, 1.0f, 0.0f, 0.0f };
-        mRight = XMVector3Normalize(XMVector3Cross(mDirection, mUp));
-        mProject = XMMatrixPerspectiveFovRH(fov, aspectRatio, near, far);
-        UpdateMatrixs();
-    }
-
-    Camera(float fov, float aspectRatio, float near, float far, const XMFLOAT4 &eye, const XMFLOAT4 &lookAt, const XMFLOAT4 &up)
-    : mFov(fov)
-    , mAspectRatio(aspectRatio)
-    , mNear(near)
-    , mFar(near)
+    , mFar(far)
     , mFocalLength(0.0f)
     , mFNumber(0.0f)
     {
