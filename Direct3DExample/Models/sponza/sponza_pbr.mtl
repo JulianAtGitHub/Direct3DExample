@@ -190,6 +190,18 @@ newmtl details
 	bump textures_pbr\Sponza_Details_normal.tga
 	map_Ns textures_pbr\Sponza_Details_roughness.tga
 
+newmtl Material__47
+	Ns 10.000000
+	Ni 1.500000
+	d 1.000000
+	Tr 0.000000
+	Tf 1.000000 1.000000 1.000000 
+	illum 2
+	Ka 0.588000 0.588000 0.588000
+	Kd 0.588000 0.588000 0.588000
+	Ks 0.000000 0.000000 0.000000
+	Ke 0.000000 0.000000 0.000000
+
 newmtl column_b
 	Ns 10.0000
 	Ni 1.5000
