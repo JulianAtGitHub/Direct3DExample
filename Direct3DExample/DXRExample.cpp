@@ -87,21 +87,8 @@ void DXRExample::Init(void) {
 }
 
 void DXRExample::Update(void) {
-    static float elapse = 0.0f;
-    static float maxAngle = 45.0f;
-    static float factor = 10.0f;
-
     mTimer.Tick();
     float deltaSecond = static_cast<float>(mTimer.GetElapsedSeconds());
-
-    elapse += deltaSecond * factor;
-    if (elapse > maxAngle) {
-        elapse = maxAngle;
-        factor = -factor;
-    } else if (elapse < -maxAngle) {
-        elapse = -maxAngle;
-        factor = -factor;
-    }
 
     if (mIsRotating) {
         int32_t deltaX = GET_X_LPARAM(mCurrentMousePos) - GET_X_LPARAM(mLastMousePos);

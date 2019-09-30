@@ -16,6 +16,11 @@ D3DExample::D3DExample(HWND hwnd)
 , mSampler(nullptr)
 , mCamera(nullptr)
 , mCurrentFrame(0)
+, mSpeedX(0.0f)
+, mSpeedZ(0.0f)
+, mIsRotating(false)
+, mLastMousePos(0)
+, mCurrentMousePos(0)
 {
     for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
         mFenceValues[i] = 1;
@@ -36,9 +41,75 @@ D3DExample::~D3DExample(void) {
 void D3DExample::Init(void) {
     LoadPipeline();
     LoadAssets();
+    mTimer.Reset();
+}
+
+void D3DExample::OnKeyDown(uint8_t key) {
+    switch (key) {
+        // W key
+        case 0x57: mSpeedZ = 1.0f; break;
+        // S key
+        case 0x53: mSpeedZ = -1.0f; break;
+        // A key
+        case 0x41: mSpeedX = -1.0f; break;
+        // D key
+        case 0x44: mSpeedX = 1.0f; break;
+        default: break;
+    }
+}
+
+void D3DExample::OnKeyUp(uint8_t key) {
+    switch (key) {
+        case 0x57: // W key
+        case 0x53: // S key
+            mSpeedZ = 0.0f; 
+            break;
+        case 0x41: // A key
+        case 0x44: // D key
+            mSpeedX = 0.0f; 
+            break;
+        default: break;
+    }
+}
+
+void D3DExample::OnMouseLButtonDown(int64_t pos) {
+    mIsRotating = true;
+    mLastMousePos = pos;
+    mCurrentMousePos = pos;
+}
+
+void D3DExample::OnMouseLButtonUp(int64_t pos) {
+    mIsRotating = false;
+}
+
+void D3DExample::OnMouseMove(int64_t pos) {
+    mCurrentMousePos = pos;
 }
 
 void D3DExample::Update(void) {
+    mTimer.Tick();
+    float deltaSecond = static_cast<float>(mTimer.GetElapsedSeconds());
+
+    if (mIsRotating) {
+        int32_t deltaX = GET_X_LPARAM(mCurrentMousePos) - GET_X_LPARAM(mLastMousePos);
+        int32_t deltaY = GET_Y_LPARAM(mCurrentMousePos) - GET_Y_LPARAM(mLastMousePos);
+        if (deltaX) {
+            mCamera->RotateY(XMConvertToRadians(-deltaX * 0.2f));
+        }
+        if (deltaY) {
+            mCamera->RotateX(XMConvertToRadians(-deltaY * 0.2f));
+        }
+
+        mLastMousePos = mCurrentMousePos;
+    }
+
+    if (mSpeedZ != 0.0f) {
+        mCamera->MoveForward(deltaSecond * mSpeedZ * 200);
+    }
+    if (mSpeedX != 0.0f) {
+        mCamera->MoveRight(deltaSecond * mSpeedX * 200);
+    }
+
     ConstBuffer constBuffer;
 
     mCamera->UpdateMatrixs();
@@ -88,7 +159,9 @@ void D3DExample::LoadPipeline(void) {
 }
 
 void D3DExample::LoadAssets(void) {
-    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 10000.0f, XMFLOAT4(1098.72424f, 651.495361f, -38.6905518f, 0.0f));
+    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 10000.0f, 
+                                XMFLOAT4(1098.72424f, 651.495361f, -38.6905518f, 0.0f),
+                                XMFLOAT4(0.0f, 651.495361f, 0.0f, 0.0f));
 
     //mScene = Utils::Model::LoadFromMMB("Models\\sponza.mmb");
     //assert(mScene);

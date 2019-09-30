@@ -12,6 +12,12 @@ public:
     virtual void Render(void);
     virtual void Destroy(void);
 
+    virtual void OnKeyDown(uint8_t key);
+    virtual void OnKeyUp(uint8_t key);
+    virtual void OnMouseLButtonDown(int64_t pos);
+    virtual void OnMouseLButtonUp(int64_t pos);
+    virtual void OnMouseMove(int64_t pos);
+
 private:
     void LoadPipeline(void);
     void LoadAssets(void);
@@ -32,13 +38,19 @@ private:
     Render::DescriptorHeap *mSamplerHeap;
     Render::Sampler *mSampler;
 
-    Utils::Camera *mCamera;
-
     uint64_t mFenceValues[Render::FRAME_COUNT];
     uint32_t mCurrentFrame;
 
     uint32_t mWidth;
     uint32_t mHeight;
 
-    Utils::Scene *mScene;
+    float   mSpeedX;
+    float   mSpeedZ;
+    bool    mIsRotating;
+    int64_t mLastMousePos;
+    int64_t mCurrentMousePos;
+
+    Utils::Timer    mTimer;
+    Utils::Camera  *mCamera;
+    Utils::Scene   *mScene;
 };
