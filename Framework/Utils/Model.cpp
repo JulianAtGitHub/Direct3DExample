@@ -124,10 +124,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseTex)) {
             shape.diffuseTex = AddImage(images, diffuseTex);
         }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), specularTex)) {
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), specularTex)) {
             shape.specularTex = AddImage(images, specularTex);
         }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0), normalTex)) {
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
             shape.normalTex = AddImage(images, normalTex);
         }
     }
