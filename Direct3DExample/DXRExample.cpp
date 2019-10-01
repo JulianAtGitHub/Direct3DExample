@@ -270,7 +270,8 @@ void DXRExample::OnMouseMove(int64_t pos) {
 }
 
 void DXRExample::InitScene(void) {
-    mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
+    //mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
+    mScene = Utils::Model::LoadFromFile("Models\\pink_room\\pink_room.fbx");
     assert(mScene);
 
     mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 100.0f, 
