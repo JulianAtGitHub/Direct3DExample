@@ -332,3 +332,7 @@ ASALocalRun/
 # external repos 
 Externals/
 !Externals/Revisions
+
+# obj model
+!Direct3DExample/Models/*.obj
+!Direct3DExample/Models/**/*.obj
