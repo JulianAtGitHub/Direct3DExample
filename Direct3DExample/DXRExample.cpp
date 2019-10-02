@@ -295,14 +295,16 @@ void DXRExample::InitScene(void) {
 
     Render::gCommand->Begin();
 
-    mEnvTexture = new Render::PixelBuffer(envImage->GetPitch(), envImage->GetWidth(), envImage->GetHeight(), envImage->GetDXGIFormat());
+    mEnvTexture = new Render::PixelBuffer(envImage->GetPitch(), envImage->GetWidth(), envImage->GetHeight(), envImage->GetMipLevels(), envImage->GetDXGIFormat());
     Render::gCommand->UploadTexture(mEnvTexture, envImage->GetPixels());
     mEnvTexture->CreateSRV(mDescriptorHeap->Allocate());
 
     mTextures.reserve(mScene->mImages.size());
     for (auto image : mScene->mImages) {
-        Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetDXGIFormat());
-        Render::gCommand->UploadTexture(texture, image->GetPixels());
+        Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetMipLevels(), image->GetDXGIFormat());
+        std::vector<D3D12_SUBRESOURCE_DATA> subResources;
+        image->GetSubResources(subResources);
+        Render::gCommand->UploadTexture(texture, subResources.data(), static_cast<uint32_t>(subResources.size()));
         texture->CreateSRV(mDescriptorHeap->Allocate());
         mTextures.push_back(texture);
     }
@@ -442,7 +444,7 @@ void DXRExample::CreateRaytracingOutput(void) {
     uint32_t height = Render::gRenderTarget[0]->GetHeight();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT), width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT), width, height, 1, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
     mRaytracingOutput->CreateSRV(mDescriptorHeap->Allocate());
 }
