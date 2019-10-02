@@ -111,7 +111,9 @@ int32_t RayTracingState::AddRayTracingShaderConfig(uint32_t maxPayloadSize, uint
 int32_t RayTracingState::AddRayTracingPipelineConfig(uint32_t maxTraceDepth) {
     ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_RAYTRACING_PIPELINE_CONFIG *object = new D3D12_RAYTRACING_PIPELINE_CONFIG;
-    object->MaxTraceRecursionDepth = maxTraceDepth;
+    // depth must between 0 ~ 31
+    // https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_raytracing_pipeline_config
+    object->MaxTraceRecursionDepth = MIN(maxTraceDepth, 31);
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, object);
 }
 
