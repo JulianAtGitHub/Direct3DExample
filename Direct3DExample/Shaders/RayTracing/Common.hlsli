@@ -19,7 +19,7 @@ struct Vertex {
 
 struct Geometry {
     uint4 indexInfo; // x: index offset, y: index count;
-    uint4 texInfo;  // x: diffuse, y: specular, z: normal
+    uint4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
 };
 
 struct HitSample {
@@ -28,7 +28,6 @@ struct HitSample {
     float4 baseColor;
     float  metalic;
     float  roughness;
-    float  occlusion;
 };
 
 struct Light {

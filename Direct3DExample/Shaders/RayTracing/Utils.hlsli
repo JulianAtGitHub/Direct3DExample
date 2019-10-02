@@ -197,7 +197,7 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     float3 hitNormal = LerpFloat3Attributes(normals, attribs);
     hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
 
-    if (geo.texInfo.z != ~0) {
+    if (geo.texInfo.w != ~0) {
         float3 tangents[3] = { gVertices[idx.x].tangent, gVertices[idx.y].tangent, gVertices[idx.z].tangent };
         float3 hitTangent = LerpFloat3Attributes(tangents, attribs);
         hitTangent = mul((float3x3)ObjectToWorld3x4(), hitTangent);
@@ -209,7 +209,7 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
         float3x3 TBN = float3x3(normalize(hitTangent), normalize(hitBitangent), normalize(hitNormal));
         TBN = transpose(TBN);
 
-        float3 normal = gMatTextures[geo.texInfo.z].SampleLevel(gSampler, hitTexCoord, 0).rgb;
+        float3 normal = gMatTextures[geo.texInfo.w].SampleLevel(gSampler, hitTexCoord, 0).rgb;
         normal = normalize(normal * 2.0f - 1.0f);
         normal = mul(TBN, normal);
         hs.normal = normalize(normal);
@@ -217,26 +217,10 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
         hs.normal = normalize(hitNormal);
     }
 
-    /**
-    BaseColor
-    - RGB - Base Color
-    - A   - Transparency
-    specColor
-    - R - Occlusion
-    - G - Roughness
-    - B - Metalness
-    - A - Reserved
-    Emissive
-    - RGB - Emissive Color
-    - A   - Unused
-    **/
-    float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
-    float4 specColor = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0);
-
-    hs.baseColor = baseColor;
-    hs.metalic = specColor.b;
-    hs.roughness = max(0.08, specColor.g);
-    hs.occlusion = specColor.a;
+    hs.baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
+    hs.metalic = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0).r;
+    hs.roughness = gMatTextures[geo.texInfo.z].SampleLevel(gSampler, hitTexCoord, 0).r;
+    hs.roughness = max(0.08, hs.roughness);
 }
 
 float3 EnvironmentColor(float3 dir) {

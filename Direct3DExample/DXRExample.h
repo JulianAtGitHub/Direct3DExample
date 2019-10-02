@@ -39,8 +39,8 @@ private:
     };
 
     struct Geometry {
-        XMUINT4 indexInfo; // x: index offset, y: index count;
-        XMUINT4 texInfo;  // x: diffuse, y: specular, z: normal
+        XMUINT4 indexInfo; // x: index offset, y: index count
+        XMUINT4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
     };
 
     enum LightType {

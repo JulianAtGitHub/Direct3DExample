@@ -28,9 +28,9 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     float3 shadeColor = GGXDirect(payload.seed, viewDir, hs);
 
     // do indirect lighting for global illumination
-    if (payload.depth < gSceneCB.maxPayDepth) {
+    //if (gSettingsCB.enableIndirectLight) {
         shadeColor += GGXIndirect(payload.seed, viewDir, hs, payload.depth);
-    }
+    //}
 
     // Since we didn't do a good job above catching NaN's, div by 0, infs, etc.,
     //    zero out samples that would blow up our frame buffer.  Note:  You can and should

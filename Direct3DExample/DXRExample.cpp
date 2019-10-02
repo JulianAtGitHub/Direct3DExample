@@ -29,7 +29,7 @@ DXRExample::DXRExample(HWND hwnd)
 , mCurrentMousePos(0)
 , mFrameCount(0)
 , mAccumCount(0)
-, mMaxRayDepth(4)
+, mMaxRayDepth(3)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
@@ -104,10 +104,10 @@ void DXRExample::Update(void) {
     }
 
     if (mSpeedZ != 0.0f) {
-        mCamera->MoveForward(deltaSecond * mSpeedZ * 2);
+        mCamera->MoveForward(deltaSecond * mSpeedZ * 200);
     }
     if (mSpeedX != 0.0f) {
-        mCamera->MoveRight(deltaSecond * mSpeedX * 2);
+        mCamera->MoveRight(deltaSecond * mSpeedX * 200);
     }
 
     float jitterX = mRangDist(mRang) - 0.5f;
@@ -121,9 +121,9 @@ void DXRExample::Update(void) {
     mCamera->UpdateMatrixs();
 
     mSettings.enableAccumulate = 1;
-    mSettings.enableJitterCamera = 1;
+    mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
-    mSettings.enableEnvironmentMap = 1;
+    mSettings.enableEnvironmentMap = 0;
     mSettings.enableIndirectLight = 1;
 
     XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
@@ -134,8 +134,8 @@ void DXRExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 0.5f, 0.5f, 0.8f, 1.0f };
-    mSceneConsts.lightCount = 3;
+    mSceneConsts.bgColor = { 0.5f, 0.7f, 1.0f, 1.0f };
+    mSceneConsts.lightCount = 1;
     mSceneConsts.frameCount = mFrameCount ++;
     mSceneConsts.accumCount = mAccumCount ++;
     mSceneConsts.maxPayDepth = mMaxRayDepth;
@@ -270,14 +270,12 @@ void DXRExample::OnMouseMove(int64_t pos) {
 }
 
 void DXRExample::InitScene(void) {
-    //mScene = Utils::Model::LoadFromMMB("Models\\pink_room.mmb");
-    mScene = Utils::Model::LoadFromFile("Models\\pink_room\\pink_room.fbx");
+    mScene = Utils::Model::LoadFromFile("..\\..\\Models\\sponza\\sponza.obj");
     assert(mScene);
 
-    mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 100.0f, 
-                                XMFLOAT4(-2.706775665283203f, 0.85294109582901f, -3.112438678741455f, 1.0f), 
-                                XMFLOAT4(-2.347264528274536f, 0.7383297681808472f, -2.1863629817962648f, 1.0f), 
-                                XMFLOAT4(0.038521841168403628f, 0.9933950304985046f, 0.1079813688993454f, 0.0f));
+    mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 1000.0f, 
+                                XMFLOAT4(1098.72424f, 651.495361f, -38.6905518f, 0.0f),
+                                XMFLOAT4(0.0f, 651.495361f, 0.0f, 0.0f));
     mCamera->SetLensParams(32.0f, 2.0f);
 
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
@@ -291,7 +289,7 @@ void DXRExample::InitScene(void) {
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
 
-    Utils::Image *envImage = Utils::Image::CreateFromFile("Models\\dirt_road.hdr");
+    Utils::Image *envImage = Utils::Image::CreateFromFile("..\\..\\Models\\dirt_road.hdr");
 
     Render::gCommand->Begin();
 
@@ -359,7 +357,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 }
 
 void DXRExample::BuildGeometry(void) {
-    constexpr uint32_t lightCount = 3;
+    constexpr uint32_t lightCount = 1;
 
     mIndices = new Render::GPUBuffer(mScene->mIndices.size() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
@@ -371,13 +369,13 @@ void DXRExample::BuildGeometry(void) {
         auto &shape = mScene->mShapes[i];
         ASSERT_PRINT(shape.diffuseTex != ~0 && shape.specularTex != ~0);
         geometries[i].indexInfo = { shape.indexOffset, shape.indexCount, 0, 0 };
-        geometries[i].texInfo = { shape.diffuseTex, shape.specularTex, shape.normalTex, 0 };
+        geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
     }
 
-    Light lights[3] = {
-        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.3642265796661377f, -0.5452651977539063f, 0.7549999952316284f}, {1.0f, 1.0f, 1.0f} },
-        { PointLight, XM_2PI, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
-        { PointLight, XM_2PI, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+    Light lights[] = {
+        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.1f}, {2.0f, 2.0f, 2.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
     };
 
 

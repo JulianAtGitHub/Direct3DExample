@@ -66,7 +66,8 @@ float3 GGXDirect(inout uint randSeed, float3 V, in HitSample hs) {
     float3 N = hs.normal;
 
     // Pick a random light from our scene to shoot a shadow ray towards
-    uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(randSeed)), gSceneCB.lightCount - 1);
+    // uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(randSeed)), gSceneCB.lightCount - 1);
+    uint lightIdx = 0;
 
     // Query the scene to find info about the randomly selected light
     LightSample ls;
@@ -75,7 +76,8 @@ float3 GGXDirect(inout uint randSeed, float3 V, in HitSample hs) {
     float3 L = ls.L;
 
     // Shoot our shadow ray to our randomly selected light
-    float shadow = float(gSceneCB.lightCount) * ShadowRayGen(hs.position, L, length(ls.position - hs.position));
+    // float shadow = float(gSceneCB.lightCount) * ShadowRayGen(hs.position, L, length(ls.position - hs.position));
+    float shadow = ShadowRayGen(hs.position, L, length(ls.position - hs.position));
 
     // Compute our lambertion term (N dot L)
     float NdotL = saturate(dot(N, L));
