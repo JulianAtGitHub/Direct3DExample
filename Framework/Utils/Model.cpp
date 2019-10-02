@@ -228,7 +228,7 @@ Scene * Model::LoadFromMMB(const char *fileName) {
         uint32_t vertexSize = head.vertexCount * sizeof(Scene::Vertex);
         uint32_t indexSize = head.indexCount * sizeof(uint32_t);
         uint32_t shapeSize = head.shapeCount * sizeof(Scene::Shape);
-        uint32_t imageSize = head.imageCount * sizeof(Image);
+        uint32_t imageSize = head.imageCount * sizeof(Image::Head);
 
         scene = new Scene;
         scene->mVertices.resize(head.vertexCount);
@@ -243,12 +243,12 @@ Scene * Model::LoadFromMMB(const char *fileName) {
         memcpy(scene->mShapes.data(), source, shapeSize);
         source += shapeSize;
 
-        void *imageHead = malloc(sizeof(Image));
+        void *imageHead = malloc(sizeof(Image::Head));
         uint8_t *heads = source;
         uint8_t *pixels = source + imageSize;
         for (uint32_t i = 0; i < head.imageCount; ++i) {
-            memcpy(imageHead, heads, sizeof(Image));
-            heads += sizeof(Image);
+            memcpy(imageHead, heads, sizeof(Image::Head));
+            heads += sizeof(Image::Head);
             Image *image = Image::LoadFromBinary(imageHead, pixels);
             pixels += image->GetPixelsSize();
             scene->mImages[i] = image;
@@ -281,7 +281,7 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     uint32_t vertexSize = static_cast<uint32_t>(scene->mVertices.size() * sizeof(Scene::Vertex));
     uint32_t indexSize = static_cast<uint32_t>(scene->mIndices.size() * sizeof(uint32_t));
     uint32_t shapeSize = static_cast<uint32_t>(scene->mShapes.size() * sizeof(Scene::Shape));
-    uint32_t imageSize = static_cast<uint32_t>(scene->mImages.size() * sizeof(Image));
+    uint32_t imageSize = static_cast<uint32_t>(scene->mImages.size() * sizeof(Image::Head));
     uint32_t pixelSize = 0;
     for (auto image : scene->mImages) {
         pixelSize += image->GetPixelsSize();
@@ -296,8 +296,8 @@ void Model::SaveToMMB(const Scene *scene, const char *fileName) {
     memcpy(dest, scene->mShapes.data(), shapeSize);
     dest += shapeSize;
     for (Image *image : scene->mImages) {
-        memcpy(dest, image, sizeof(Image));
-        dest += sizeof(Image);
+        memcpy(dest, &(image->GetHead()), sizeof(Image::Head));
+        dest += sizeof(Image::Head);
     }
     for (Image *image : scene->mImages) {
         uint32_t copySize = image->GetPixelsSize();

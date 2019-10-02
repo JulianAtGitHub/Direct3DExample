@@ -7,39 +7,62 @@ public:
     enum Format {
         Unknown,
         R8,
-        R8_G8,
-        R8_G8_B8_A8,
-        R32_G32_B32_FLOAT,
-        R32_G32_B32_A32_FLOAT,
+        R8G8,
+        R8G8B8A8,
+        R32G32B32_FLOAT,
+        R32G32B32A32_FLOAT,
+    };
+
+    struct Head {
+        Head(void): mWidth(0), mHeight(0), mBPP(0), mFormat(Unknown) { }
+        uint32_t            mWidth;
+        uint32_t            mHeight;
+        uint32_t            mBPP;   // byte per pxiel
+        Format              mFormat;
     };
 
     static Image * LoadFromBinary(const void *head, void *pixels);
     static Image * CreateFromFile(const char *filePath, bool hdr2ldr = true);
-    static Image * CombineImages(const char *aoFile, const char *roughnessFile, const char *metalicFile);
 
     ~Image(void);
 
-    INLINE uint32_t GetWidth(void) const { return mWidth; }
-    INLINE uint32_t GetHeight(void) const { return mHeight; }
-    INLINE uint32_t GetPitch(void) const { return mPitch; }
-    INLINE Format GetFormat(void) const { return mFormat; }
-    INLINE const void * GetPixels(void) const { return mPixels; }
-    INLINE uint32_t GetPixelsSize(void) { return mPitch * mHeight; }
+    INLINE const Head & GetHead(void) const { return mHead; }
+    INLINE uint32_t GetWidth(void) const { return mHead.mWidth; }
+    INLINE uint32_t GetHeight(void) const { return mHead.mHeight; }
+    INLINE Format GetFormat(void) const { return mHead.mFormat; }
+    INLINE uint32_t GetMipLevels(void) const { return mMipLevels; }
+    INLINE uint32_t GetPitch(uint32_t level = 0) { if (level < mMipLevels) { return mHead.mBPP * mSlices[level].mWidth; } return 0; }
+    INLINE const void * GetPixels(uint32_t level = 0) const { if (level < mMipLevels) { return mSlices[level].mPixels; } return nullptr; }
+    INLINE uint32_t GetPixelsSize(uint32_t level = 0) { if (level < mMipLevels) { return mHead.mBPP * mSlices[level].GetPixelCount(); } return 0; }
 
     DXGI_FORMAT GetDXGIFormat(void);
+    void GetSubResources(std::vector<D3D12_SUBRESOURCE_DATA> &resources);
 
 private:
     static Image * CreateBitmapImage(const char *filePath);
     static Image * CreateHDRImage(const char *filePath);
     static Image * CreateCompressedImage(const char *filePath);
 
+    struct Slice {
+        Slice(void): mWidth(0), mHeight(0), mPixels(nullptr) { }
+        Slice(uint32_t width, uint32_t height, void *pixels): mWidth(width), mHeight(height), mPixels(pixels) { }
+        INLINE uint32_t GetPixelCount(void) { return mWidth * mHeight; }
+        uint32_t    mWidth;
+        uint32_t    mHeight;
+        void *      mPixels;
+    };
+
     Image(void);
 
-    uint32_t    mWidth;
-    uint32_t    mHeight;
-    uint32_t    mPitch;
-    Format      mFormat;
-    void *      mPixels;
+    void GenerateMipmaps(void);
+    bool NextMipLevel(const Slice &src, Slice &dst);
+    void MergePixels_R8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor);
+    void MergePixels_R8G8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor);
+    void MergePixels_R8G8B8A8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor);
+
+    Head                mHead;
+    uint32_t            mMipLevels;
+    std::vector<Slice>  mSlices;
 };
 
 }
