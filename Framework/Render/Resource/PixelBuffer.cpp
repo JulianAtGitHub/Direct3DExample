@@ -3,11 +3,12 @@
 
 namespace Render {
 
-PixelBuffer::PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, DXGI_FORMAT format, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
+PixelBuffer::PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, uint32_t mipLevels, DXGI_FORMAT format, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
 : GPUResource()
 , mPitch(pitch)
 , mWidth(width)
 , mHeight(height)
+, mMipLevels(mipLevels)
 , mFormat(format)
 , mFlag(flag)
 {
@@ -41,7 +42,7 @@ void PixelBuffer::Initialize(void) {
     texDesc.Width = mWidth;
     texDesc.Height = mHeight;
     texDesc.DepthOrArraySize = 1;
-    texDesc.MipLevels = 1;
+    texDesc.MipLevels = mMipLevels;
     texDesc.Format = mFormat;
     texDesc.SampleDesc.Count = 1;
     texDesc.SampleDesc.Quality = 0;
@@ -68,7 +69,7 @@ void PixelBuffer::CreateSRV(DescriptorHandle &handle) {
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Format = mFormat;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MipLevels = mMipLevels;
     srvDesc.Texture2D.MostDetailedMip = 0;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 

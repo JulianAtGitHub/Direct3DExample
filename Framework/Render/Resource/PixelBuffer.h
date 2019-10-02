@@ -6,7 +6,7 @@ namespace Render {
 
 class PixelBuffer: public GPUResource {
 public:
-    PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, DXGI_FORMAT format, 
+    PixelBuffer(uint32_t pitch, uint32_t width, uint32_t height, uint32_t mipLevels, DXGI_FORMAT format, 
                 D3D12_RESOURCE_STATES usage = D3D12_RESOURCE_STATE_COMMON, 
                 D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE);
     PixelBuffer(void);
@@ -28,6 +28,7 @@ protected:
     uint32_t                mPitch; // bytes per row
     uint32_t                mWidth;
     uint32_t                mHeight;
+    uint32_t                mMipLevels;
     DXGI_FORMAT             mFormat;
     D3D12_RESOURCE_FLAGS    mFlag;
     DescriptorHandle        mSRVHandle;
