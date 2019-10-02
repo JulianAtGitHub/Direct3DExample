@@ -71,7 +71,8 @@
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY $(ProjectDir)Models\*.* $(OutDir)Models\ /E /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -100,7 +101,8 @@
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY $(ProjectDir)Models\*.* $(OutDir)Models\ /E /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
