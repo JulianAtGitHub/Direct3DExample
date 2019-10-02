@@ -98,12 +98,12 @@ Scene * Model::LoadFromFile(const char *fileName) {
     images.reserve(scene->mNumMaterials * 3);
 
     Scene *out = new Scene;
-    out->mShapes.resize(scene->mNumMeshes);
+    out->mShapes.reserve(scene->mNumMeshes);
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[i];
         assert(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE);
 
-        Scene::Shape &shape = out->mShapes[i];
+        Scene::Shape shape;
         shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
 
@@ -129,6 +129,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
         }
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
             shape.normalTex = AddImage(images, normalTex);
+        }
+
+        if (shape.IsAllTexturesValid()) {
+            out->mShapes.push_back(shape);
         }
     }
 

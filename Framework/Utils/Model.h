@@ -8,6 +8,7 @@ class Scene {
 public:
     struct Shape {
         Shape(void): indexOffset(0), indexCount(0), ambientTex(~0), diffuseTex(~0), specularTex(~0), normalTex(~0) { }
+        INLINE bool IsAllTexturesValid(void) { return ambientTex != (~0) && diffuseTex != (~0) && specularTex != (~0) && normalTex != (~0); }
         uint32_t indexOffset;
         uint32_t indexCount;
         uint32_t ambientTex;    // metallic
