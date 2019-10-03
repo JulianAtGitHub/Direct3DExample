@@ -26,7 +26,8 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
 
     payload.color = GGXDirect(payload.seed, viewDir, hs);
 
-    if (payload.depth < gSceneCB.maxPayDepth - 1) {
+    // There is a shadow ray in GGXDirect, so reduce one for deoth
+    if (payload.depth < gSceneCB.maxRayDepth - 1) {
         payload.color += GGXIndirect(payload.seed, viewDir, hs, payload.depth);
     }
 }

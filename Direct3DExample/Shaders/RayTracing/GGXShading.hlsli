@@ -63,48 +63,55 @@ inline float3 GGXMicrofacet(inout uint randSeed, float roughness, float3 hitNorm
 }
 
 float3 GGXDirect(inout uint randSeed, float3 V, in HitSample hs) {
-    float3 N = hs.normal;
 
-    // Pick a random light from our scene to shoot a shadow ray towards
-    // uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(randSeed)), gSceneCB.lightCount - 1);
-    uint lightIdx = 0;
+    float3 color = float3(0.0f, 0.0f, 0.0f);
 
-    // Query the scene to find info about the randomly selected light
-    LightSample ls;
-    EvaluateLight(gLights[lightIdx], hs.position, ls);
+    for (uint lightIdx = 0; lightIdx < gSceneCB.lightCount; ++lightIdx) {
+        // Pick a random light from our scene to shoot a shadow ray towards
+        // uint lightIdx = min(uint(gSceneCB.lightCount * NextRand(randSeed)), gSceneCB.lightCount - 1);
 
-    float3 L = ls.L;
+        // Query the scene to find info about the randomly selected light
+        LightSample ls;
+        EvaluateLight(gLights[lightIdx], hs.position, ls);
 
-    // Shoot our shadow ray to our randomly selected light
-    // float shadow = float(gSceneCB.lightCount) * ShadowRayGen(hs.position, L, length(ls.position - hs.position));
-    float shadow = ShadowRayGen(hs.position, L, length(ls.position - hs.position));
+        float3 L = ls.L;
 
-    // Compute our lambertion term (N dot L)
-    float NdotL = saturate(dot(N, L));
+        // Shoot our shadow ray to our randomly selected light
+        // float shadow = float(gSceneCB.lightCount) * ShadowRayGen(hs.position, L, length(ls.position - hs.position));
+        float shadow = ShadowRayGen(hs.position, L, length(ls.position - hs.position));
 
-    // Compute half vectors and additional dot products for GGX
-    float3 H = normalize(V + L);
-    float NdotH = saturate(dot(N, H));
-    float NdotV = saturate(dot(N, V));
-    float HdotV = saturate(dot(H, V));
+        if (shadow > 0) {
+            float3 N = hs.normal;
+            // Compute our lambertion term (N dot L)
+            float NdotL = saturate(dot(N, L));
 
-    // If it's a dia-electric (like plastic) use F0 of 0.04
-    // And if it's a metal, use the albedo color as F0 (metal workflow)
-    float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), hs.baseColor.rgb, hs.metalic);
+            // Compute half vectors and additional dot products for GGX
+            float3 H = normalize(V + L);
+            float NdotH = saturate(dot(N, H));
+            float NdotV = saturate(dot(N, V));
+            float HdotV = saturate(dot(H, V));
 
-    // Evaluate terms for our GGX BRDF model
-    float  D = GGXNormalDistribution(NdotH, hs.roughness);
-    float  G = GGXSchlickMaskingTerm(NdotL, NdotV, hs.roughness);
-    float3 F = SchlickFresnel(f0, HdotV);
+            // If it's a dia-electric (like plastic) use F0 of 0.04
+            // And if it's a metal, use the albedo color as F0 (metal workflow)
+            float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), hs.baseColor.rgb, hs.metalic);
 
-    // Evaluate the Cook-Torrance Microfacet BRDF model
-    float3 specular = D * G * F / max(0.001f, (4 * NdotV * NdotL));
+            // Evaluate terms for our GGX BRDF model
+            float  D = GGXNormalDistribution(NdotH, hs.roughness);
+            float  G = GGXSchlickMaskingTerm(NdotL, NdotV, hs.roughness);
+            float3 F = SchlickFresnel(f0, HdotV);
 
-    float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0 - hs.metalic);
-    float3 diffuse = hs.baseColor.rgb * NdotL * kD * M_1_PI;
+            // Evaluate the Cook-Torrance Microfacet BRDF model
+            float3 specular = D * G * F / max(0.001f, (4 * NdotV * NdotL));
 
-    // Compute our final color (combining diffuse lobe plus specular GGX lobe)
-    return (diffuse + specular) * ls.diffuse * shadow ;
+            float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0 - hs.metalic);
+            float3 diffuse = hs.baseColor.rgb * NdotL * kD * M_1_PI;
+
+            // Compute our final color (combining diffuse lobe plus specular GGX lobe)
+            color += (diffuse + specular) * ls.diffuse * shadow ;
+        }
+    }
+
+    return color;
 }
 
 float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth) {

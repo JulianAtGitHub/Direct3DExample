@@ -27,9 +27,10 @@ DXRExample::DXRExample(HWND hwnd)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
+, mLightCount(0)
 , mFrameCount(0)
 , mAccumCount(0)
-, mMaxRayDepth(3)
+, mMaxRayDepth(4)
 , mCurrentFrame(0)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
@@ -120,7 +121,7 @@ void DXRExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    mSettings.enableAccumulate = 1;
+    mSettings.enableAccumulate = 0;
     mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
     mSettings.enableEnvironmentMap = 0;
@@ -135,10 +136,12 @@ void DXRExample::Update(void) {
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
     mSceneConsts.bgColor = { 0.5f, 0.7f, 1.0f, 1.0f };
-    mSceneConsts.lightCount = 1;
-    mSceneConsts.frameCount = mFrameCount ++;
+    mSceneConsts.lightCount = mLightCount;
+    //mSceneConsts.frameSeed = mFrameCount ++;
+    mSceneConsts.frameSeed = 0;
     mSceneConsts.accumCount = mAccumCount ++;
-    mSceneConsts.maxPayDepth = mMaxRayDepth;
+    mSceneConsts.maxRayDepth = mMaxRayDepth;
+    mSceneConsts.sampleCount = 1;
 }
 
 void DXRExample::Render(void) {
@@ -274,7 +277,7 @@ void DXRExample::InitScene(void) {
     assert(mScene);
 
     mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 1000.0f, 
-                                XMFLOAT4(1098.72424f, 651.495361f, -38.6905518f, 0.0f),
+                                XMFLOAT4(1098.72424f, 651.495361f, 0.0f, 0.0f),
                                 XMFLOAT4(0.0f, 651.495361f, 0.0f, 0.0f));
     mCamera->SetLensParams(32.0f, 2.0f);
 
@@ -357,25 +360,40 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 }
 
 void DXRExample::BuildGeometry(void) {
-    constexpr uint32_t lightCount = 1;
+    mLightCount = 1;
 
     mIndices = new Render::GPUBuffer(mScene->mIndices.size() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
     mGeometries = new Render::GPUBuffer(mScene->mShapes.size() * sizeof(Geometry));
-    mLights = new Render::GPUBuffer(lightCount * sizeof(Light));
+    mLights = new Render::GPUBuffer(mLightCount * sizeof(Light));
 
     Geometry *geometries = new Geometry[mScene->mShapes.size()];
     for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
         auto &shape = mScene->mShapes[i];
         ASSERT_PRINT(shape.diffuseTex != ~0 && shape.specularTex != ~0);
-        geometries[i].indexInfo = { shape.indexOffset, shape.indexCount, 0, 0 };
+        geometries[i].indexOffset = shape.indexOffset;
+        geometries[i].indexCount = shape.indexCount;
+        geometries[i].isOpacity = shape.isOpacity ? 1 : 0;
+        geometries[i].reserve = 0;
         geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
     }
 
     Light lights[] = {
-        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.1f}, {2.0f, 2.0f, 2.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-4.645481586456299f, 1.5427508354187012f, -1.488459825515747f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1.016136884689331f, 1.4740270376205445f, -1.4256235361099244f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.1f}, {3.0f, 3.0f, 3.0f} },
+        //// downstairs
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //// upstairs
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
     };
 
 
@@ -389,7 +407,7 @@ void DXRExample::BuildGeometry(void) {
     mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
-    mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), lightCount, sizeof(Light));
+    mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mLightCount, sizeof(Light));
 
     Render::gCommand->End(true);
 

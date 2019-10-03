@@ -32,7 +32,7 @@ inline void LensCameraRay(in float2 pixel, inout uint randSeed, out RayDesc ray)
 float3 PrimaryRayGen(void) {
     uint2 launchIdx = DispatchRaysIndex().xy;
     uint2 launchDim = DispatchRaysDimensions().xy;
-    uint randSeed = InitRand(launchIdx.x + launchIdx.y * launchDim.x, gSceneCB.frameCount);
+    uint randSeed = InitRand(launchIdx.x + launchIdx.y * launchDim.x, gSceneCB.frameSeed);
 
     float2 pixel = (launchIdx + float2(0.5f, 0.5f)) / launchDim;;
     if (gSettingsCB.enableJitterCamera) {

@@ -18,7 +18,10 @@ struct Vertex {
 };
 
 struct Geometry {
-    uint4 indexInfo; // x: index offset, y: index count;
+    uint  indexOffset;
+    uint  indexCount;
+    uint  isOpacity;
+    uint  reserve;
     uint4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
 };
 
@@ -60,9 +63,10 @@ struct CameraConstants {
 struct SceneConstants {
     float4 bgColor;
     uint   lightCount;
-    uint   frameCount;
+    uint   frameSeed;
     uint   accumCount;
-    uint   maxPayDepth;
+    uint   maxRayDepth;
+    uint   sampleCount;
 };
 
 struct PrimaryRayPayload {

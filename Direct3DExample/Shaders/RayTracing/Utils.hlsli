@@ -128,7 +128,7 @@ void EvaluateLight(in Light light, in float3 hitPos, inout LightSample ls) {
 /**Others Utils***********************************************************/
 
 inline uint3 HitTriangle(void) {
-    uint indexOffset = gGeometries[InstanceID()].indexInfo.x + PrimitiveIndex() * 3; // indicesPerTriangle(3)
+    uint indexOffset = gGeometries[InstanceID()].indexOffset + PrimitiveIndex() * 3; // indicesPerTriangle(3)
     return gIndices.Load3(indexOffset * 4); // indexSizeInBytes(4)
 }
 
@@ -148,6 +148,9 @@ inline float2 LerpFloat2Attributes(float2 vertexAttributes[3], Attributes attr) 
 inline bool AlphaTestFailed(float threshold, Attributes attribs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
+    if (geo.isOpacity) {
+        return false;
+    }
     
     float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
     float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);

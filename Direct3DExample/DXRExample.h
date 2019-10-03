@@ -39,7 +39,10 @@ private:
     };
 
     struct Geometry {
-        XMUINT4 indexInfo; // x: index offset, y: index count
+        uint32_t indexOffset;
+        uint32_t indexCount;
+        uint32_t isOpacity;
+        uint32_t reserve;
         XMUINT4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
     };
 
@@ -72,9 +75,10 @@ private:
     struct SceneConstants {
         XMFLOAT4 bgColor;
         uint32_t lightCount;
-        uint32_t frameCount;
+        uint32_t frameSeed;
         uint32_t accumCount;
-        uint32_t maxPayDepth;
+        uint32_t maxRayDepth;
+        uint32_t sampleCount;
     };
 
     enum GlobalRootSignatureParams {
@@ -110,6 +114,7 @@ private:
 
     uint32_t        mWidth;
     uint32_t        mHeight;
+    uint32_t        mLightCount;
     uint32_t        mFrameCount;
     uint32_t        mAccumCount;
     uint32_t        mMaxRayDepth;
