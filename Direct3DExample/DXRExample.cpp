@@ -28,10 +28,10 @@ DXRExample::DXRExample(HWND hwnd)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
 , mLightCount(0)
-, mFrameCount(0)
 , mAccumCount(0)
-, mMaxRayDepth(4)
+, mMaxRayDepth(3)
 , mCurrentFrame(0)
+, mEnableScreenPass(true)
 , mGlobalRootSignature(nullptr)
 , mLocalRootSignature(nullptr)
 , mRayTracingState(nullptr)
@@ -52,6 +52,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mSPRootSignature(nullptr)
 , mSPGraphicsState(nullptr)
 , mSPVertexBuffer(nullptr)
+, mFrameCount(0)
+, mFrameStart(0)
 {
     for (auto &fence : mFenceValues) {
         fence = 1;
@@ -72,6 +74,7 @@ DXRExample::~DXRExample(void) {
 }
 
 void DXRExample::Init(void) {
+    SetWindowText(mHwnd, "Ray Tracing Example");
     Render::Initialize(mHwnd);
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
@@ -85,6 +88,8 @@ void DXRExample::Init(void) {
     PrepareScreenPass();
 
     mTimer.Reset();
+    mProfileTimer.Reset();
+    mFrameStart = mFrameCount;
 }
 
 void DXRExample::Update(void) {
@@ -137,57 +142,64 @@ void DXRExample::Update(void) {
 
     mSceneConsts.bgColor = { 0.5f, 0.7f, 1.0f, 1.0f };
     mSceneConsts.lightCount = mLightCount;
-    //mSceneConsts.frameSeed = mFrameCount ++;
     mSceneConsts.frameSeed = 0;
     mSceneConsts.accumCount = mAccumCount ++;
     mSceneConsts.maxRayDepth = mMaxRayDepth;
     mSceneConsts.sampleCount = 1;
+
+    ++ mFrameCount;
 }
 
 void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
-    Render::gCommand->SetRootSignature(mGlobalRootSignature);
+    if (mAccumCount == 1) {
+        // Copy the updated scene constant buffer to GPU.
+        mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
+        mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
+        mCameraCB->CopyData(&mCameraConsts, sizeof(CameraConstants), 0, mCurrentFrame);
 
-    // Copy the updated scene constant buffer to GPU.
-    mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
-    mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
-    mCameraCB->CopyData(&mCameraConsts, sizeof(CameraConstants), 0, mCurrentFrame);
+        Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));
-    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::CameraConstantsSlot, mCameraCB->GetGPUAddress(0, mCurrentFrame));
+        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
+        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));
+        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::CameraConstantsSlot, mCameraCB->GetGPUAddress(0, mCurrentFrame));
 
+        // Bind the heaps, acceleration structure and dispatch rays.
+        Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
+        Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+        // Set index and successive vertex buffer decriptor tables
+        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
+        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetSRVHandle());
+        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetSRVHandle());
+        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
+        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetUAVHandle());
+        Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
-    // Bind the heaps, acceleration structure and dispatch rays.
-    Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
-    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    // Set index and successive vertex buffer decriptor tables
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetSRVHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetSRVHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
-    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetUAVHandle());
-    Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
+        Render::gCommand->SetRayTracingState(mRayTracingState);
+        Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
+    }
 
-    Render::gCommand->SetRayTracingState(mRayTracingState);
-    Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
-
-    // screen pass
-    Render::gCommand->SetPipelineState(mSPGraphicsState);
-    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
-    Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
-    Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], nullptr);
-    Render::gCommand->SetRootSignature(mSPRootSignature);
-    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPTextureSlot, mRaytracingOutput->GetSRVHandle());
-    Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPSamplerSlot, mSampler->GetHandle());
-    Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    Render::gCommand->SetVertices(mSPVertexBufferView);
-    Render::gCommand->DrawInstanced(6);
-
-    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
-
+    if (mEnableScreenPass) {
+        Render::gCommand->SetPipelineState(mSPGraphicsState);
+        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+        Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
+        Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], nullptr);
+        Render::gCommand->SetRootSignature(mSPRootSignature);
+        Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
+        Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+        Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPTextureSlot, mRaytracingOutput->GetSRVHandle());
+        Render::gCommand->SetGraphicsRootDescriptorTable(SPRootSignatureParams::SPSamplerSlot, mSampler->GetHandle());
+        Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        Render::gCommand->SetVertices(mSPVertexBufferView);
+        Render::gCommand->DrawInstanced(6);
+        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
+    } else {
+        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+        Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mRaytracingOutput);
+        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
+        Render::gCommand->TransitResource(mRaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    }
 
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
@@ -195,6 +207,23 @@ void DXRExample::Render(void) {
 
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
     Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
+
+    Profiling();
+}
+
+void DXRExample::Profiling(void) {
+    mProfileTimer.Tick();
+    double totalTime = mProfileTimer.GetTotalSeconds();
+    if (totalTime >= 1.0) {
+        double fps = (mFrameCount - mFrameStart) / totalTime;
+
+        char title[MAX_CHAR_A_LINE];
+        sprintf_s(title, MAX_CHAR_A_LINE, "Ray Tracing Example    FPS:%.1f    Vertex:%zu    Primitive:%zu", (float)fps, mScene->mVertices.size(), mScene->mIndices.size() / 3);
+        SetWindowText(mHwnd, title);
+
+        mFrameStart = mFrameCount;
+        mProfileTimer.Reset();
+    }
 }
 
 void DXRExample::Destroy(void) {
@@ -277,7 +306,7 @@ void DXRExample::InitScene(void) {
     assert(mScene);
 
     mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 1000.0f, 
-                                XMFLOAT4(1098.72424f, 651.495361f, 0.0f, 0.0f),
+                                XMFLOAT4(1098.72424f, 651.495361f, -200.0f, 0.0f),
                                 XMFLOAT4(0.0f, 651.495361f, 0.0f, 0.0f));
     mCamera->SetLensParams(32.0f, 2.0f);
 
@@ -379,7 +408,7 @@ void DXRExample::BuildGeometry(void) {
     }
 
     Light lights[] = {
-        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.1f}, {3.0f, 3.0f, 3.0f} },
+        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.2f}, {3.0f, 3.0f, 3.0f} },
         //// downstairs
         //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
         //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
@@ -460,7 +489,12 @@ void DXRExample::CreateRaytracingOutput(void) {
     uint32_t height = Render::gRenderTarget[0]->GetHeight();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT), width, height, 1, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    DXGI_FORMAT outputFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    if (mEnableScreenPass) {
+        outputFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    }
+    
+    mRaytracingOutput = new Render::PixelBuffer(width * Render::BytesPerPixel(outputFormat), width, height, 1, outputFormat, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mRaytracingOutput->CreateUAV(mDescriptorHeap->Allocate());
     mRaytracingOutput->CreateSRV(mDescriptorHeap->Allocate());
 }

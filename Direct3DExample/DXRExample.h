@@ -30,6 +30,8 @@ private:
     void CreateRaytracingOutput(void);
     void PrepareScreenPass(void);
 
+    void Profiling(void);
+
     struct AppSettings {
         uint32_t enableAccumulate;
         uint32_t enableJitterCamera;
@@ -115,11 +117,11 @@ private:
     uint32_t        mWidth;
     uint32_t        mHeight;
     uint32_t        mLightCount;
-    uint32_t        mFrameCount;
     uint32_t        mAccumCount;
     uint32_t        mMaxRayDepth;
     uint32_t        mCurrentFrame;
     uint64_t        mFenceValues[Render::FRAME_COUNT];
+    bool            mEnableScreenPass;
     Utils::Scene   *mScene;
 
     Render::RootSignature              *mGlobalRootSignature;
@@ -153,4 +155,9 @@ private:
     Render::GraphicsState      *mSPGraphicsState;
     Render::GPUBuffer          *mSPVertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW    mSPVertexBufferView;
+
+    // profile
+    Utils::Timer    mProfileTimer;
+    uint32_t        mFrameCount;
+    uint32_t        mFrameStart;
 };
