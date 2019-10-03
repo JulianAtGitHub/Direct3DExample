@@ -117,6 +117,7 @@ Scene * Model::LoadFromFile(const char *fileName) {
         aiString diffuseTex;
         aiString specularTex;
         aiString normalTex;
+        aiString maskTex;
 
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), ambientTex)) {
             shape.ambientTex = AddImage(images, ambientTex);
@@ -129,6 +130,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
         }
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
             shape.normalTex = AddImage(images, normalTex);
+        }
+
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), maskTex)) {
+            shape.isOpacity = false;
         }
 
         if (shape.IsAllTexturesValid()) {

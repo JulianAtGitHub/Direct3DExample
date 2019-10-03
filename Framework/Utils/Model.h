@@ -7,7 +7,7 @@ class Image;
 class Scene {
 public:
     struct Shape {
-        Shape(void): indexOffset(0), indexCount(0), ambientTex(~0), diffuseTex(~0), specularTex(~0), normalTex(~0) { }
+        Shape(void): indexOffset(0), indexCount(0), ambientTex(~0), diffuseTex(~0), specularTex(~0), normalTex(~0), isOpacity(true) { }
         INLINE bool IsAllTexturesValid(void) { return ambientTex != (~0) && diffuseTex != (~0) && specularTex != (~0) && normalTex != (~0); }
         uint32_t indexOffset;
         uint32_t indexCount;
@@ -15,6 +15,7 @@ public:
         uint32_t diffuseTex;    // albedo
         uint32_t specularTex;   // roughness
         uint32_t normalTex;     // normal
+        bool     isOpacity;
     };
 
     struct Vertex {
