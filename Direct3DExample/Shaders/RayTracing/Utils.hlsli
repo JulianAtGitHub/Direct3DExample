@@ -133,16 +133,12 @@ inline uint3 HitTriangle(void) {
 }
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
-inline float3 LerpFloat3Attributes(float3 vertexAttributes[3], Attributes attr) {
-    return  vertexAttributes[0] +
-            attr.barycentrics.x * (vertexAttributes[1] - vertexAttributes[0]) +
-            attr.barycentrics.y * (vertexAttributes[2] - vertexAttributes[0]);
+inline float2 BarycentricLerpFloat2(in float2 v0, in float2 v1, in float2 v2, in float2 bc) {
+    return v0 + (v1 - v0) * bc.x + (v2 - v0) * bc.y;
 }
 
-inline float2 LerpFloat2Attributes(float2 vertexAttributes[3], Attributes attr) {
-    return  vertexAttributes[0] +
-            attr.barycentrics.x * (vertexAttributes[1] - vertexAttributes[0]) +
-            attr.barycentrics.y * (vertexAttributes[2] - vertexAttributes[0]);
+inline float3 BarycentricLerpFloat3(in float3 v0, in float3 v1, in float3 v2, in float2 bc) {
+    return v0 + (v1 - v0) * bc.x + (v2 - v0) * bc.y;
 }
 
 inline bool AlphaTestFailed(float threshold, Attributes attribs) {
@@ -151,9 +147,8 @@ inline bool AlphaTestFailed(float threshold, Attributes attribs) {
     if (geo.isOpacity) {
         return false;
     }
-    
-    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
-    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
+
+    float2 hitTexCoord = BarycentricLerpFloat2(gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord, attribs.barycentrics);
     float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
 
     if (baseColor.a < threshold) {
@@ -188,25 +183,25 @@ void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
 
+    Vertex vert0 = gVertices[idx.x];
+    Vertex vert1 = gVertices[idx.y];
+    Vertex vert2 = gVertices[idx.z];
+
     // position
     hs.position = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 
     // texcoord
-    float2 texCoords[3] = { gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord };
-    float2 hitTexCoord = LerpFloat2Attributes(texCoords, attribs);
+    float2 hitTexCoord = BarycentricLerpFloat2(vert0.texCoord, vert1.texCoord, vert2.texCoord, attribs.barycentrics);
 
     // normal
-    float3 normals[3] = { gVertices[idx.x].normal, gVertices[idx.y].normal, gVertices[idx.z].normal };
-    float3 hitNormal = LerpFloat3Attributes(normals, attribs);
+    float3 hitNormal = BarycentricLerpFloat3(vert0.normal, vert1.normal, vert2.normal, attribs.barycentrics);
     hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
 
     if (geo.texInfo.w != ~0) {
-        float3 tangents[3] = { gVertices[idx.x].tangent, gVertices[idx.y].tangent, gVertices[idx.z].tangent };
-        float3 hitTangent = LerpFloat3Attributes(tangents, attribs);
+        float3 hitTangent = BarycentricLerpFloat3(vert0.tangent, vert1.tangent, vert2.tangent, attribs.barycentrics);
         hitTangent = mul((float3x3)ObjectToWorld3x4(), hitTangent);
 
-        float3 bitangents[3] = { gVertices[idx.x].bitangent, gVertices[idx.y].bitangent, gVertices[idx.z].bitangent };
-        float3 hitBitangent = LerpFloat3Attributes(bitangents, attribs);
+        float3 hitBitangent = BarycentricLerpFloat3(vert0.bitangent, vert1.bitangent, vert2.bitangent, attribs.barycentrics);
         hitBitangent = mul((float3x3)ObjectToWorld3x4(), hitBitangent);
 
         float3x3 TBN = float3x3(normalize(hitTangent), normalize(hitBitangent), normalize(hitNormal));
