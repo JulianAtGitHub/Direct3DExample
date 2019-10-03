@@ -129,7 +129,7 @@ void DXRExample::Update(void) {
     mSettings.enableAccumulate = 0;
     mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
-    mSettings.enableEnvironmentMap = 0;
+    mSettings.enableEnvironmentMap = 1;
     mSettings.enableIndirectLight = 1;
 
     XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
@@ -321,7 +321,7 @@ void DXRExample::InitScene(void) {
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
 
-    Utils::Image *envImage = Utils::Image::CreateFromFile("..\\..\\Models\\dirt_road.hdr");
+    Utils::Image *envImage = Utils::Image::CreateFromFile("..\\..\\Models\\blue_sky.jpg");
 
     Render::gCommand->Begin();
 
