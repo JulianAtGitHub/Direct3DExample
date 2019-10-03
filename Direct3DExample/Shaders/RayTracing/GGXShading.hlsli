@@ -19,7 +19,7 @@ inline float GGXNormalDistribution(float NdotH, float roughness) {
 // This function can be used for "G" in the Cook-Torrance model:  D*G*F / (4*NdotL*NdotV)
 inline float GGXSchlickMaskingTerm(float NdotL, float NdotV, float roughness) {
     // Karis notes they use alpha / 2 (or roughness^2 / 2)
-    float k = roughness*roughness / 2;
+    float k = roughness * roughness * 0.5;
 
     // Karis also notes they can use the following equation, but only for analytical lights
     //float k = (roughness + 1)*(roughness + 1) / 8; 
