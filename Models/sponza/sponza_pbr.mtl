@@ -332,7 +332,6 @@ newmtl chain
 	Ke 0.0000 0.0000 0.0000
 	map_Ka textures_pbr\ChainTexture_Metallic.tga
 	map_Kd textures_pbr\ChainTexture_Albedo.tga
-	map_d textures_pbr\chain_texture_mask.tga
 	map_Kn textures_pbr\ChainTexture_Normal.tga
 	map_Ks textures_pbr\ChainTexture_Roughness.tga
 
