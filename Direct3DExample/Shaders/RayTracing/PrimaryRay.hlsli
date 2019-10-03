@@ -22,7 +22,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     EvaluateHit(attribs, hs);
 
     // float roughness = hs.specular.a * hs.specular.a;
-    float3 viewDir = normalize(gCameraCB.position - hs.position);
+    float3 viewDir = normalize(WorldRayOrigin() - hs.position);
 
     // do explicit direct lighting to a random light in the scene
     float3 directColor = GGXDirect(payload.seed, viewDir, hs);

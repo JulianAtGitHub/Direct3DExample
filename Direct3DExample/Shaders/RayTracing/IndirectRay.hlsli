@@ -22,7 +22,7 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
     EvaluateHit(attribs, hs);
 
     //float roughness = hs.specular.a * hs.specular.a;
-    float3 viewDir = normalize(gCameraCB.position - hs.position);
+    float3 viewDir = normalize(WorldRayOrigin() - hs.position);
 
     payload.color = GGXDirect(payload.seed, viewDir, hs);
 
