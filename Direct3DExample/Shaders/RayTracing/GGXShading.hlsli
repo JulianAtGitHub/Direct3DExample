@@ -80,35 +80,33 @@ float3 GGXDirect(inout uint randSeed, float3 V, in HitSample hs) {
         // float shadow = float(gSceneCB.lightCount) * ShadowRayGen(hs.position, L, length(ls.position - hs.position));
         float shadow = ShadowRayGen(hs.position, L, length(ls.position - hs.position));
 
-        if (shadow > 0) {
-            float3 N = hs.normal;
-            // Compute our lambertion term (N dot L)
-            float NdotL = saturate(dot(N, L));
+        float3 N = hs.normal;
+        // Compute our lambertion term (N dot L)
+        float NdotL = saturate(dot(N, L));
 
-            // Compute half vectors and additional dot products for GGX
-            float3 H = normalize(V + L);
-            float NdotH = saturate(dot(N, H));
-            float NdotV = saturate(dot(N, V));
-            float HdotV = saturate(dot(H, V));
+        // Compute half vectors and additional dot products for GGX
+        float3 H = normalize(V + L);
+        float NdotH = saturate(dot(N, H));
+        float NdotV = saturate(dot(N, V));
+        float HdotV = saturate(dot(H, V));
 
-            // If it's a dia-electric (like plastic) use F0 of 0.04
-            // And if it's a metal, use the albedo color as F0 (metal workflow)
-            float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), hs.baseColor.rgb, hs.metalic);
+        // If it's a dia-electric (like plastic) use F0 of 0.04
+        // And if it's a metal, use the albedo color as F0 (metal workflow)
+        float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), hs.baseColor.rgb, hs.metalic);
 
-            // Evaluate terms for our GGX BRDF model
-            float  D = GGXNormalDistribution(NdotH, hs.roughness);
-            float  G = GGXSchlickMaskingTerm(NdotL, NdotV, hs.roughness);
-            float3 F = SchlickFresnel(f0, HdotV);
+        // Evaluate terms for our GGX BRDF model
+        float  D = GGXNormalDistribution(NdotH, hs.roughness);
+        float  G = GGXSchlickMaskingTerm(NdotL, NdotV, hs.roughness);
+        float3 F = SchlickFresnel(f0, HdotV);
 
-            // Evaluate the Cook-Torrance Microfacet BRDF model
-            float3 specular = D * G * F / max(0.001f, (4 * NdotV * NdotL));
+        // Evaluate the Cook-Torrance Microfacet BRDF model
+        float3 specular = D * G * F / max(0.001f, (4 * NdotV * NdotL));
 
-            float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0 - hs.metalic);
-            float3 diffuse = hs.baseColor.rgb * NdotL * kD * M_1_PI;
+        float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0 - hs.metalic);
+        float3 diffuse = hs.baseColor.rgb * kD * M_1_PI;
 
-            // Compute our final color (combining diffuse lobe plus specular GGX lobe)
-            color += (diffuse + specular) * ls.diffuse * shadow ;
-        }
+        // Compute our final color (combining diffuse lobe plus specular GGX lobe)
+        color += (diffuse + specular)* NdotL * ls.diffuse * shadow ;
     }
 
     return color;
@@ -118,7 +116,7 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
     float3 N = hs.normal;
 
     float probability = NextRand(randSeed);
-    float diffuceRatio = 0.5f * (1.0f - hs.metalic);
+    float diffuceRatio = 1.0f - hs.metalic;
 
     // If we randomly selected to sample our diffuse lobe...
     if (probability < diffuceRatio) {
@@ -131,7 +129,7 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
 
         // Accumulate the color: (NdotL * incomingLight * difs / pi) 
         // Probability of sampling:  (NdotL / pi) * probDifs
-        return bounceColor * hs.baseColor.rgb;
+        return NdotL * bounceColor * hs.baseColor.rgb;
 
     // Otherwise we randomly selected to sample our GGX lobe
     } else {
@@ -160,10 +158,10 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
         float3 F = SchlickFresnel(f0, HdotV);                               // Use Schlick's approx to Fresnel
         float3 specular = D * G * F / max(0.001f, (4 * NdotL * NdotV));    // The Cook-Torrance microfacet BRDF
 
-        float pdf = D * NdotL / (4 * VdotL);
-
         // Accumulate the color:  ggx-BRDF * incomingLight * NdotL / probability-of-sampling
-        return specular * bounceColor * NdotL / pdf;
+        //float pdf = D * NdotL / (4 * VdotL);
+        //return specular * bounceColor * NdotL / pdf;
+        return specular * bounceColor * 4 * VdotL / D;
     }
 }
 
