@@ -153,7 +153,7 @@ void DXRExample::Update(void) {
 void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
-    if (mAccumCount == 1) {
+    //if (mAccumCount == 1) {
         // Copy the updated scene constant buffer to GPU.
         mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
         mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
@@ -178,7 +178,7 @@ void DXRExample::Render(void) {
 
         Render::gCommand->SetRayTracingState(mRayTracingState);
         Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
-    }
+    //}
 
     if (mEnableScreenPass) {
         Render::gCommand->SetPipelineState(mSPGraphicsState);
@@ -408,7 +408,7 @@ void DXRExample::BuildGeometry(void) {
     }
 
     Light lights[] = {
-        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.2f}, {3.0f, 3.0f, 3.0f} },
+        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.2f, -1.0f, 0.28f}, {3.0f, 3.0f, 3.0f} },
         //// downstairs
         //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
         //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
