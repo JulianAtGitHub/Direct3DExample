@@ -48,6 +48,9 @@
     <ClInclude Include="DXRExample.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\RayTracing\SharedTypes.h">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\color.vs.hlsl">
@@ -71,28 +74,13 @@
     <None Include="Shaders\inputs.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Shaders\RayTracing\Common.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\Utils.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\ShadowRay.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\IndirectRay.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\GGXShading.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\RayGener.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
-    <None Include="Shaders\RayTracing\PrimaryRay.hlsli">
-      <Filter>Resource Files\Shaders\RayTracing</Filter>
-    </None>
     <None Include="Shaders\RayTracing\Display.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\Shading.hlsli">
+      <Filter>Resource Files\Shaders\RayTracing</Filter>
+    </None>
+    <None Include="Shaders\RayTracing\RayTrace.hlsli">
       <Filter>Resource Files\Shaders\RayTracing</Filter>
     </None>
   </ItemGroup>

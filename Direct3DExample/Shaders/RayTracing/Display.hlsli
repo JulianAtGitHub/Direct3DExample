@@ -11,6 +11,8 @@ struct PSInput {
 Texture2D gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
+const static float exp = 0.4545454545f; // gamma correction 1.0 / 2.2
+
 PSInput VSMain(VSInput input) {
     PSInput output;
     output.pos = float4(input.pos, 0.0, 1.0);
@@ -19,6 +21,6 @@ PSInput VSMain(VSInput input) {
 }
 
 float4 PSMain(PSInput input) : SV_TARGET {
-    float3 color = gTexture.SampleLevel(gSampler, input.uv, 0).rgb;
-    return float4(color, 1.0);
+    float4 color = gTexture.SampleLevel(gSampler, input.uv, 0);
+    return float4(pow(abs(color.rgb / color.w), exp), 1.0);
 }

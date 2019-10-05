@@ -54,6 +54,8 @@ DXRExample::DXRExample(HWND hwnd)
 , mSPVertexBuffer(nullptr)
 , mFrameCount(0)
 , mFrameStart(0)
+, mVertexCount(0)
+, mIndexCount(0)
 {
     for (auto &fence : mFenceValues) {
         fence = 1;
@@ -90,11 +92,18 @@ void DXRExample::Init(void) {
     mTimer.Reset();
     mProfileTimer.Reset();
     mFrameStart = mFrameCount;
+    mVertexCount = mScene->mVertices.size();
+    mIndexCount = mScene->mIndices.size();
+
+    DeleteAndSetNull(mScene);
 }
 
 void DXRExample::Update(void) {
     mTimer.Tick();
     float deltaSecond = static_cast<float>(mTimer.GetElapsedSeconds());
+
+    ++ mFrameCount;
+    ++ mAccumCount;
 
     if (mIsRotating) {
         int32_t deltaX = GET_X_LPARAM(mCurrentMousePos) - GET_X_LPARAM(mLastMousePos);
@@ -126,11 +135,10 @@ void DXRExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    mSettings.enableAccumulate = 0;
+    mSettings.enableAccumulate = 1;
     mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
     mSettings.enableEnvironmentMap = 0;
-    mSettings.enableIndirectLight = 1;
 
     XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
@@ -142,18 +150,17 @@ void DXRExample::Update(void) {
 
     mSceneConsts.bgColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     mSceneConsts.lightCount = mLightCount;
-    mSceneConsts.frameSeed = 0;
-    mSceneConsts.accumCount = mAccumCount ++;
+    mSceneConsts.frameSeed = mFrameCount;
+    mSceneConsts.accumCount = mAccumCount;
     mSceneConsts.maxRayDepth = mMaxRayDepth;
     mSceneConsts.sampleCount = 1;
-
-    ++ mFrameCount;
 }
 
 void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
-    //if (mAccumCount == 1) {
+    bool traceRay = mSettings.enableAccumulate ? mAccumCount < 100 : true;
+    if (traceRay) {
         // Copy the updated scene constant buffer to GPU.
         mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
         mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
@@ -178,7 +185,7 @@ void DXRExample::Render(void) {
 
         Render::gCommand->SetRayTracingState(mRayTracingState);
         Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
-    //}
+    }
 
     if (mEnableScreenPass) {
         Render::gCommand->SetPipelineState(mSPGraphicsState);
@@ -218,7 +225,7 @@ void DXRExample::Profiling(void) {
         double fps = (mFrameCount - mFrameStart) / totalTime;
 
         char title[MAX_CHAR_A_LINE];
-        sprintf_s(title, MAX_CHAR_A_LINE, "Ray Tracing Example    FPS:%.1f    Vertex:%zu    Primitive:%zu", (float)fps, mScene->mVertices.size(), mScene->mIndices.size() / 3);
+        sprintf_s(title, MAX_CHAR_A_LINE, "Ray Tracing Example    FPS:%.1f    Vertex:%zu    Primitive:%zu", (float)fps, mVertexCount, mIndexCount / 3);
         SetWindowText(mHwnd, title);
 
         mFrameStart = mFrameCount;
@@ -240,7 +247,6 @@ void DXRExample::Destroy(void) {
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
-    DeleteAndSetNull(mScene);
     DeleteAndSetNull(mTLAS);
     DeleteAndSetNull(mRaytracingOutput);
     DeleteAndSetNull(mSettingsCB);
@@ -383,7 +389,7 @@ void DXRExample::CreateRayTracingPipelineState(void) {
 
     mRayTracingState->AddGlobalRootSignature(mGlobalRootSignature);
 
-    mRayTracingState->AddRayTracingPipelineConfig(mMaxRayDepth);
+    mRayTracingState->AddRayTracingPipelineConfig(30);
 
     mRayTracingState->Create();
 }
@@ -408,21 +414,7 @@ void DXRExample::BuildGeometry(void) {
     }
 
     Light lights[] = {
-        { DirectLight, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.2f, -1.0f, 0.28f}, {3.0f, 3.0f, 3.0f} },
-        //// downstairs
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 270.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 270.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //// upstairs
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {-1200.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {1100.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 700.0f, 400.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
-        //{ PointLight, XM_2PI, 0.0f, -1.0f, {0.0f, 700.0f, -450.0f}, {0.0f, -1.0f, 0.0f}, {20000.0f, 20000.0f, 20000.0f} },
+        { 0, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.2f, -1.0f, 0.15f}, {1.0f, 1.0f, 1.0f} },
     };
 
 

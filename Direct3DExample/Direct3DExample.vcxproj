@@ -125,6 +125,7 @@
     <ClInclude Include="DXRExample.h" />
     <ClInclude Include="Example.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Shaders\RayTracing\SharedTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\color.ps.hlsl">
@@ -176,13 +177,8 @@
     <None Include="packages.config" />
     <None Include="Shaders\inputs.hlsli" />
     <None Include="Shaders\RayTracing\Display.hlsli" />
-    <None Include="Shaders\RayTracing\GGXShading.hlsli" />
-    <None Include="Shaders\RayTracing\IndirectRay.hlsli" />
-    <None Include="Shaders\RayTracing\Common.hlsli" />
-    <None Include="Shaders\RayTracing\PrimaryRay.hlsli" />
-    <None Include="Shaders\RayTracing\RayGener.hlsli" />
-    <None Include="Shaders\RayTracing\ShadowRay.hlsli" />
-    <None Include="Shaders\RayTracing\Utils.hlsli" />
+    <None Include="Shaders\RayTracing\RayTrace.hlsli" />
+    <None Include="Shaders\RayTracing\Shading.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

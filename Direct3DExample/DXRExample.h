@@ -3,6 +3,7 @@
 #include "Example.h"
 
 #include <random>
+#include "Shaders/RayTracing/SharedTypes.h"
 
 class DXRExample : public Example {
 public:
@@ -31,57 +32,6 @@ private:
     void PrepareScreenPass(void);
 
     void Profiling(void);
-
-    struct AppSettings {
-        uint32_t enableAccumulate;
-        uint32_t enableJitterCamera;
-        uint32_t enableLensCamera;
-        uint32_t enableEnvironmentMap;
-        uint32_t enableIndirectLight;
-    };
-
-    struct Geometry {
-        uint32_t indexOffset;
-        uint32_t indexCount;
-        uint32_t isOpacity;
-        uint32_t reserve;
-        XMUINT4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
-    };
-
-    enum LightType {
-        DirectLight = 0,
-        PointLight,
-        SpotLight,
-    };
-
-    struct Light {
-        uint32_t  type; // LightType
-        float     openAngle;
-        float     penumbraAngle;
-        float     cosOpenAngle;
-        XMFLOAT3  position;
-        XMFLOAT3  direction;
-        XMFLOAT3  intensity;
-    };
-
-    struct CameraConstants {
-        XMFLOAT4 position;
-        XMFLOAT4 u;
-        XMFLOAT4 v;
-        XMFLOAT4 w;
-        XMFLOAT2 jitter;
-        float    lensRadius;
-        float    focalLength;
-    };
-
-    struct SceneConstants {
-        XMFLOAT4 bgColor;
-        uint32_t lightCount;
-        uint32_t frameSeed;
-        uint32_t accumCount;
-        uint32_t maxRayDepth;
-        uint32_t sampleCount;
-    };
 
     enum GlobalRootSignatureParams {
         OutputViewSlot = 0,
@@ -160,4 +110,6 @@ private:
     Utils::Timer    mProfileTimer;
     uint32_t        mFrameCount;
     uint32_t        mFrameStart;
+    size_t          mVertexCount;
+    size_t          mIndexCount;
 };
