@@ -129,7 +129,7 @@ void DXRExample::Update(void) {
     mSettings.enableAccumulate = 0;
     mSettings.enableJitterCamera = 0;
     mSettings.enableLensCamera = 0;
-    mSettings.enableEnvironmentMap = 1;
+    mSettings.enableEnvironmentMap = 0;
     mSettings.enableIndirectLight = 1;
 
     XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
@@ -140,7 +140,7 @@ void DXRExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 0.5f, 0.7f, 1.0f, 1.0f };
+    mSceneConsts.bgColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     mSceneConsts.lightCount = mLightCount;
     mSceneConsts.frameSeed = 0;
     mSceneConsts.accumCount = mAccumCount ++;
