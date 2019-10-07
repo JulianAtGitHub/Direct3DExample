@@ -312,8 +312,8 @@ void DXRExample::InitScene(void) {
     assert(mScene);
 
     mCamera = new Utils::Camera(XM_PIDIV4, (float)mWidth / (float)mHeight, 0.1f, 1000.0f, 
-                                XMFLOAT4(1098.72424f, 651.495361f, -200.0f, 0.0f),
-                                XMFLOAT4(0.0f, 651.495361f, 0.0f, 0.0f));
+                                XMFLOAT4(1098.72424f, 151.495361f, -200.0f, 0.0f),
+                                XMFLOAT4(0.0f, 351.495361f, 0.0f, 0.0f));
     mCamera->SetLensParams(32.0f, 2.0f);
 
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
