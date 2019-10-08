@@ -46,7 +46,7 @@ float3 PrimaryRayGen(void) {
         PinholdCameraRay(pixel, ray);
     }
 
-    PrimaryRayPayload payload = { float3(0, 0, 0), randSeed, 1 };
+    PrimaryRayPayload payload = { float3(0, 0, 0), randSeed, 0 };
 
     TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
@@ -200,32 +200,60 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
     }
 }
 
+// Lambertian material path trace
 // https://en.wikipedia.org/wiki/Path_tracing#targetText=Path%20tracing%20is%20a%20computer,the%20surface%20of%20an%20object.
-float3 TracePath(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
+float3 LambertianTracePath(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
     if (rayDepth >= gSceneCB.maxRayDepth) {
         return float3(0.0f, 0.0f, 0.0f);
     }
 
-    float reflectance = 0.5f;
+    HitSample hs;
+    EvaluateHit(attribs, hs);
+
+    float3 reflectance = hs.baseColor.rgb;
     float3 emittance = float3(0.0f, 0.0f, 0.0f);
-    float3 color = float3(0.0f, 0.0f, 0.0f);
+
+    float3 N = hs.normal;
+    float3 L = UniformHemisphereSample(randSeed, N);
+    float NDotL = saturate(dot(N, L));
+
+    const float pdf = 1.0f / (2.0f * M_PI);
+    
+    float3 BRDF = reflectance / M_PI;
+
+    float3 incoming = float3(0.0f, 0.0f, 0.0f);
+    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
+        incoming += IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
+    }
+    incoming /= gSceneCB.sampleCount;
+
+    float3 color = emittance + (BRDF * incoming * NDotL / pdf);
+
+    return color;
+}
+
+// optimzed of function LambertianTracePath
+float3 LambertianTracePathOpt(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
+    if (rayDepth >= gSceneCB.maxRayDepth) {
+        return float3(0.0f, 0.0f, 0.0f);
+    }
 
     HitSample hs;
     EvaluateHit(attribs, hs);
 
+    float3 reflectance = hs.baseColor.rgb;
+
     float3 N = hs.normal;
     float3 L = UniformHemisphereSample(randSeed, N);
-
-    const float p = 1.0f / (2.0f * M_PI);
     float NDotL = saturate(dot(N, L));
 
-    float BRDF = reflectance / M_PI;
+    float3 incoming = float3(0.0f, 0.0f, 0.0f);
+    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
+        incoming += IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
+    }
+    incoming /= gSceneCB.sampleCount;
 
-    float3 incoming = IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
-
-    color += emittance + (BRDF * incoming * hs.baseColor.rgb * NDotL / p);
-
-    return color;
+    return reflectance * incoming * NDotL * 2.0f;
 }
 
 /**Primary Ray***********************************************************/
@@ -270,7 +298,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
-    payload.color += TracePath(payload.seed, payload.depth, attribs);
+    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
 }
 
 #endif
@@ -312,7 +340,7 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
 
 [shader("closesthit")]
 void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
-    payload.color += TracePath(payload.seed, payload.depth, attribs);
+    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
 }
 
 #endif
