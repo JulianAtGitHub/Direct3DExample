@@ -66,7 +66,6 @@ private:
     uint32_t        mHeight;
     uint32_t        mLightCount;
     uint32_t        mAccumCount;
-    uint32_t        mMaxRayDepth;
     uint32_t        mCurrentFrame;
     uint64_t        mFenceValues[Render::FRAME_COUNT];
     bool            mEnableScreenPass;

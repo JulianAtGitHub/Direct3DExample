@@ -28,7 +28,6 @@ DXRExample::DXRExample(void)
 , mCurrentMousePos(0)
 , mLightCount(0)
 , mAccumCount(0)
-, mMaxRayDepth(3)
 , mCurrentFrame(0)
 , mEnableScreenPass(true)
 , mGlobalRootSignature(nullptr)
@@ -148,44 +147,41 @@ void DXRExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    mSceneConsts.bgColor = { 3.0f, 3.0f, 3.0f, 3.0f };
     mSceneConsts.lightCount = mLightCount;
     mSceneConsts.frameSeed = mFrameCount;
     mSceneConsts.accumCount = mAccumCount;
-    mSceneConsts.maxRayDepth = mMaxRayDepth;
+    mSceneConsts.maxRayDepth = 3;
     mSceneConsts.sampleCount = 1;
 }
 
 void DXRExample::Render(void) {
     Render::gCommand->Begin();
 
-    bool traceRay = mSettings.enableAccumulate ? mAccumCount < 100 : true;
-    if (traceRay) {
-        // Copy the updated scene constant buffer to GPU.
-        mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
-        mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
-        mCameraCB->CopyData(&mCameraConsts, sizeof(CameraConstants), 0, mCurrentFrame);
+    // Copy the updated scene constant buffer to GPU.
+    mSettingsCB->CopyData(&mSettings, sizeof(AppSettings), 0, mCurrentFrame);
+    mSceneCB->CopyData(&mSceneConsts, sizeof(SceneConstants), 0, mCurrentFrame);
+    mCameraCB->CopyData(&mCameraConsts, sizeof(CameraConstants), 0, mCurrentFrame);
 
-        Render::gCommand->SetRootSignature(mGlobalRootSignature);
+    Render::gCommand->SetRootSignature(mGlobalRootSignature);
 
-        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
-        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));
-        Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::CameraConstantsSlot, mCameraCB->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::AppSettingsSlot, mSettingsCB->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantsSlot, mSceneCB->GetGPUAddress(0, mCurrentFrame));
+    Render::gCommand->SetComputeRootConstantBufferView(GlobalRootSignatureParams::CameraConstantsSlot, mCameraCB->GetGPUAddress(0, mCurrentFrame));
 
-        // Bind the heaps, acceleration structure and dispatch rays.
-        Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
-        Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-        // Set index and successive vertex buffer decriptor tables
-        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
-        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetSRVHandle());
-        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetSRVHandle());
-        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
-        Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetUAVHandle());
-        Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
+    // Bind the heaps, acceleration structure and dispatch rays.
+    Render::DescriptorHeap *heaps[] = { mDescriptorHeap, mSamplerHeap };
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+    // Set index and successive vertex buffer decriptor tables
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::BuffersSlot, mIndices->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, mEnvTexture->GetSRVHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::TexturesSlot, mTextures[0]->GetSRVHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::SamplerSlot, mSampler->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, mRaytracingOutput->GetUAVHandle());
+    Render::gCommand->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, mTLAS->GetResult());
 
-        Render::gCommand->SetRayTracingState(mRayTracingState);
-        Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
-    }
+    Render::gCommand->SetRayTracingState(mRayTracingState);
+    Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
 
     if (mEnableScreenPass) {
         Render::gCommand->SetPipelineState(mSPGraphicsState);
