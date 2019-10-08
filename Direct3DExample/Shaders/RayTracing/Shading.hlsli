@@ -218,7 +218,7 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     float3 hitNormal = BarycentricLerpFloat3(vert0.normal, vert1.normal, vert2.normal, attribs.barycentrics);
     hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
 
-    if (geo.texInfo.w != ~0) {
+    if (geo.texInfo.w != TEX_INDEX_INVALID) {
         float3 hitTangent = BarycentricLerpFloat3(vert0.tangent, vert1.tangent, vert2.tangent, attribs.barycentrics);
         hitTangent = mul((float3x3)ObjectToWorld3x4(), hitTangent);
 

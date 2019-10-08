@@ -6,9 +6,11 @@ class Image;
 
 class Scene {
 public:
+    constexpr static uint32_t TEX_INDEX_INVALID = 0xFFFFFFFF;
+
     struct Shape {
-        Shape(void): indexOffset(0), indexCount(0), ambientTex(~0), diffuseTex(~0), specularTex(~0), normalTex(~0), isOpacity(true) { }
-        INLINE bool IsAllTexturesValid(void) { return ambientTex != (~0) && diffuseTex != (~0) && specularTex != (~0) && normalTex != (~0); }
+        Shape(void): indexOffset(0), indexCount(0), ambientTex(TEX_INDEX_INVALID), diffuseTex(TEX_INDEX_INVALID), specularTex(TEX_INDEX_INVALID), normalTex(TEX_INDEX_INVALID), isOpacity(true) { }
+        INLINE bool IsAllTexturesValid(void) { return ambientTex != (TEX_INDEX_INVALID) && diffuseTex != (TEX_INDEX_INVALID) && specularTex != (TEX_INDEX_INVALID) && normalTex != (TEX_INDEX_INVALID); }
         uint32_t indexOffset;
         uint32_t indexCount;
         uint32_t ambientTex;    // metallic

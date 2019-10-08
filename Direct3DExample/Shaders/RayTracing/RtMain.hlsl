@@ -37,6 +37,8 @@ static const float M_1_PI = 0.318309886f;
 
 static const float FLT_MAX = 3.402823466e+38f;
 
+static const uint TEX_INDEX_INVALID = 0xFFFFFFFF;
+
 namespace RayTraceParams {
     enum RayType {
         PrimaryRay = 0,

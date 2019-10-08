@@ -358,9 +358,6 @@ Scene * Model::CreateUnitQuad(void) {
     auto &shape = scene->mShapes[0];
     shape.indexOffset = 0;
     shape.indexCount = 6;
-    shape.diffuseTex = ~0;
-    shape.specularTex = ~0;
-    shape.normalTex = ~0;
 
     return scene;
 }
@@ -447,9 +444,6 @@ Scene * Model::CreateUnitCube(void) {
     auto &shape = scene->mShapes[0];
     shape.indexOffset = 0;
     shape.indexCount = 36;
-    shape.diffuseTex = ~0;
-    shape.specularTex = ~0;
-    shape.normalTex = ~0;
 
     return scene;
 }
@@ -518,9 +512,6 @@ Scene * Model::CreateUnitSphere(void) {
     auto &shape = scene->mShapes[0];
     shape.indexOffset = 0;
     shape.indexCount = static_cast<uint32_t>(scene->mIndices.size());
-    shape.diffuseTex = ~0;
-    shape.specularTex = ~0;
-    shape.normalTex = ~0;
 
     return scene;
 }
