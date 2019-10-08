@@ -401,12 +401,15 @@ void DXRExample::BuildGeometry(void) {
     Geometry *geometries = new Geometry[mScene->mShapes.size()];
     for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
         auto &shape = mScene->mShapes[i];
-        ASSERT_PRINT(shape.diffuseTex != ~0 && shape.specularTex != ~0);
         geometries[i].indexOffset = shape.indexOffset;
         geometries[i].indexCount = shape.indexCount;
         geometries[i].isOpacity = shape.isOpacity ? 1 : 0;
         geometries[i].reserve = 0;
         geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
+        geometries[i].ambientColor = float4(shape.ambientColor.x, shape.ambientColor.y, shape.ambientColor.z, 1.0f);
+        geometries[i].diffuseColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
+        geometries[i].specularColor = float4(shape.specularColor.x, shape.specularColor.y, shape.specularColor.z, 1.0f);
+        geometries[i].emissiveColor = float4(shape.emissiveColor.x, shape.emissiveColor.y, shape.emissiveColor.z, 1.0f);
     }
 
     Light lights[] = {

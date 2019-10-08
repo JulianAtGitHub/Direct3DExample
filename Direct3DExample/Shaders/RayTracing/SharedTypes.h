@@ -19,11 +19,15 @@ struct Vertex {
 };
 
 struct Geometry {
-    uint  indexOffset;
-    uint  indexCount;
-    uint  isOpacity;
-    uint  reserve;
-    uint4 texInfo;  // x: diffuse, y: metallic, z:roughness, w: normal
+    uint    indexOffset;
+    uint    indexCount;
+    uint    isOpacity;
+    uint    reserve;
+    uint4   texInfo;    // x: diffuse, y: metallic, z:roughness, w: normal
+    float4  ambientColor;
+    float4  diffuseColor;
+    float4  specularColor;
+    float4  emissiveColor;
 };
 
 struct Light {

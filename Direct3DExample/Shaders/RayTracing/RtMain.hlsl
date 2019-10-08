@@ -5,6 +5,7 @@ struct HitSample {
     float3 position;
     float3 normal;
     float4 baseColor;
+    float4 emissive;
     float  metalic;
     float  roughness;
 };

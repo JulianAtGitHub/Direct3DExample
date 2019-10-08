@@ -211,7 +211,7 @@ float3 LambertianTracePath(inout uint randSeed, in uint rayDepth, in Attributes 
     EvaluateHit(attribs, hs);
 
     float3 reflectance = hs.baseColor.rgb;
-    float3 emittance = float3(0.0f, 0.0f, 0.0f);
+    float3 emittance = hs.emissive.rgb;
 
     float3 N = hs.normal;
     float3 L = UniformHemisphereSample(randSeed, N);
@@ -253,7 +253,7 @@ float3 LambertianTracePathOpt(inout uint randSeed, in uint rayDepth, in Attribut
     }
     incoming /= gSceneCB.sampleCount;
 
-    return reflectance * incoming * NDotL * 2.0f;
+    return hs.emissive.rgb + reflectance * incoming * NDotL * 2.0f;
 }
 
 /**Primary Ray***********************************************************/
