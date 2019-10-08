@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{f378ea61-b50f-4402-93fe-b9f7041f9c00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\PathTrace">
+      <UniqueIdentifier>{8f14e240-daaf-4461-af08-5d413c035c1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\ScreenPass">
+      <UniqueIdentifier>{cfd0edc4-f56c-4689-bfa0-c388fda72c4c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\PathTrace\SharedTypes.h">
+      <Filter>Resource Files\Shaders\PathTrace</Filter>
+    </ClInclude>
+    <ClInclude Include="PtExample.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PtMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PtExample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\PathTrace\Shading.hlsli">
+      <Filter>Resource Files\Shaders\PathTrace</Filter>
+    </None>
+    <None Include="Shaders\PathTrace\PathTrace.hlsli">
+      <Filter>Resource Files\Shaders\PathTrace</Filter>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\ScreenPass\PostPass.ps.hlsl">
+      <Filter>Resource Files\Shaders\ScreenPass</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ScreenPass\PostPass.vs.hlsl">
+      <Filter>Resource Files\Shaders\ScreenPass</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PathTrace\PtMain.hlsl">
+      <Filter>Resource Files\Shaders\PathTrace</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>
