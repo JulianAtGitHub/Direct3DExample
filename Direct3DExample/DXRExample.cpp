@@ -147,7 +147,7 @@ void DXRExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 3.0f, 3.0f, 3.0f, 3.0f };
+    mSceneConsts.bgColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     mSceneConsts.lightCount = mLightCount;
     mSceneConsts.frameSeed = mFrameCount;
     mSceneConsts.accumCount = mAccumCount;

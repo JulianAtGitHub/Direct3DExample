@@ -238,11 +238,9 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
 
     hs.baseColor = geo.texInfo.x != TEX_INDEX_INVALID ? gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0) : geo.diffuseColor;
     hs.emissive = geo.emissiveColor;
-#ifdef ENABLE_PBR
     hs.metalic = geo.texInfo.y != TEX_INDEX_INVALID ? gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0).r : geo.ambientColor.r;
     hs.roughness = geo.texInfo.z != TEX_INDEX_INVALID ? gMatTextures[geo.texInfo.z].SampleLevel(gSampler, hitTexCoord, 0).r : geo.specularColor.r;
     hs.roughness = max(0.08, hs.roughness);
-#endif // ENABLE_PBR
 }
 
 

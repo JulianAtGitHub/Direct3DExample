@@ -271,8 +271,6 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
     }
 }
 
-#ifdef ENABLE_PBR
-
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     HitSample hs;
@@ -294,15 +292,6 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     payload.color = saturate(directColor + indirectColor);
 }
 
-#else
-
-[shader("closesthit")]
-void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
-}
-
-#endif
-
 /**Indirect Ray***********************************************************/
 
 [shader("miss")]
@@ -317,8 +306,6 @@ void IndirectAnyHit(inout IndirectRayPayload payload, Attributes attribs) {
         IgnoreHit();
     }
 }
-
-#ifdef ENABLE_PBR
 
 [shader("closesthit")]
 void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
@@ -335,15 +322,6 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
         payload.color += GGXIndirect(payload.seed, viewDir, hs, payload.depth);
     }
 }
-
-#else
-
-[shader("closesthit")]
-void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
-}
-
-#endif
 
 /**Shadow Ray***********************************************************/
 
