@@ -43,7 +43,7 @@ void GPUBuffer::Initialize(void) {
     FillGPUAddress();
 }
 
-void GPUBuffer::CreateStructBufferSRV(DescriptorHandle &handle, uint32_t count, uint32_t size) {
+void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size) {
     if (!mResource) {
         return;
     }
@@ -60,7 +60,7 @@ void GPUBuffer::CreateStructBufferSRV(DescriptorHandle &handle, uint32_t count, 
     mHandle = handle;
 }
 
-void GPUBuffer::CreateIndexBufferSRV(DescriptorHandle &handle, uint32_t count) {
+void GPUBuffer::CreateIndexBufferSRV(const DescriptorHandle &handle, uint32_t count) {
     if (!mResource) {
         return;
     }

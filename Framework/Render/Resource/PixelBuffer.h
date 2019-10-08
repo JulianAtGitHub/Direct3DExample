@@ -19,8 +19,8 @@ public:
     INLINE const DescriptorHandle & GetSRVHandle(void) const { return mSRVHandle; }
     INLINE const DescriptorHandle & GetUAVHandle(void) const { return mUAVHandle; }
 
-    void CreateSRV(DescriptorHandle &handle);
-    void CreateUAV(DescriptorHandle &handle);
+    void CreateSRV(const DescriptorHandle &handle);
+    void CreateUAV(const DescriptorHandle &handle);
 
 protected:
     void Initialize(void);

@@ -21,7 +21,7 @@ Sampler::~Sampler(void) {
 
 }
 
-void Sampler::Create(DescriptorHandle &handle) {
+void Sampler::Create(const DescriptorHandle &handle) {
     gDevice->CreateSampler(&mDesc, handle.cpu);
     mHandle = handle;
 }

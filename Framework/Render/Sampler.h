@@ -16,7 +16,7 @@ public:
     void SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE mode);
     void SetBorderColor(const XMFLOAT4 &color);
 
-    void Create(DescriptorHandle &handle);
+    void Create(const DescriptorHandle &handle);
 
 private:
     D3D12_SAMPLER_DESC  mDesc;

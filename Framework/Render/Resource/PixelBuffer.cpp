@@ -60,7 +60,7 @@ void PixelBuffer::Initialize(void) {
     mResource->SetName(L"Texture");
 }
 
-void PixelBuffer::CreateSRV(DescriptorHandle &handle) {
+void PixelBuffer::CreateSRV(const DescriptorHandle &handle) {
     if (!mResource) {
         return;
     }
@@ -76,7 +76,7 @@ void PixelBuffer::CreateSRV(DescriptorHandle &handle) {
     mSRVHandle = handle;
 }
 
-void PixelBuffer::CreateUAV(DescriptorHandle &handle) {
+void PixelBuffer::CreateUAV(const DescriptorHandle &handle) {
     if (!mResource) {
         return;
     }
