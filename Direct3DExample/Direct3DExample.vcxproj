@@ -110,7 +110,6 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
     <ClCompile Include="D3DExample.cpp" />
     <ClCompile Include="DXRExample.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -120,10 +119,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h" />
     <ClInclude Include="D3DExample.h" />
     <ClInclude Include="DXRExample.h" />
-    <ClInclude Include="Example.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Shaders\RayTracing\SharedTypes.h" />
   </ItemGroup>

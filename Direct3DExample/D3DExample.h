@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Example.h"
-
-class D3DExample : public Example {
+class D3DExample : public Utils::AnExample {
 public:
     D3DExample(void);
     virtual ~D3DExample(void);

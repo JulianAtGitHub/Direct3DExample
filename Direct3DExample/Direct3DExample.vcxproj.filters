@@ -19,9 +19,6 @@
     <ClCompile Include="Main.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="Application.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -33,16 +30,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="D3DExample.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Example.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="DXRExample.h">

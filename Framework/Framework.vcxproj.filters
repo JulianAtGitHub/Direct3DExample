@@ -97,6 +97,12 @@
     <ClInclude Include="Utils\Common.h">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\Application.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\AnExample.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -163,6 +169,9 @@
       <Filter>Sources\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Common.cpp">
+      <Filter>Sources\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Application.cpp">
       <Filter>Sources\Utils</Filter>
     </ClCompile>
   </ItemGroup>

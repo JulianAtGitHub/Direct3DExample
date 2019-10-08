@@ -1,11 +1,9 @@
 #pragma once
 
-#include "Example.h"
-
 #include <random>
 #include "Shaders/RayTracing/SharedTypes.h"
 
-class DXRExample : public Example {
+class DXRExample : public Utils::AnExample {
 public:
     DXRExample(void);
     virtual ~DXRExample(void);

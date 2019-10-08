@@ -33,7 +33,7 @@ D3DExample::~D3DExample(void) {
 }
 
 void D3DExample::Init(HWND hwnd) {
-    Example::Init(hwnd);
+    Utils::AnExample::Init(hwnd);
     WINDOWINFO windowInfo;
     GetWindowInfo(mHwnd, &windowInfo);
     mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
