@@ -9,10 +9,28 @@ public:
     constexpr static uint32_t TEX_INDEX_INVALID = 0xFFFFFFFF;
 
     struct Shape {
-        Shape(void): indexOffset(0), indexCount(0), ambientTex(TEX_INDEX_INVALID), diffuseTex(TEX_INDEX_INVALID), specularTex(TEX_INDEX_INVALID), normalTex(TEX_INDEX_INVALID), isOpacity(true) { }
-        INLINE bool IsAllTexturesValid(void) { return ambientTex != (TEX_INDEX_INVALID) && diffuseTex != (TEX_INDEX_INVALID) && specularTex != (TEX_INDEX_INVALID) && normalTex != (TEX_INDEX_INVALID); }
+        Shape(void)
+        : indexOffset(0)
+        , indexCount(0)
+        , ambientColor(0.0f, 0.0f, 0.0f)
+        , diffuseColor(0.0f, 0.0f, 0.0f)
+        , specularColor(0.0f, 0.0f, 0.0f)
+        , emissiveColor(0.0f, 0.0f, 0.0f)
+        , ambientTex(TEX_INDEX_INVALID)
+        , diffuseTex(TEX_INDEX_INVALID)
+        , specularTex(TEX_INDEX_INVALID)
+        , normalTex(TEX_INDEX_INVALID)
+        , isOpacity(true) 
+        {
+
+        }
+
         uint32_t indexOffset;
         uint32_t indexCount;
+        XMFLOAT3 ambientColor;
+        XMFLOAT3 diffuseColor;
+        XMFLOAT3 specularColor;
+        XMFLOAT3 emissiveColor;
         uint32_t ambientTex;    // metallic
         uint32_t diffuseTex;    // albedo
         uint32_t specularTex;   // roughness

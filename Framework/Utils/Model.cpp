@@ -113,32 +113,20 @@ Scene * Model::LoadFromFile(const char *fileName) {
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
         //PrintMaterialInfo(material);
 
-        aiString ambientTex;
-        aiString diffuseTex;
-        aiString specularTex;
-        aiString normalTex;
-        aiString maskTex;
+        aiColor3D color;
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_AMBIENT, color)) { shape.ambientColor = XMFLOAT3(color.r, color.g, color.b); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, color)) { shape.diffuseColor = XMFLOAT3(color.r, color.g, color.b); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_SPECULAR, color)) { shape.specularColor = XMFLOAT3(color.r, color.g, color.b); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, color)) { shape.emissiveColor = XMFLOAT3(color.r, color.g, color.b); }
 
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), ambientTex)) {
-            shape.ambientTex = AddImage(images, ambientTex);
-        }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseTex)) {
-            shape.diffuseTex = AddImage(images, diffuseTex);
-        }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), specularTex)) {
-            shape.specularTex = AddImage(images, specularTex);
-        }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalTex)) {
-            shape.normalTex = AddImage(images, normalTex);
-        }
+        aiString texture;
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), texture)) { shape.ambientTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture)) { shape.diffuseTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), texture)) { shape.specularTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), texture)) { shape.normalTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), texture)) { shape.isOpacity = false; }
 
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), maskTex)) {
-            shape.isOpacity = false;
-        }
-
-        if (shape.IsAllTexturesValid()) {
-            out->mShapes.push_back(shape);
-        }
+        out->mShapes.push_back(shape);
     }
 
     out->mVertices.resize(vertexCount);
