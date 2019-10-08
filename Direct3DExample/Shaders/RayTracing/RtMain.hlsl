@@ -16,19 +16,18 @@ struct LightSample {
     float3 position;
 };
 
-struct PrimaryRayPayload {
+struct GenericRayPayload {
     float3 color;
     uint   seed;
     uint   depth;
 };
 
-struct RayHitPayload {
+struct ShadowRayPayload {
     float value;
 };
 
-typedef PrimaryRayPayload IndirectRayPayload;
-
-typedef RayHitPayload ShadowRayPayload;
+typedef GenericRayPayload PrimaryRayPayload;
+typedef GenericRayPayload IndirectRayPayload;
 
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 

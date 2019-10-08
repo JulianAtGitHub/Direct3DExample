@@ -237,9 +237,12 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     }
 
     hs.baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
+
+#ifdef ENABLE_PBR
     hs.metalic = gMatTextures[geo.texInfo.y].SampleLevel(gSampler, hitTexCoord, 0).r;
     hs.roughness = gMatTextures[geo.texInfo.z].SampleLevel(gSampler, hitTexCoord, 0).r;
     hs.roughness = max(0.08, hs.roughness);
+#endif // ENABLE_PBR
 }
 
 

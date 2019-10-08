@@ -67,10 +67,10 @@ float3 IndirectRayGen(float3 origin, float3 direction, inout uint seed, uint dep
     ray.TMin = 1e-4f;
     ray.TMax = 1e+38f;
 
-    IndirectRayPayload payload = { float3(0, 0, 0), seed, depth + 1 };
+    IndirectRayPayload payload = { float3(0, 0, 0), seed, depth };
 
     TraceRay(gRtScene, 
-             RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
+             RAY_FLAG_NONE, 
              RayTraceParams::InstanceMask, 
              RayTraceParams::HitGroupIndex[RayTraceParams::IndirectRay], 
              0, 
@@ -157,7 +157,7 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
     if (probability < diffuceRatio) {
         // Shoot a randomly selected cosine-sampled diffuse ray.
         float3 L = CosHemisphereSample(randSeed, N);
-        float3 bounceColor = IndirectRayGen(hs.position, L, randSeed, rayDepth);
+        float3 bounceColor = IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
 
         float NdotL = saturate(dot(N, L));
         //float pdf = NdotL * M_1_PI;
@@ -173,7 +173,7 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
         float3 H = normalize(V + L);
 
         // Compute our color by tracing a ray in this direction
-        float3 bounceColor = IndirectRayGen(hs.position, L, randSeed, rayDepth);
+        float3 bounceColor = IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
 
         // Compute some dot products needed for shading
         float NdotL = saturate(dot(N, L));
@@ -200,6 +200,34 @@ float3 GGXIndirect(inout uint randSeed, float3 V, in HitSample hs, uint rayDepth
     }
 }
 
+// https://en.wikipedia.org/wiki/Path_tracing#targetText=Path%20tracing%20is%20a%20computer,the%20surface%20of%20an%20object.
+float3 TracePath(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
+    if (rayDepth >= gSceneCB.maxRayDepth) {
+        return float3(0.0f, 0.0f, 0.0f);
+    }
+
+    float reflectance = 0.5f;
+    float3 emittance = float3(0.0f, 0.0f, 0.0f);
+    float3 color = float3(0.0f, 0.0f, 0.0f);
+
+    HitSample hs;
+    EvaluateHit(attribs, hs);
+
+    float3 N = hs.normal;
+    float3 L = UniformHemisphereSample(randSeed, N);
+
+    const float p = 1.0f / (2.0f * M_PI);
+    float NDotL = saturate(dot(N, L));
+
+    float BRDF = reflectance / M_PI;
+
+    float3 incoming = IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
+
+    color += emittance + (BRDF * incoming * hs.baseColor.rgb * NDotL / p);
+
+    return color;
+}
+
 /**Primary Ray***********************************************************/
 
 [shader("miss")]
@@ -214,6 +242,8 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
         IgnoreHit();
     }
 }
+
+#ifdef ENABLE_PBR
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
@@ -236,6 +266,15 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
     payload.color = saturate(directColor + indirectColor);
 }
 
+#else
+
+[shader("closesthit")]
+void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
+    payload.color += TracePath(payload.seed, payload.depth, attribs);
+}
+
+#endif
+
 /**Indirect Ray***********************************************************/
 
 [shader("miss")]
@@ -250,6 +289,8 @@ void IndirectAnyHit(inout IndirectRayPayload payload, Attributes attribs) {
         IgnoreHit();
     }
 }
+
+#ifdef ENABLE_PBR
 
 [shader("closesthit")]
 void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
@@ -266,6 +307,15 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
         payload.color += GGXIndirect(payload.seed, viewDir, hs, payload.depth);
     }
 }
+
+#else
+
+[shader("closesthit")]
+void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
+    payload.color += TracePath(payload.seed, payload.depth, attribs);
+}
+
+#endif
 
 /**Shadow Ray***********************************************************/
 
