@@ -249,7 +249,7 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
 inline bool AlphaTestFailed(float threshold, Attributes attribs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
-    if (geo.isOpacity) {
+    if (geo.isOpacity || geo.texInfo.x == TEX_INDEX_INVALID) {
         return false;
     }
 
