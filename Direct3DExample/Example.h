@@ -2,10 +2,10 @@
 
 class Example {
 public:
-    Example(HWND hwnd): mHwnd(hwnd) { }
+    Example(void): mHwnd(NULL) { }
     virtual ~Example(void) { }
 
-    virtual void Init(void) = 0;
+    virtual void Init(HWND hwnd) { mHwnd = hwnd; };
     virtual void Update(void) = 0;
     virtual void Render(void) = 0;
     virtual void Destroy(void) = 0;

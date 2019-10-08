@@ -4,10 +4,10 @@
 
 class D3DExample : public Example {
 public:
-    D3DExample(HWND hwnd);
+    D3DExample(void);
     virtual ~D3DExample(void);
 
-    virtual void Init(void);
+    virtual void Init(HWND hwnd);
     virtual void Update(void);
     virtual void Render(void);
     virtual void Destroy(void);

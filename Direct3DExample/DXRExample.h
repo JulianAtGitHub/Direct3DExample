@@ -7,10 +7,10 @@
 
 class DXRExample : public Example {
 public:
-    DXRExample(HWND hwnd);
+    DXRExample(void);
     virtual ~DXRExample(void);
 
-    virtual void Init(void);
+    virtual void Init(HWND hwnd);
     virtual void Update(void);
     virtual void Render(void);
     virtual void Destroy(void);

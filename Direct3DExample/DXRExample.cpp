@@ -19,9 +19,8 @@ const static wchar_t *ShadowHitGroupName = L"ShadowHitGroup";
 const static wchar_t *ShadowAnyHitName = L"ShadowAnyHit";
 const static wchar_t *ShadowClosetHitName = L"ShadowClosestHit";
 
-DXRExample::DXRExample(HWND hwnd)
-: Example(hwnd)
-, mCamera(nullptr)
+DXRExample::DXRExample(void)
+: mCamera(nullptr)
 , mSpeedX(0.0f)
 , mSpeedZ(0.0f)
 , mIsRotating(false)
@@ -60,7 +59,14 @@ DXRExample::DXRExample(HWND hwnd)
     for (auto &fence : mFenceValues) {
         fence = 1;
     }
+}
 
+DXRExample::~DXRExample(void) {
+    DeleteAndSetNull(mCamera);
+}
+
+void DXRExample::Init(HWND hwnd) {
+    Example::Init(hwnd);
     WINDOWINFO windowInfo;
     GetWindowInfo(mHwnd, &windowInfo);
     mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
@@ -69,13 +75,7 @@ DXRExample::DXRExample(HWND hwnd)
     struct timeb tb;
     ftime(&tb);
     mRang = std::mt19937( uint32_t(tb.time * 1000 + tb.millitm) );
-}
 
-DXRExample::~DXRExample(void) {
-    DeleteAndSetNull(mCamera);
-}
-
-void DXRExample::Init(void) {
     SetWindowText(mHwnd, "Ray Tracing Example");
     Render::Initialize(mHwnd);
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();

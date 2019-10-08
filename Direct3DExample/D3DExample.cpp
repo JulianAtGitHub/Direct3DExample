@@ -5,9 +5,8 @@ struct ConstBuffer {
     XMFLOAT4X4 mvp;
 };
 
-D3DExample::D3DExample(HWND hwnd)
-: Example(hwnd)
-, mRootSignature(nullptr)
+D3DExample::D3DExample(void)
+: mRootSignature(nullptr)
 , mGraphicsState(nullptr)
 , mVertexIndexBuffer(nullptr)
 , mConstBuffer(nullptr)
@@ -27,18 +26,19 @@ D3DExample::D3DExample(HWND hwnd)
     }
     mVertexBufferView = {};
     mIndexBufferView = {};
-
-    WINDOWINFO windowInfo;
-    GetWindowInfo(mHwnd, &windowInfo);
-    mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
-    mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
 }
 
 D3DExample::~D3DExample(void) {
 
 }
 
-void D3DExample::Init(void) {
+void D3DExample::Init(HWND hwnd) {
+    Example::Init(hwnd);
+    WINDOWINFO windowInfo;
+    GetWindowInfo(mHwnd, &windowInfo);
+    mWidth = windowInfo.rcClient.right - windowInfo.rcClient.left;
+    mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
+
     LoadPipeline();
     LoadAssets();
     mTimer.Reset();
