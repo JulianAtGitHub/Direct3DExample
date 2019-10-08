@@ -14,7 +14,8 @@ A DXR path tracing example with a simple framework to learn and understand raytr
 > 
     cd path/to/root/folder
     python UpdateExternals.py
-4. Open Direct3DExample.sln to build and run.
+4. Open Direct3DExample.sln and Set PathTracingDXR as start up project.
+5. Build and run.
 
 **Requirements**
 - Windows 10 October 2018 update (RS5 | version 1809) or newer.
