@@ -21,8 +21,8 @@ struct Vertex {
 struct Geometry {
     uint    indexOffset;
     uint    indexCount;
-    uint    isOpacity;
-    uint    reserve;
+    uint    reserve0;
+    uint    reserve1;
     uint4   texInfo;    // x: diffuse, y: ambient, z:specular, w: normal
     float4  ambientColor;
     float4  diffuseColor;

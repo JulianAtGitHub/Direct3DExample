@@ -70,7 +70,7 @@ float3 IndirectRayGen(float3 origin, float3 direction, inout uint seed, uint dep
     IndirectRayPayload payload = { float3(0, 0, 0), seed, depth };
 
     TraceRay(gRtScene, 
-             RAY_FLAG_NONE, 
+             RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
              RayTraceParams::InstanceMask, 
              RayTraceParams::HitGroupIndex[RayTraceParams::IndirectRay], 
              0, 

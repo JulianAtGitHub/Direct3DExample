@@ -403,8 +403,8 @@ void PtExample::BuildGeometry(void) {
         auto &shape = mScene->mShapes[i];
         geometries[i].indexOffset = shape.indexOffset;
         geometries[i].indexCount = shape.indexCount;
-        geometries[i].isOpacity = shape.isOpacity ? 1 : 0;
-        geometries[i].reserve = 0;
+        geometries[i].reserve0 = 0;
+        geometries[i].reserve1 = 0;
         geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
         geometries[i].ambientColor = float4(shape.ambientColor.x, shape.ambientColor.y, shape.ambientColor.z, 1.0f);
         geometries[i].diffuseColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
@@ -443,7 +443,9 @@ void PtExample::BuildAccelerationStructure(void) {
     for (uint32_t i = 0; i < shapeCount; ++i) {
         auto &shape = mScene->mShapes[i];
         BLAS *blas = new BLAS();
-        blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, mVertices, 0, static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
+        blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, 
+                           mVertices, 0, static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex), DXGI_FORMAT_R32G32B32_FLOAT, 
+                           shape.isOpacity ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
         blas->PreBuild();
         mBLASes.push_back(blas);
         mTLAS->AddInstance(blas, i, 0, transform);
