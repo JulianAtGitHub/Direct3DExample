@@ -4,7 +4,6 @@ namespace Render {
 
 class GPUResource;
 class GPUBuffer;
-class UploadBuffer;
 
 class AccelerationStructure {
 public:
@@ -49,7 +48,7 @@ public:
 
 private:
     std::vector<D3D12_RAYTRACING_INSTANCE_DESC>   mInstanceDescs;
-    UploadBuffer   *mInstances;
+    GPUBuffer  *mInstances;
 };
 
 }

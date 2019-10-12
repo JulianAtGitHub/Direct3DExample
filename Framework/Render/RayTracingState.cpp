@@ -2,7 +2,7 @@
 #include "RayTracingState.h"
 #include "RootSignature.h"
 #include "RenderCore.h"
-#include "Resource/UploadBuffer.h"
+#include "Resource/GPUBuffer.h"
 
 namespace Render {
 
@@ -203,7 +203,7 @@ void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGen
     uint32_t hitGroupRecordSize = AlignUp(idSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
     uint32_t hitGroupeTableSize = hitGroupCount > 0 ? AlignUp(hitGroupCount * hitGroupRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT) : 0;
 
-    mShaderTable = new Render::UploadBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize);
+    mShaderTable = new GPUBuffer(rayGenTableSize + missTableSize + hitGroupeTableSize, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
     uint32_t offset = 0;
     for (uint32_t i = 0; i < rayGenCount; ++i) {
         mShaderTable->UploadData(rayGenIds[i], idSize, offset + i * rayGenRecordSize);

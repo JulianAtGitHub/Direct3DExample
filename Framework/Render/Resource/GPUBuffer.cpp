@@ -3,16 +3,21 @@
 
 namespace Render {
 
-GPUBuffer::GPUBuffer(size_t size, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag)
+GPUBuffer::GPUBuffer(size_t size, D3D12_RESOURCE_STATES usage, D3D12_RESOURCE_FLAGS flag, bool cpuWritable)
 : GPUResource()
 , mBufferSize(size)
 , mFlag(flag)
+, mCpuWritable(cpuWritable)
+, mMappedBuffer(nullptr)
 {
     SetUsageState(usage);
     Initialize();
 }
 
 GPUBuffer::~GPUBuffer(void) {
+    if (mCpuWritable) {
+        mResource->Unmap(0, nullptr);
+    }
     mBufferSize = 0;
 }
 
@@ -31,7 +36,7 @@ void GPUBuffer::Initialize(void) {
     resourceDesc.Width = mBufferSize;
 
     D3D12_HEAP_PROPERTIES heapProps;
-    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+    heapProps.Type = mCpuWritable ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT;
     heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
     heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
     heapProps.CreationNodeMask = 1;
@@ -41,6 +46,11 @@ void GPUBuffer::Initialize(void) {
     mResource->SetName(L"GPUBuffer");
 
     FillGPUAddress();
+
+    if (mCpuWritable) {
+        CD3DX12_RANGE readRange(0, 0);
+        ASSERT_SUCCEEDED(mResource->Map(0, &readRange, &mMappedBuffer));
+    }
 }
 
 void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size) {
@@ -75,6 +85,21 @@ void GPUBuffer::CreateIndexBufferSRV(const DescriptorHandle &handle, uint32_t co
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 
     mHandle = handle;
+}
+
+void GPUBuffer::UploadData(const void *data, size_t size, uint64_t offset) {
+    ASSERT_PRINT(mCpuWritable, "This buffer can not write by cpu, call CommandContext::UploadBuffer instead!");
+
+    if (!mCpuWritable || !data) {
+        return;
+    }
+
+    if (offset + size > mBufferSize) {
+        size = mBufferSize - offset;
+    }
+
+    uint8_t *dest = (uint8_t *)mMappedBuffer;
+    memcpy(dest + offset, data, size);
 }
 
 }

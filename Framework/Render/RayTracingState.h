@@ -3,7 +3,7 @@
 namespace Render {
 
 class RootSignature;
-class UploadBuffer;
+class GPUBuffer;
 
 class RayTracingState {
 public:
@@ -39,7 +39,7 @@ private:
     std::vector<D3D12_STATE_SUBOBJECT>  mSubObjects;
     ID3D12StateObject                  *mState;
     D3D12_DISPATCH_RAYS_DESC            mRaysDesc;
-    UploadBuffer                       *mShaderTable;
+    GPUBuffer                          *mShaderTable;
 };
 
 }

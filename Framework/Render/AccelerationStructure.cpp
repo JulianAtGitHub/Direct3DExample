@@ -2,7 +2,6 @@
 #include "AccelerationStructure.h"
 #include "RenderCore.h"
 #include "Resource/GPUBuffer.h"
-#include "Resource/UploadBuffer.h"
 
 namespace Render {
 
@@ -139,7 +138,7 @@ bool TopLevelAccelerationStructure::PreBuild(D3D12_RAYTRACING_ACCELERATION_STRUC
     mResultData = new GPUBuffer(prebuildInfo.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     uint64_t stride = AlignUp(sizeof(D3D12_RAYTRACING_INSTANCE_DESC), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT);
-    mInstances = new UploadBuffer(mInstanceDescs.size() * stride);
+    mInstances = new GPUBuffer(mInstanceDescs.size() * stride, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
     if (stride == sizeof(D3D12_RAYTRACING_INSTANCE_DESC)) {
         mInstances->UploadData(mInstanceDescs.data(), mInstanceDescs.size() * stride);
     } else {
