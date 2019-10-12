@@ -1,10 +1,8 @@
 #pragma once
 
-#include "CommandQueue.h"
-#include "DescriptorHeap.h"
-
 namespace Render {
 
+class CommandQueue;
 class LinerAllocator;
 class GPUResource;
 class PixelBuffer;
@@ -64,7 +62,7 @@ public:
     void SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType);
     void SetVertices(const D3D12_VERTEX_BUFFER_VIEW &vertices);
     void SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW &vertices, const D3D12_INDEX_BUFFER_VIEW &indices);
-    void DrawIndexed(uint32_t indexCount, uint32_t indexOffset);
+    void DrawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffset = 0);
     void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount = 1);
 
     void BuildAccelerationStructure(AccelerationStructure *as);
@@ -149,8 +147,8 @@ INLINE void CommandContext::SetVerticesAndIndices(const D3D12_VERTEX_BUFFER_VIEW
     mCommandList->IASetIndexBuffer(&indices);
 }
 
-INLINE void CommandContext::DrawIndexed(uint32_t indexCount, uint32_t indexOffset) {
-    mCommandList->DrawIndexedInstanced(indexCount, 1, indexOffset, 0, 0);
+INLINE void CommandContext::DrawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffset) {
+    mCommandList->DrawIndexedInstanced(indexCount, 1, indexOffset, vertexOffset, 0);
 }
 
 INLINE void CommandContext::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount) {
