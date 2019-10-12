@@ -4,6 +4,7 @@ A DXR path tracing example with a simple framework to learn and understand raytr
 - Implement Monte Carlo pathtracing
 - Native DirectX Raytracing
 - PBR material
+- Integrate With Dear Imgui
 
 ![Result of display](https://github.com/JulianAtGitHub/Direct3DExample/blob/master/screenshot.jpg)
 
