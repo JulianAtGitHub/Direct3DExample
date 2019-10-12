@@ -1,7 +1,5 @@
 #pragma once
 
-#include "DescriptorHeap.h"
-
 namespace Render {
 
 class Sampler {

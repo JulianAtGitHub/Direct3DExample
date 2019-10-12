@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "RenderCore.h"
+#include "CommandQueue.h"
 #include "CommandContext.h"
 #include "DescriptorHeap.h"
 #include "Resource/RenderTargetBuffer.h"
