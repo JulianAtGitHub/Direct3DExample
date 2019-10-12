@@ -17,6 +17,9 @@
     <Filter Include="Sources\Render\Resource">
       <UniqueIdentifier>{1f4ba534-88f9-4204-8d58-eaac3e2e3d5c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\Render\GUI">
+      <UniqueIdentifier>{9605afeb-aee5-4d86-a25e-2710e675fd6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -57,9 +60,6 @@
     </ClInclude>
     <ClInclude Include="Render\Sampler.h">
       <Filter>Sources\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Render\Resource\UploadBuffer.h">
-      <Filter>Sources\Render\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Render\Resource\RenderTargetBuffer.h">
       <Filter>Sources\Render\Resource</Filter>
@@ -103,6 +103,27 @@
     <ClInclude Include="Utils\AnExample.h">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Render\GUI\imconfig.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUI\imgui.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUI\imgui_internal.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUI\imstb_rectpack.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUI\imstb_textedit.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUI\imstb_truetype.h">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GUILayer.h">
+      <Filter>Sources\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -144,9 +165,6 @@
     <ClCompile Include="Render\Sampler.cpp">
       <Filter>Sources\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Resource\UploadBuffer.cpp">
-      <Filter>Sources\Render\Resource</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Resource\RenderTargetBuffer.cpp">
       <Filter>Sources\Render\Resource</Filter>
     </ClCompile>
@@ -173,6 +191,18 @@
     </ClCompile>
     <ClCompile Include="Utils\Application.cpp">
       <Filter>Sources\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\GUI\imgui.cpp">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\GUI\imgui_draw.cpp">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\GUI\imgui_widgets.cpp">
+      <Filter>Sources\Render\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\GUILayer.cpp">
+      <Filter>Sources\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

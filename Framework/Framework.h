@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include "Render/Sampler.h"
+#include "Render/CommandQueue.h"
 #include "Render/CommandContext.h"
 #include "Render/DescriptorHeap.h"
 #include "Render/DescriptorHeapPool.h"
@@ -12,10 +13,12 @@
 #include "Render/AccelerationStructure.h"
 #include "Render/Resource/GPUBuffer.h"
 #include "Render/Resource/PixelBuffer.h"
-#include "Render/Resource/UploadBuffer.h"
 #include "Render/Resource/ConstantBuffer.h"
 #include "Render/Resource/RenderTargetBuffer.h"
 #include "Render/Resource/DepthStencilBuffer.h"
+
+#include "Render/GUILayer.h"
+#include "Render/GUI/imgui.h"
 
 #include "Utils/Timer.hpp"
 #include "Utils/Camera.hpp"
