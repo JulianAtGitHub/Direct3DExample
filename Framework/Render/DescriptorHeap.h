@@ -14,7 +14,7 @@ public:
 
 private:
     void Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count);
-    void Destory(void);
+    void Destroy(void);
 
     ID3D12DescriptorHeap   *mHeap;
     uint32_t                mDescriptorSize;

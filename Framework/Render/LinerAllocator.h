@@ -41,7 +41,7 @@ private:
 
     private:
         void Create(MemoryType type, size_t size);
-        void Destory(void);
+        void Destroy(void);
 
         MemoryType  mType;
         size_t      mSize;
@@ -58,7 +58,7 @@ private:
 
     MemoryPage * AllocatePage(void);
     MemoryBlock AllocateLarge(size_t size);
-    void DestoryPages(void);
+    void DestroyPages(void);
 
     const static size_t MEMORY_ALIGNMENT        = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
     const static size_t MEMORY_ALIGNMENT_MASK   = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;

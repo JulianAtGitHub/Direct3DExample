@@ -16,7 +16,7 @@ public:
     void FillGPUAddress(void);
 
 protected:
-    void DestoryResource(void);
+    void DestroyResource(void);
 
     D3D12_RESOURCE_STATES       mUsageState;
     ID3D12Resource             *mResource;

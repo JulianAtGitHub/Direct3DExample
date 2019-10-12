@@ -12,10 +12,10 @@ GPUResource::GPUResource(void)
 }
 
 GPUResource::~GPUResource(void) {
-    DestoryResource();
+    DestroyResource();
 }
 
-void GPUResource::DestoryResource(void) {
+void GPUResource::DestroyResource(void) {
     ReleaseAndSetNull(mResource);
 }
 

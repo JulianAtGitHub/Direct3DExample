@@ -14,7 +14,7 @@ DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
 }
 
 DescriptorHeap::~DescriptorHeap(void) {
-    Destory();
+    Destroy();
 }
 
 void DescriptorHeap::Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count) {
@@ -37,7 +37,7 @@ void DescriptorHeap::Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
     mRemainingCount = count;
 }
 
-void DescriptorHeap::Destory(void) {
+void DescriptorHeap::Destroy(void) {
     ReleaseAndSetNull(mHeap);
     mDescriptorSize = 0;
     mTotalCount = 0;

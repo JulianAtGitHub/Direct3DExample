@@ -15,7 +15,7 @@ LinerAllocator::MemoryPage::MemoryPage(MemoryType type, size_t size)
 }
 
 LinerAllocator::MemoryPage::~MemoryPage(void) {
-    Destory();
+    Destroy();
 }
 
 void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
@@ -61,9 +61,9 @@ void LinerAllocator::MemoryPage::Create(MemoryType type, size_t size) {
     Map();
 }
 
-void LinerAllocator::MemoryPage::Destory(void) {
+void LinerAllocator::MemoryPage::Destroy(void) {
     Unmap();
-    DestoryResource();
+    DestroyResource();
 
     mCPUAddress = nullptr;
     mType = Invalid;
@@ -80,7 +80,7 @@ LinerAllocator::LinerAllocator(MemoryType type)
 }
 
 LinerAllocator::~LinerAllocator(void) {
-    DestoryPages();
+    DestroyPages();
 }
 
 LinerAllocator::MemoryBlock LinerAllocator::AllocateLarge(size_t size) {
@@ -157,7 +157,7 @@ void LinerAllocator::CleanupPages(uint64_t fenceValue, uint64_t completeValue) {
     mLargePages.clear();
 }
 
-void LinerAllocator::DestoryPages(void) {
+void LinerAllocator::DestroyPages(void) {
     for (auto page : mPagePool) {
         delete page;
     }
