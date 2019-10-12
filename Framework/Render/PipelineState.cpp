@@ -23,7 +23,11 @@ GraphicsState::GraphicsState(void)
 }
 
 GraphicsState::~GraphicsState(void) {
-
+    if (mDesc.VS.pShaderBytecode) { free(const_cast<void *>(mDesc.VS.pShaderBytecode)); mDesc.VS.pShaderBytecode = nullptr; }
+    if (mDesc.PS.pShaderBytecode) { free(const_cast<void *>(mDesc.PS.pShaderBytecode)); mDesc.PS.pShaderBytecode = nullptr; }
+    if (mDesc.GS.pShaderBytecode) { free(const_cast<void *>(mDesc.GS.pShaderBytecode)); mDesc.GS.pShaderBytecode = nullptr; }
+    if (mDesc.HS.pShaderBytecode) { free(const_cast<void *>(mDesc.HS.pShaderBytecode)); mDesc.HS.pShaderBytecode = nullptr; }
+    if (mDesc.DS.pShaderBytecode) { free(const_cast<void *>(mDesc.DS.pShaderBytecode)); mDesc.DS.pShaderBytecode = nullptr; }
 }
 
 void GraphicsState::Initialize(void) {
@@ -49,6 +53,21 @@ void GraphicsState::LoadShaderByteCode(const char *fileName, D3D12_SHADER_BYTECO
         free(const_cast<void *>(byteCode.pShaderBytecode));
     }
     byteCode.pShaderBytecode = ReadFileData(fileName, byteCode.BytecodeLength);
+}
+
+void GraphicsState::CopyShaderByteCode(ID3DBlob *blob, D3D12_SHADER_BYTECODE &byteCode) {
+    if (!blob) {
+        return;
+    }
+
+    if (byteCode.pShaderBytecode) {
+        free(const_cast<void *>(byteCode.pShaderBytecode));
+    }
+
+    byteCode.BytecodeLength = blob->GetBufferSize();
+    void *bytecode = malloc(byteCode.BytecodeLength);
+    memcpy(bytecode, blob->GetBufferPointer(), byteCode.BytecodeLength);
+    byteCode.pShaderBytecode = bytecode;
 }
 
 void GraphicsState::Create(RootSignature *rootSignature) {
