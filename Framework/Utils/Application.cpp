@@ -91,37 +91,20 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
         // Save the Application* passed in to CreateWindow.
         LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
         SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
-    } return 0;
-
-    case WM_KEYDOWN:
-        if (example) {
-            example->OnKeyDown(static_cast<uint8_t>(wParam));
-        }
         return 0;
+    }
 
-    case WM_KEYUP:
-        if (example) {
-            example->OnKeyUp(static_cast<uint8_t>(wParam));
-        }
-        return 0;
-
-    case WM_LBUTTONDOWN:
-        if (example) {
-            example->OnMouseLButtonDown(lParam);
-        }
-        return 0;
-
-    case WM_LBUTTONUP:
-        if (example) {
-            example->OnMouseLButtonUp(lParam);
-        }
-        return 0;
-
-    case WM_MOUSEMOVE:
-        if (example) {
-            example->OnMouseMove(lParam);
-        }
-        return 0;
+    case WM_KEYDOWN:        if (example) { example->OnKeyDown(static_cast<uint8_t>(wParam)); } return 0;
+    case WM_KEYUP:          if (example) { example->OnKeyUp(static_cast<uint8_t>(wParam)); } return 0;
+    case WM_CHAR:           if (example) { example->OnChar(static_cast<uint16_t>(wParam)); } return 0;
+    case WM_LBUTTONDOWN:    if (example) { example->OnMouseLButtonDown(lParam); } return 0;
+    case WM_LBUTTONUP:      if (example) { example->OnMouseLButtonUp(lParam); } return 0;
+    case WM_RBUTTONDOWN:    if (example) { example->OnMouseRButtonDown(lParam); }  return 0;
+    case WM_RBUTTONUP:      if (example) { example->OnMouseRButtonUp(lParam); } return 0;
+    case WM_MBUTTONDOWN:    if (example) { example->OnMouseMButtonDown(lParam); } return 0;
+    case WM_MBUTTONUP:      if (example) { example->OnMouseMButtonUp(lParam); } return 0;
+    case WM_MOUSEMOVE:      if (example) { example->OnMouseMove(lParam); } return 0;
+    case WM_MOUSEWHEEL:     if (example) { example->OnMouseWheel(wParam); } return 0;
 
     case WM_PAINT:
         if (example) {
