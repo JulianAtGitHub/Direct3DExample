@@ -15,9 +15,15 @@ public:
 
     virtual void OnKeyDown(uint8_t key);
     virtual void OnKeyUp(uint8_t key);
+    virtual void OnChar(uint16_t cha);
     virtual void OnMouseLButtonDown(int64_t pos);
     virtual void OnMouseLButtonUp(int64_t pos);
+    virtual void OnMouseRButtonDown(int64_t pos);
+    virtual void OnMouseRButtonUp(int64_t pos);
+    virtual void OnMouseMButtonDown(int64_t pos);
+    virtual void OnMouseMButtonUp(int64_t pos);
     virtual void OnMouseMove(int64_t pos);
+    virtual void OnMouseWheel(uint64_t param);
 
 private:
     void InitScene(void);
@@ -29,6 +35,7 @@ private:
     void CreateRaytracingOutput(void);
     void PrepareScreenPass(void);
 
+    void UpdateGUI(float dt);
     void Profiling(void);
 
     enum GlobalRootSignatureParams {
@@ -64,7 +71,6 @@ private:
 
     uint32_t        mWidth;
     uint32_t        mHeight;
-    uint32_t        mLightCount;
     uint32_t        mAccumCount;
     uint32_t        mCurrentFrame;
     uint64_t        mFenceValues[Render::FRAME_COUNT];
@@ -102,6 +108,8 @@ private:
     Render::GraphicsState      *mSPGraphicsState;
     Render::GPUBuffer          *mSPVertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW    mSPVertexBufferView;
+
+    Render::GUILayer           *mGUI;
 
     // profile
     Utils::Timer    mProfileTimer;

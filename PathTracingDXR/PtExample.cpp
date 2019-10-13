@@ -26,7 +26,6 @@ PtExample::PtExample(void)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
-, mLightCount(0)
 , mAccumCount(0)
 , mCurrentFrame(0)
 , mEnableScreenPass(true)
@@ -50,6 +49,7 @@ PtExample::PtExample(void)
 , mSPRootSignature(nullptr)
 , mSPGraphicsState(nullptr)
 , mSPVertexBuffer(nullptr)
+, mGUI(nullptr)
 , mFrameCount(0)
 , mFrameStart(0)
 , mVertexCount(0)
@@ -94,6 +94,17 @@ void PtExample::Init(HWND hwnd) {
     mVertexCount = mScene->mVertices.size();
     mIndexCount = mScene->mIndices.size();
 
+    mSettings.enableAccumulate = 1;
+    mSettings.enableJitterCamera = 1;
+    mSettings.enableLensCamera = 0;
+    mSettings.enableEnvironmentMap = 0;
+
+    mSceneConsts.bgColor = { 3.0f, 3.0f, 3.0f, 3.0f };
+    mSceneConsts.maxRayDepth = 3;
+    mSceneConsts.sampleCount = 1;
+
+    mGUI = new Render::GUILayer(mHwnd, mWidth, mHeight);
+
     DeleteAndSetNull(mScene);
 }
 
@@ -134,11 +145,6 @@ void PtExample::Update(void) {
 
     mCamera->UpdateMatrixs();
 
-    mSettings.enableAccumulate = 1;
-    mSettings.enableJitterCamera = 0;
-    mSettings.enableLensCamera = 0;
-    mSettings.enableEnvironmentMap = 0;
-
     XMStoreFloat4(&mCameraConsts.position, mCamera->GetPosition());
     XMStoreFloat4(&mCameraConsts.u, mCamera->GetU());
     XMStoreFloat4(&mCameraConsts.v, mCamera->GetV());
@@ -147,12 +153,35 @@ void PtExample::Update(void) {
     mCameraConsts.lensRadius = mCamera->GetLensRadius();
     mCameraConsts.focalLength = mCamera->GetFocalLength();
 
-    mSceneConsts.bgColor = { 3.0f, 3.0f, 3.0f, 3.0f };
-    mSceneConsts.lightCount = mLightCount;
+    UpdateGUI(deltaSecond);
+
     mSceneConsts.frameSeed = mFrameCount;
     mSceneConsts.accumCount = mAccumCount;
-    mSceneConsts.maxRayDepth = 3;
-    mSceneConsts.sampleCount = 1;
+}
+
+void PtExample::UpdateGUI(float deltaSecond) {
+    mGUI->BeginFrame(deltaSecond);
+
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 300.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
+    ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::BeginChild("Settings");
+
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings 1");
+    ImGui::Checkbox("Accumulate Frame", (bool *)&mSettings.enableAccumulate);
+    ImGui::Checkbox("Jitter Camera", (bool *)&mSettings.enableJitterCamera);
+
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings 2");
+    ImGui::ColorEdit3("Sky Color", &mSceneConsts.bgColor.x, ImGuiColorEditFlags_Float);
+    ImGui::SliderInt("Max Ray Depth", (int *)&mSceneConsts.maxRayDepth, 1, 5);
+    ImGui::SliderInt("Sample Count", (int *)&mSceneConsts.sampleCount, 1, 5);
+
+    ImGui::EndChild();
+
+    ImGui::End();
+
+    mGUI->EndFrame(mCurrentFrame);
 }
 
 void PtExample::Render(void) {
@@ -183,9 +212,10 @@ void PtExample::Render(void) {
     Render::gCommand->SetRayTracingState(mRayTracingState);
     Render::gCommand->DispatchRay(mRayTracingState, mWidth, mHeight);
 
+    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+
     if (mEnableScreenPass) {
         Render::gCommand->SetPipelineState(mSPGraphicsState);
-        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
         Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
         Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], nullptr);
         Render::gCommand->SetRootSignature(mSPRootSignature);
@@ -196,13 +226,14 @@ void PtExample::Render(void) {
         Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         Render::gCommand->SetVertices(mSPVertexBufferView);
         Render::gCommand->DrawInstanced(6);
-        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
     } else {
-        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
         Render::gCommand->CopyResource(Render::gRenderTarget[mCurrentFrame], mRaytracingOutput);
-        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
         Render::gCommand->TransitResource(mRaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     }
+
+    mGUI->Draw(mCurrentFrame, Render::gRenderTarget[mCurrentFrame]);
+
+    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 
     mFenceValues[mCurrentFrame] = Render::gCommand->End();
 
@@ -237,6 +268,7 @@ void PtExample::Destroy(void) {
     for (auto texture : mTextures) { delete texture; }
     mTextures.clear();
 
+    DeleteAndSetNull(mGUI);
     DeleteAndSetNull(mSPVertexBuffer);
     DeleteAndSetNull(mSPRootSignature);
     DeleteAndSetNull(mSPGraphicsState);
@@ -262,45 +294,79 @@ void PtExample::Destroy(void) {
 
 // Windows virtual key code: https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 void PtExample::OnKeyDown(uint8_t key) {
+    mGUI->OnKeyDown(key);
     switch (key) {
-        // W key
-        case 0x57: mSpeedZ = 1.0f; break;
-        // S key
-        case 0x53: mSpeedZ = -1.0f; break;
-        // A key
-        case 0x41: mSpeedX = -1.0f; break;
-        // D key
-        case 0x44: mSpeedX = 1.0f; break;
+        case 'W': mSpeedZ = 1.0f; break;
+        case 'S': mSpeedZ = -1.0f; break;
+        case 'A': mSpeedX = -1.0f; break;
+        case 'D': mSpeedX = 1.0f; break;
         default: break;
     }
 }
 
 void PtExample::OnKeyUp(uint8_t key) {
+    mGUI->OnKeyUp(key);
     switch (key) {
-        case 0x57: // W key
-        case 0x53: // S key
+        case 'W':
+        case 'S':
             mSpeedZ = 0.0f; 
             break;
-        case 0x41: // A key
-        case 0x44: // D key
+        case 'A':
+        case 'D':
             mSpeedX = 0.0f; 
             break;
         default: break;
     }
 }
 
+void PtExample::OnChar(uint16_t cha) {
+    mGUI->OnChar(cha);
+}
+
 void PtExample::OnMouseLButtonDown(int64_t pos) {
+    mGUI->OnMouseLButtonDown();
+    if (mGUI->IsHovered()) {
+        return;
+    }
     mIsRotating = true;
     mLastMousePos = pos;
     mCurrentMousePos = pos;
 }
 
 void PtExample::OnMouseLButtonUp(int64_t pos) {
+    mGUI->OnMouseLButtonUp();
     mIsRotating = false;
 }
 
+void PtExample::OnMouseRButtonDown(int64_t pos) {
+    if (mGUI->IsHovered()) {
+        return;
+    }
+    mGUI->OnMouseRButtonDown();
+}
+
+void PtExample::OnMouseRButtonUp(int64_t pos) {
+    mGUI->OnMouseRButtonUp();
+}
+
+void PtExample::OnMouseMButtonDown(int64_t pos) {
+    if (mGUI->IsHovered()) {
+        return;
+    }
+    mGUI->OnMouseMButtonDown();
+}
+
+void PtExample::OnMouseMButtonUp(int64_t pos) {
+    mGUI->OnMouseMButtonUp();
+}
+
 void PtExample::OnMouseMove(int64_t pos) {
+    mGUI->OnMouseMove(pos);
     mCurrentMousePos = pos;
+}
+
+void PtExample::OnMouseWheel(uint64_t param) {
+    mGUI->OnMouseWheel(param);
 }
 
 void PtExample::InitScene(void) {
@@ -391,12 +457,12 @@ void PtExample::CreateRayTracingPipelineState(void) {
 }
 
 void PtExample::BuildGeometry(void) {
-    mLightCount = 1;
+    uint32_t lightCount = 1;
 
     mIndices = new Render::GPUBuffer(mScene->mIndices.size() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
     mGeometries = new Render::GPUBuffer(mScene->mShapes.size() * sizeof(Geometry));
-    mLights = new Render::GPUBuffer(mLightCount * sizeof(Light));
+    mLights = new Render::GPUBuffer(lightCount * sizeof(Light));
 
     Geometry *geometries = new Geometry[mScene->mShapes.size()];
     for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
@@ -427,11 +493,13 @@ void PtExample::BuildGeometry(void) {
     mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
-    mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mLightCount, sizeof(Light));
+    mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), lightCount, sizeof(Light));
 
     Render::gCommand->End(true);
 
     delete [] geometries;
+
+    mSceneConsts.lightCount = lightCount;
 }
 
 void PtExample::BuildAccelerationStructure(void) {
