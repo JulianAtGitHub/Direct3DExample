@@ -25,8 +25,10 @@ GUILayer::GUILayer(HWND hwnd, uint32_t width, uint32_t height)
 , mRootSignature(nullptr)
 , mGraphicsState(nullptr)
 , mConstBuffer(nullptr)
-, mVertexBuffer(nullptr)
 {
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        mVertexBuffer[i] = nullptr;
+    }
     Initialize(hwnd);
 }
 
@@ -153,15 +155,19 @@ void GUILayer::Initialize(HWND hwnd) {
     mSampler->Create(mSamplerHeap->Allocate());
 
     mConstBuffer = new ConstantBuffer(sizeof(XMFLOAT4X4), 1);
-    mVertexBuffer = new GPUBuffer(VERTEX_BUFFER_SIZE, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        mVertexBuffer[i] = new GPUBuffer(VERTEX_BUFFER_SIZE, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
+    }
 }
 
 void GUILayer::Destroy(void) {
     ImGui::DestroyContext(mContext);
     mContext = nullptr;
 
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        DeleteAndSetNull(mVertexBuffer[i]);
+    }
     DeleteAndSetNull(mConstBuffer);
-    DeleteAndSetNull(mVertexBuffer);
     DeleteAndSetNull(mFontTexture);
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mResourceHeap);
@@ -183,7 +189,7 @@ void GUILayer::BeginFrame(float deltaTime) {
     ImGui::NewFrame();
 }
 
-void GUILayer::EndFrame(uint32_t currentFrame) {
+void GUILayer::EndFrame(uint32_t frameIdx) {
     ImGui::Render();
     ImDrawData* drawData = ImGui::GetDrawData();
 
@@ -203,14 +209,14 @@ void GUILayer::EndFrame(uint32_t currentFrame) {
         const ImDrawList* drawList = drawData->CmdLists[i];
         const size_t subVertSize = drawList->VtxBuffer.size() * sizeof(ImDrawVert);
         const size_t subIdxSize = drawList->IdxBuffer.size() * sizeof(ImDrawIdx);
-        mVertexBuffer->UploadData(&drawList->VtxBuffer[0], subVertSize, vertStartAt);
-        mVertexBuffer->UploadData(&drawList->IdxBuffer[0], subIdxSize, idxStartAt);
+        mVertexBuffer[frameIdx]->UploadData(&drawList->VtxBuffer[0], subVertSize, vertStartAt);
+        mVertexBuffer[frameIdx]->UploadData(&drawList->IdxBuffer[0], subIdxSize, idxStartAt);
         vertStartAt += subVertSize;
         idxStartAt += subIdxSize;
     }
 
-    mVertexView = mVertexBuffer->FillVertexBufferView(0, static_cast<uint32_t>(vertSize), static_cast<uint32_t>(sizeof(ImDrawVert)));
-    mIndexView = mVertexBuffer->FillIndexBufferView(vertSizeAligned, static_cast<uint32_t>(idxSize), sizeof(ImDrawIdx) == sizeof(uint16_t));
+    mVertexView = mVertexBuffer[frameIdx]->FillVertexBufferView(0, static_cast<uint32_t>(vertSize), static_cast<uint32_t>(sizeof(ImDrawVert)));
+    mIndexView = mVertexBuffer[frameIdx]->FillIndexBufferView(vertSizeAligned, static_cast<uint32_t>(idxSize), sizeof(ImDrawIdx) == sizeof(uint16_t));
 
     const float L = 0.0f;
     const float R = float(mWidth);
@@ -221,10 +227,10 @@ void GUILayer::EndFrame(uint32_t currentFrame) {
                                    0.0f,         0.0f,           0.5f,       0.0f,
                                    (R+L)/(L-R),  (T+B)/(B-T),    0.5f,       1.0f);
 
-    mConstBuffer->CopyData(&matrix, sizeof(XMFLOAT4X4), 0, currentFrame);
+    mConstBuffer->CopyData(&matrix, sizeof(XMFLOAT4X4), 0, frameIdx);
 }
 
-void GUILayer::Draw(uint32_t currentFrame, RenderTargetBuffer *renderTarget) {
+void GUILayer::Draw(uint32_t frameIdx, RenderTargetBuffer *renderTarget) {
     if (!renderTarget) {
         return;
     }
@@ -237,7 +243,7 @@ void GUILayer::Draw(uint32_t currentFrame, RenderTargetBuffer *renderTarget) {
     gCommand->SetPipelineState(mGraphicsState);
     gCommand->SetRootSignature(mRootSignature);
     gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, currentFrame));
+    gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, frameIdx));
     gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
     gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
     gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -264,6 +270,10 @@ void GUILayer::Draw(uint32_t currentFrame, RenderTargetBuffer *renderTarget) {
         }
         vtxOffset += drawList->VtxBuffer.size();
     }
+}
+
+bool GUILayer::IsHovered(void) {
+    return ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 }
 
 void GUILayer::OnKeyDown(uint8_t key) {

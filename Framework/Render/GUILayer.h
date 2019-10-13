@@ -22,6 +22,8 @@ public:
     void EndFrame(uint32_t frameIdx);
     void Draw(uint32_t frameIdx, RenderTargetBuffer *renderTarget);
 
+    bool IsHovered(void);
+
     // Input
     void OnKeyDown(uint8_t key);
     void OnKeyUp(uint8_t key);
@@ -51,7 +53,7 @@ private:
     GraphicsState  *mGraphicsState;
 
     ConstantBuffer *mConstBuffer;
-    GPUBuffer      *mVertexBuffer; // vertices & indices
+    GPUBuffer      *mVertexBuffer[FRAME_COUNT]; // vertices & indices
     D3D12_VERTEX_BUFFER_VIEW    mVertexView;
     D3D12_INDEX_BUFFER_VIEW     mIndexView;
 
