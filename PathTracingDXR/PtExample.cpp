@@ -170,13 +170,13 @@ void PtExample::UpdateGUI(float deltaSecond) {
     ImGui::BeginChild("Settings");
 
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings 1");
-    ImGui::Checkbox("Accumulate Frame", (bool *)&mSettings.enableAccumulate);
-    ImGui::Checkbox("Jitter Camera", (bool *)&mSettings.enableJitterCamera);
+    if (ImGui::Checkbox("Accumulate Frame", (bool *)&mSettings.enableAccumulate)) { mAccumCount = 0; }
+    if (ImGui::Checkbox("Jitter Camera", (bool *)&mSettings.enableJitterCamera)) { mAccumCount = 0; }
 
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings 2");
-    ImGui::ColorEdit3("Sky Color", &mSceneConsts.bgColor.x, ImGuiColorEditFlags_Float);
-    ImGui::SliderInt("Max Ray Depth", (int *)&mSceneConsts.maxRayDepth, 1, 5);
-    ImGui::SliderInt("Sample Count", (int *)&mSceneConsts.sampleCount, 1, 5);
+    if (ImGui::ColorEdit3("Sky Color", &mSceneConsts.bgColor.x, ImGuiColorEditFlags_Float)) { mAccumCount = 0; }
+    if (ImGui::SliderInt("Max Ray Depth", (int *)&mSceneConsts.maxRayDepth, 1, 5)) { mAccumCount = 0; }
+    if (ImGui::SliderInt("Sample Count", (int *)&mSceneConsts.sampleCount, 1, 5)) { mAccumCount = 0; }
 
     ImGui::EndChild();
 
@@ -487,7 +487,6 @@ void PtExample::BuildGeometry(void) {
     Light lights[] = {
         { 0, 0.0f, 0.0f, 0.0f, {0.0f, 0.0f, 0.0f}, {0.2f, -1.0f, 0.15f}, {1.0f, 1.0f, 1.0f} },
     };
-
 
     Render::gCommand->Begin();
 
