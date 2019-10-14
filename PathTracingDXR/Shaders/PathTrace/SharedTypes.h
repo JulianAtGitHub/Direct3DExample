@@ -23,11 +23,24 @@ struct Geometry {
     uint    indexCount;
     uint    reserve0;
     uint    reserve1;
-    uint4   texInfo;    // x: diffuse, y: ambient, z:specular, w: normal
-    float4  ambientColor;
-    float4  diffuseColor;
-    float4  specularColor;
-    float4  emissiveColor;
+};
+
+// material type
+enum MatType {
+    LambertianMat,
+    MetalMat,
+    DielectricMat,
+    MatTypeCount
+};
+
+struct Material {
+    uint    type;
+    uint    normalTex;
+    uint    albedoTex;
+    uint    roughnessTex;
+    float4  albedoColor;
+    float3  emissiveColor;
+    float   roughness;
 };
 
 struct Light {

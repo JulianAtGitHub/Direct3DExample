@@ -36,6 +36,7 @@ PtExample::PtExample(void)
 , mVertices(nullptr)
 , mIndices(nullptr)
 , mGeometries(nullptr)
+, mMaterials(nullptr)
 , mLights(nullptr)
 , mRaytracingOutput(nullptr)
 , mSamplerHeap(nullptr)
@@ -283,6 +284,7 @@ void PtExample::Destroy(void) {
     DeleteAndSetNull(mIndices);
     DeleteAndSetNull(mVertices);
     DeleteAndSetNull(mGeometries);
+    DeleteAndSetNull(mMaterials);
     DeleteAndSetNull(mLights);
     DeleteAndSetNull(mDescriptorHeap);
     DeleteAndSetNull(mRayTracingState);
@@ -381,10 +383,10 @@ void PtExample::InitScene(void) {
     mSettingsCB = new Render::ConstantBuffer(sizeof(AppSettings), 1);
     mSceneCB = new Render::ConstantBuffer(sizeof(SceneConstants), 1);
     mCameraCB = new Render::ConstantBuffer(sizeof(CameraConstants), 1);
-    // 4: vertexBuf, indexBuf, GeometryBuf, lightBuf
+    // 5: vertexBuf, indexBuf, GeometryBuf, MaterialBuf, lightBuf
     // 2: rtOutput SRV + UAV
     // 1: evtTex
-    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(4 + 2 + 1 + mScene->mImages.size()));
+    mDescriptorHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(5 + 2 + 1 + mScene->mImages.size()));
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
@@ -419,9 +421,9 @@ void PtExample::CreateRootSignature(void) {
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::AppSettingsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::SceneConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mGlobalRootSignature->SetDescriptor(GlobalRootSignatureParams::CameraConstantsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::BuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
-    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<uint32_t>(mScene->mImages.size()), 6);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::BuffersSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 1);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::EnvTexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
+    mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::TexturesSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<uint32_t>(mScene->mImages.size()), 7);
     mGlobalRootSignature->SetDescriptorTable(GlobalRootSignatureParams::SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mGlobalRootSignature->Create();
 
@@ -462,20 +464,24 @@ void PtExample::BuildGeometry(void) {
     mIndices = new Render::GPUBuffer(mScene->mIndices.size() * sizeof(uint32_t));
     mVertices = new Render::GPUBuffer(mScene->mVertices.size() * sizeof(Utils::Scene::Vertex));
     mGeometries = new Render::GPUBuffer(mScene->mShapes.size() * sizeof(Geometry));
+    mMaterials = new Render::GPUBuffer(mScene->mShapes.size() * sizeof(Material));
     mLights = new Render::GPUBuffer(lightCount * sizeof(Light));
 
     Geometry *geometries = new Geometry[mScene->mShapes.size()];
+    Material *materials = new Material[mScene->mShapes.size()];
     for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
         auto &shape = mScene->mShapes[i];
         geometries[i].indexOffset = shape.indexOffset;
         geometries[i].indexCount = shape.indexCount;
         geometries[i].reserve0 = 0;
         geometries[i].reserve1 = 0;
-        geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
-        geometries[i].ambientColor = float4(shape.ambientColor.x, shape.ambientColor.y, shape.ambientColor.z, 1.0f);
-        geometries[i].diffuseColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
-        geometries[i].specularColor = float4(shape.specularColor.x, shape.specularColor.y, shape.specularColor.z, 1.0f);
-        geometries[i].emissiveColor = float4(shape.emissiveColor.x, shape.emissiveColor.y, shape.emissiveColor.z, 1.0f);
+        materials[i].type = LambertianMat;
+        materials[i].normalTex = shape.normalTex;
+        materials[i].albedoTex = shape.diffuseTex;
+        materials[i].roughnessTex = shape.specularTex;
+        materials[i].albedoColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
+        materials[i].emissiveColor = float3(shape.emissiveColor.x, shape.emissiveColor.y, shape.emissiveColor.z);
+        materials[i].roughness = 0.1f;
     }
 
     Light lights[] = {
@@ -488,16 +494,19 @@ void PtExample::BuildGeometry(void) {
     Render::gCommand->UploadBuffer(mIndices, 0, mScene->mIndices.data(), mIndices->GetBufferSize());
     Render::gCommand->UploadBuffer(mVertices, 0, mScene->mVertices.data(), mVertices->GetBufferSize());
     Render::gCommand->UploadBuffer(mGeometries, 0, geometries, mGeometries->GetBufferSize());
+    Render::gCommand->UploadBuffer(mMaterials, 0, materials, mMaterials->GetBufferSize());
     Render::gCommand->UploadBuffer(mLights, 0, lights, mLights->GetBufferSize());
 
     mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
+    mMaterials->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Material));
     mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), lightCount, sizeof(Light));
 
     Render::gCommand->End(true);
 
     delete [] geometries;
+    delete [] materials;
 
     mSceneConsts.lightCount = lightCount;
 }

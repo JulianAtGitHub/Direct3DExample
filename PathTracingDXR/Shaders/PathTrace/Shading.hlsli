@@ -116,9 +116,9 @@ inline void EvaluateSpotLight(in Light light, in float3 hitPos, inout LightSampl
 
 inline void EvaluateLight(in Light light, in float3 hitPos, inout LightSample ls) {
     switch(light.type) {
-        case RayTraceParams::DirectLight:   return EvaluateDirectLight(light, hitPos, ls);
-        case RayTraceParams::PointLight:    return EvaluatePointLight(light, hitPos, ls);
-        case RayTraceParams::SpotLight:     return EvaluateSpotLight(light, hitPos, ls);
+        case DirectLight:   return EvaluateDirectLight(light, hitPos, ls);
+        case PointLight:    return EvaluatePointLight(light, hitPos, ls);
+        case SpotLight:     return EvaluateSpotLight(light, hitPos, ls);
         default:                            return;
     }
 }
@@ -142,6 +142,7 @@ inline float3 BarycentricLerpFloat3(in float3 v0, in float3 v1, in float3 v2, in
 inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
+    Material mat = gMaterials[InstanceID()];
 
     Vertex vert0 = gVertices[idx.x];
     Vertex vert1 = gVertices[idx.y];
@@ -157,7 +158,7 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
     float3 hitNormal = BarycentricLerpFloat3(vert0.normal, vert1.normal, vert2.normal, attribs.barycentrics);
     hitNormal = mul((float3x3)ObjectToWorld3x4(), hitNormal);
 
-    if (geo.texInfo.w != TEX_INDEX_INVALID) {
+    if (mat.normalTex != TEX_INDEX_INVALID) {
         float3 hitTangent = BarycentricLerpFloat3(vert0.tangent, vert1.tangent, vert2.tangent, attribs.barycentrics);
         hitTangent = mul((float3x3)ObjectToWorld3x4(), hitTangent);
 
@@ -167,7 +168,7 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
         float3x3 TBN = float3x3(normalize(hitTangent), normalize(hitBitangent), normalize(hitNormal));
         TBN = transpose(TBN);
 
-        float3 normal = gMatTextures[geo.texInfo.w].SampleLevel(gSampler, hitTexCoord, 0).rgb;
+        float3 normal = gMatTextures[mat.normalTex].SampleLevel(gSampler, hitTexCoord, 0).rgb;
         normal = normalize(normal * 2.0f - 1.0f);
         normal = mul(TBN, normal);
         hs.normal = normalize(normal);
@@ -175,25 +176,20 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
         hs.normal = normalize(hitNormal);
     }
 
-    hs.baseColor = geo.texInfo.x != TEX_INDEX_INVALID ? gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0) : geo.diffuseColor;
-    hs.emissive = geo.emissiveColor;
+    hs.baseColor = mat.albedoTex != TEX_INDEX_INVALID ? gMatTextures[mat.albedoTex].SampleLevel(gSampler, hitTexCoord, 0) : mat.albedoColor;
+    hs.emissive = mat.emissiveColor;
 }
 
-
+// return false if it is opaque
 inline bool AlphaTestFailed(float threshold, Attributes attribs) {
     uint3 idx = HitTriangle();
     Geometry geo = gGeometries[InstanceID()];
-    if (geo.texInfo.x == TEX_INDEX_INVALID) {
-        return false;
-    }
+    Material mat = gMaterials[InstanceID()];
 
     float2 hitTexCoord = BarycentricLerpFloat2(gVertices[idx.x].texCoord, gVertices[idx.y].texCoord, gVertices[idx.z].texCoord, attribs.barycentrics);
-    float4 baseColor = gMatTextures[geo.texInfo.x].SampleLevel(gSampler, hitTexCoord, 0);
+    float4 baseColor = mat.albedoTex != TEX_INDEX_INVALID ? gMatTextures[mat.albedoTex].SampleLevel(gSampler, hitTexCoord, 0) : mat.albedoColor;
 
-    if (baseColor.a < threshold) {
-        return true;
-    }
-    return false;
+    return (baseColor.a < threshold) ? true : false;
 }
 
 // Returns a relative luminance of an input linear RGB color in the ITU-R BT.709 color space

@@ -50,10 +50,10 @@ float3 PrimaryRayGen(void) {
 
     TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
-             RayTraceParams::InstanceMask, 
-             RayTraceParams::HitGroupIndex[RayTraceParams::PrimaryRay], 
+             INSTANCE_MASK, 
+             HIT_GROUP_INDEX[PrimaryRay], 
              0, 
-             RayTraceParams::MissIndex[RayTraceParams::PrimaryRay], 
+             MISS_INDEX[PrimaryRay], 
              ray, 
              payload);
 
@@ -71,10 +71,10 @@ float3 IndirectRayGen(float3 origin, float3 direction, inout uint seed, uint dep
 
     TraceRay(gRtScene, 
              RAY_FLAG_CULL_BACK_FACING_TRIANGLES, 
-             RayTraceParams::InstanceMask, 
-             RayTraceParams::HitGroupIndex[RayTraceParams::IndirectRay], 
+             INSTANCE_MASK, 
+             HIT_GROUP_INDEX[IndirectRay], 
              0, 
-             RayTraceParams::MissIndex[RayTraceParams::IndirectRay], 
+             MISS_INDEX[IndirectRay], 
              ray, 
              payload);
 
@@ -92,10 +92,10 @@ float ShadowRayGen(float3 origin, float3 direction, float tMax) {
 
     TraceRay(gRtScene, 
              RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, 
-             RayTraceParams::InstanceMask, 
-             RayTraceParams::HitGroupIndex[RayTraceParams::ShadowRay], 
+             INSTANCE_MASK, 
+             HIT_GROUP_INDEX[ShadowRay], 
              0, 
-             RayTraceParams::MissIndex[RayTraceParams::ShadowRay], 
+             MISS_INDEX[ShadowRay], 
              ray, 
              payload);
 
@@ -113,7 +113,6 @@ float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in Attributes at
     EvaluateHit(attribs, hs);
 
     float3 reflectance = hs.baseColor.rgb;
-    float3 emittance = hs.emissive.rgb;
 
     float3 N = hs.normal;
     float3 L = UniformHemisphereSample(randSeed, N);
@@ -129,7 +128,7 @@ float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in Attributes at
     }
     incoming /= gSceneCB.sampleCount;
 
-    float3 color = emittance + (BRDF * incoming * NDotL / pdf);
+    float3 color = hs.emissive + (BRDF * incoming * NDotL / pdf);
 
     return color;
 }
@@ -155,7 +154,7 @@ float3 LambertianScatterOpt(inout uint randSeed, in uint rayDepth, in Attributes
     }
     incoming /= gSceneCB.sampleCount;
 
-    return hs.emissive.rgb + reflectance * incoming * NDotL * 2.0f;
+    return hs.emissive + reflectance * incoming * NDotL * 2.0f;
 }
 
 /**Primary Ray***********************************************************/
@@ -168,7 +167,7 @@ void PrimaryMiss(inout PrimaryRayPayload payload) {
 [shader("anyhit")]
 void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
     // Is this a transparent part of the surface?  If so, ignore this hit
-    if (AlphaTestFailed(RayTraceParams::AlphaThreshold, attribs)) {
+    if (AlphaTestFailed(ALPHA_THRESHOLD, attribs)) {
         IgnoreHit();
     }
 }
@@ -188,7 +187,7 @@ void IndirectMiss(inout IndirectRayPayload payload) {
 [shader("anyhit")]
 void IndirectAnyHit(inout IndirectRayPayload payload, Attributes attribs) {
     // Is this a transparent part of the surface?  If so, ignore this hit
-    if (AlphaTestFailed(RayTraceParams::AlphaThreshold, attribs)) {
+    if (AlphaTestFailed(ALPHA_THRESHOLD, attribs)) {
         IgnoreHit();
     }
 }
@@ -208,7 +207,7 @@ void ShadowMiss(inout ShadowRayPayload payload) {
 [shader("anyhit")]
 void ShadowAnyHit(inout ShadowRayPayload payload, Attributes attribs) {
     // Is this a transparent part of the surface?  If so, ignore this hit
-    if (AlphaTestFailed(RayTraceParams::AlphaThreshold, attribs)) {
+    if (AlphaTestFailed(ALPHA_THRESHOLD, attribs)) {
         IgnoreHit();
     }
 }

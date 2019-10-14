@@ -84,6 +84,7 @@ private:
     Render::GPUBuffer                  *mVertices;
     Render::GPUBuffer                  *mIndices;
     Render::GPUBuffer                  *mGeometries;
+    Render::GPUBuffer                  *mMaterials;
     Render::GPUBuffer                  *mLights;
     Render::PixelBuffer                *mRaytracingOutput;
     Render::DescriptorHeap             *mSamplerHeap;
