@@ -102,59 +102,25 @@ float ShadowRayGen(float3 origin, float3 direction, float tMax) {
     return payload.value;
 }
 
-// Lambertian material path trace
-// https://en.wikipedia.org/wiki/Path_tracing#targetText=Path%20tracing%20is%20a%20computer,the%20surface%20of%20an%20object.
-float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
-    if (rayDepth >= gSceneCB.maxRayDepth) {
-        return float3(0.0f, 0.0f, 0.0f);
-    }
-
-    HitSample hs;
-    EvaluateHit(attribs, hs);
-
-    float3 reflectance = hs.baseColor.rgb;
-
+float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in HitSample hs) {
     float3 N = hs.normal;
     float3 L = UniformHemisphereSample(randSeed, N);
-    float NDotL = saturate(dot(N, L));
+    float3 intensity = hs.albedo.rgb * IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
 
-    const float pdf = 1.0f / (2.0f * M_PI);
-    
-    float3 BRDF = reflectance / M_PI;
-
-    float3 incoming = float3(0.0f, 0.0f, 0.0f);
-    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
-        incoming += IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
-    }
-    incoming /= gSceneCB.sampleCount;
-
-    float3 color = hs.emissive + (BRDF * incoming * NDotL / pdf);
-
-    return color;
+    return hs.emissive + intensity;
 }
 
-// optimzed of function LambertianScatter
-float3 LambertianScatterOpt(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
-    if (rayDepth >= gSceneCB.maxRayDepth) {
-        return float3(0.0f, 0.0f, 0.0f);
-    }
-
-    HitSample hs;
-    EvaluateHit(attribs, hs);
-
-    float3 reflectance = hs.baseColor.rgb;
-
+float3 MetalScatter(inout uint randSeed, in uint rayDepth, in HitSample hs) {
     float3 N = hs.normal;
-    float3 L = UniformHemisphereSample(randSeed, N);
-    float NDotL = saturate(dot(N, L));
-
-    float3 incoming = float3(0.0f, 0.0f, 0.0f);
-    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
-        incoming += IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
+    float3 R = reflect(WorldRayDirection(), N);
+    float3 L = normalize(R + UniformHemisphereSample(randSeed, N) * hs.roughness);
+    float NDotL = dot(N, L);
+    float3 intensity = float3(0.0f, 0.0f, 0.0f);
+    if (NDotL > 0.0f) {
+        intensity = hs.albedo.rgb * IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
     }
-    incoming /= gSceneCB.sampleCount;
 
-    return hs.emissive + reflectance * incoming * NDotL * 2.0f;
+    return hs.emissive + intensity;
 }
 
 /**Primary Ray***********************************************************/
@@ -174,7 +140,20 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianScatterOpt(payload.seed, payload.depth, attribs);
+    if (payload.depth >= gSceneCB.maxRayDepth) {
+        return;
+    }
+
+    HitSample hs;
+    EvaluateHit(attribs, hs);
+
+    float3 incoming = float3(0.0f, 0.0f, 0.0f);
+    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
+        incoming += LambertianScatter(payload.seed, payload.depth, hs);
+    }
+    incoming /= gSceneCB.sampleCount;
+
+    payload.color += incoming;
 }
 
 /**Indirect Ray***********************************************************/
@@ -194,7 +173,20 @@ void IndirectAnyHit(inout IndirectRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianScatterOpt(payload.seed, payload.depth, attribs);
+    if (payload.depth >= gSceneCB.maxRayDepth) {
+        return;
+    }
+
+    HitSample hs;
+    EvaluateHit(attribs, hs);
+
+    float3 incoming = float3(0.0f, 0.0f, 0.0f);
+    for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
+        incoming += LambertianScatter(payload.seed, payload.depth, hs);
+    }
+    incoming /= gSceneCB.sampleCount;
+
+    payload.color += incoming;
 }
 
 /**Shadow Ray***********************************************************/

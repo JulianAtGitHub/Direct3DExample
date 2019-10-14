@@ -18,8 +18,10 @@ enum LightType {
 struct HitSample {
     float3 position;
     float3 normal;
-    float4 baseColor;
+    float4 albedo;
     float3 emissive;
+    float  roughness;
+    float  refractivity;
 };
 
 struct LightSample {
