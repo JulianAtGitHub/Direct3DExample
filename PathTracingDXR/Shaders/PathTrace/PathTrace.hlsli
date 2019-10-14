@@ -104,7 +104,7 @@ float ShadowRayGen(float3 origin, float3 direction, float tMax) {
 
 // Lambertian material path trace
 // https://en.wikipedia.org/wiki/Path_tracing#targetText=Path%20tracing%20is%20a%20computer,the%20surface%20of%20an%20object.
-float3 LambertianTracePath(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
+float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
     if (rayDepth >= gSceneCB.maxRayDepth) {
         return float3(0.0f, 0.0f, 0.0f);
     }
@@ -134,8 +134,8 @@ float3 LambertianTracePath(inout uint randSeed, in uint rayDepth, in Attributes 
     return color;
 }
 
-// optimzed of function LambertianTracePath
-float3 LambertianTracePathOpt(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
+// optimzed of function LambertianScatter
+float3 LambertianScatterOpt(inout uint randSeed, in uint rayDepth, in Attributes attribs) {
     if (rayDepth >= gSceneCB.maxRayDepth) {
         return float3(0.0f, 0.0f, 0.0f);
     }
@@ -175,7 +175,7 @@ void PrimaryAnyHit(inout PrimaryRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
+    payload.color += LambertianScatterOpt(payload.seed, payload.depth, attribs);
 }
 
 /**Indirect Ray***********************************************************/
@@ -195,7 +195,7 @@ void IndirectAnyHit(inout IndirectRayPayload payload, Attributes attribs) {
 
 [shader("closesthit")]
 void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs) {
-    payload.color += LambertianTracePathOpt(payload.seed, payload.depth, attribs);
+    payload.color += LambertianScatterOpt(payload.seed, payload.depth, attribs);
 }
 
 /**Shadow Ray***********************************************************/
