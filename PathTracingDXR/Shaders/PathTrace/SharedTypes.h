@@ -41,6 +41,7 @@ struct Material {
     float4  albedoColor;
     float3  emissiveColor;
     float   roughness;
+    float   refractivity;
 };
 
 struct Light {

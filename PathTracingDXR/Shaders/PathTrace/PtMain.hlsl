@@ -16,6 +16,7 @@ enum LightType {
 };
 
 struct HitSample {
+    uint   matType;
     float3 position;
     float3 normal;
     float4 albedo;

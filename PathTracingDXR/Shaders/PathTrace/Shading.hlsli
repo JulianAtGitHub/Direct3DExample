@@ -176,9 +176,12 @@ inline void EvaluateHit(in Attributes attribs, inout HitSample hs) {
         hs.normal = normalize(hitNormal);
     }
 
+    hs.matType = mat.type;
+
     hs.albedo = mat.albedoTex != TEX_INDEX_INVALID ? gMatTextures[mat.albedoTex].SampleLevel(gSampler, hitTexCoord, 0) : mat.albedoColor;
     hs.emissive = mat.emissiveColor;
     hs.roughness = mat.roughnessTex != TEX_INDEX_INVALID ? gMatTextures[mat.roughnessTex].SampleLevel(gSampler, hitTexCoord, 0).r : mat.roughness;
+    hs.refractivity = mat.refractivity;
 }
 
 // return false if it is opaque

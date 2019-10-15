@@ -102,7 +102,7 @@ float ShadowRayGen(float3 origin, float3 direction, float tMax) {
     return payload.value;
 }
 
-float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in HitSample hs) {
+inline float3 LambertianScatter(inout uint randSeed, in uint rayDepth, inout HitSample hs) {
     float3 N = hs.normal;
     float3 L = UniformHemisphereSample(randSeed, N);
     float3 intensity = hs.albedo.rgb * IndirectRayGen(hs.position, L, randSeed, rayDepth + 1);
@@ -110,7 +110,7 @@ float3 LambertianScatter(inout uint randSeed, in uint rayDepth, in HitSample hs)
     return hs.emissive + intensity;
 }
 
-float3 MetalScatter(inout uint randSeed, in uint rayDepth, in HitSample hs) {
+inline float3 MetalScatter(inout uint randSeed, in uint rayDepth, inout HitSample hs) {
     float3 N = hs.normal;
     float3 R = reflect(WorldRayDirection(), N);
     float3 L = normalize(R + UniformHemisphereSample(randSeed, N) * hs.roughness);
@@ -121,6 +121,57 @@ float3 MetalScatter(inout uint randSeed, in uint rayDepth, in HitSample hs) {
     }
 
     return hs.emissive + intensity;
+}
+
+inline float Schlick(float cosine, float refIdx) {
+    float r0 = (1.0f - refIdx) / (1.0f + refIdx);
+    r0 = r0 * r0;
+    return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
+}
+
+inline float3 DielectricScatter(inout uint randSeed, in uint rayDepth, inout HitSample hs) {
+    float3 outwardNormal;
+    float refractivity;
+    float cosine;
+    float3 N = hs.normal;
+    float IDotN = dot(WorldRayDirection(), N);
+    if (IDotN > 0.0f) {
+        outwardNormal = -N;
+        refractivity = hs.refractivity;
+        cosine = refractivity * IDotN;
+    } else {
+        outwardNormal = N;
+        refractivity = 1.0f / hs.refractivity;
+        cosine = -IDotN;
+    }
+
+    float3 refracted = refract(WorldRayDirection(), outwardNormal, refractivity);
+
+    float reflectPercentage;
+    if (dot(refracted, refracted) < 0.0001f) {
+        reflectPercentage = 1.0f;
+    } else {
+        reflectPercentage = Schlick(cosine, hs.refractivity);
+    }
+
+    float3 intensity = float3(0.0f, 0.0f, 0.0f);
+    if (NextRand(randSeed) < reflectPercentage) {
+        float3 reflected = reflect(WorldRayDirection(), N);
+        intensity = hs.albedo.rgb * IndirectRayGen(hs.position, reflected, randSeed, rayDepth + 1);
+    } else {
+        intensity = hs.albedo.rgb * IndirectRayGen(hs.position, refracted, randSeed, rayDepth + 1);
+    }
+
+    return hs.emissive + intensity;
+}
+
+inline float3 ScatterRay(inout uint randSeed, in uint rayDepth, inout HitSample hs) {
+    switch(hs.matType) {
+        case LambertianMat: return LambertianScatter(randSeed, rayDepth, hs);
+        case MetalMat:      return MetalScatter(randSeed, rayDepth, hs);
+        case DielectricMat: return DielectricScatter(randSeed, rayDepth, hs);
+        default: return float3(0.0f, 0.0f, 0.0f);
+    }
 }
 
 /**Primary Ray***********************************************************/
@@ -149,7 +200,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload payload, in Attributes attribs) {
 
     float3 incoming = float3(0.0f, 0.0f, 0.0f);
     for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
-        incoming += LambertianScatter(payload.seed, payload.depth, hs);
+        incoming += ScatterRay(payload.seed, payload.depth, hs);
     }
     incoming /= gSceneCB.sampleCount;
 
@@ -182,7 +233,7 @@ void IndirectClosestHit(inout IndirectRayPayload payload, in Attributes attribs)
 
     float3 incoming = float3(0.0f, 0.0f, 0.0f);
     for (uint i = 0; i < gSceneCB.sampleCount; ++i) {
-        incoming += LambertianScatter(payload.seed, payload.depth, hs);
+        incoming += ScatterRay(payload.seed, payload.depth, hs);
     }
     incoming /= gSceneCB.sampleCount;
 
