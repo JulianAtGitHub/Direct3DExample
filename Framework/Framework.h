@@ -17,8 +17,8 @@
 #include "Render/Resource/RenderTargetBuffer.h"
 #include "Render/Resource/DepthStencilBuffer.h"
 
-#include "Render/GUILayer.h"
-#include "Render/GUI/imgui.h"
+#include "GUI/imgui.h"
+#include "Utils/GUILayer.h"
 
 #include "Utils/Timer.hpp"
 #include "Utils/Camera.hpp"

@@ -3,15 +3,17 @@
 struct ImGuiContext;
 
 namespace Render {
+    class PixelBuffer;
+    class Sampler;
+    class DescriptorHeap;
+    class RootSignature;
+    class GraphicsState;
+    class GPUBuffer;
+    class ConstantBuffer;
+    class RenderTargetBuffer;
+}
 
-class PixelBuffer;
-class Sampler;
-class DescriptorHeap;
-class RootSignature;
-class GraphicsState;
-class GPUBuffer;
-class ConstantBuffer;
-class RenderTargetBuffer;
+namespace Utils {
 
 class GUILayer {
 public:
@@ -20,7 +22,7 @@ public:
 
     void BeginFrame(float deltaTime);
     void EndFrame(uint32_t frameIdx);
-    void Draw(uint32_t frameIdx, RenderTargetBuffer *renderTarget);
+    void Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget);
 
     bool IsHovered(void);
 
@@ -44,16 +46,16 @@ private:
     uint32_t        mWidth;
     uint32_t        mHeight;
 
-    ImGuiContext   *mContext;
-    PixelBuffer    *mFontTexture;
-    Sampler        *mSampler;
-    DescriptorHeap *mResourceHeap;
-    DescriptorHeap *mSamplerHeap;
-    RootSignature  *mRootSignature;
-    GraphicsState  *mGraphicsState;
+    ImGuiContext               *mContext;
+    Render::PixelBuffer        *mFontTexture;
+    Render::Sampler            *mSampler;
+    Render::DescriptorHeap     *mResourceHeap;
+    Render::DescriptorHeap     *mSamplerHeap;
+    Render::RootSignature      *mRootSignature;
+    Render::GraphicsState      *mGraphicsState;
 
-    ConstantBuffer *mConstBuffer;
-    GPUBuffer      *mVertexBuffer[FRAME_COUNT]; // vertices & indices
+    Render::ConstantBuffer     *mConstBuffer;
+    Render::GPUBuffer          *mVertexBuffer[Render::FRAME_COUNT]; // vertices & indices
     D3D12_VERTEX_BUFFER_VIEW    mVertexView;
     D3D12_INDEX_BUFFER_VIEW     mIndexView;
 

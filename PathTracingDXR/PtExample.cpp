@@ -104,7 +104,7 @@ void PtExample::Init(HWND hwnd) {
     mSceneConsts.maxRayDepth = 3;
     mSceneConsts.sampleCount = 1;
 
-    mGUI = new Render::GUILayer(mHwnd, mWidth, mHeight);
+    mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
 
     DeleteAndSetNull(mScene);
 }

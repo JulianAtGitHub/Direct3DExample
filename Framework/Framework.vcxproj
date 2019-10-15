@@ -89,18 +89,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Framework.h" />
+    <ClInclude Include="GUI\imconfig.h" />
+    <ClInclude Include="GUI\imgui.h" />
+    <ClInclude Include="GUI\imgui_internal.h" />
+    <ClInclude Include="GUI\imstb_rectpack.h" />
+    <ClInclude Include="GUI\imstb_textedit.h" />
+    <ClInclude Include="GUI\imstb_truetype.h" />
     <ClInclude Include="Render\AccelerationStructure.h" />
     <ClInclude Include="Render\CommandContext.h" />
     <ClInclude Include="Render\CommandQueue.h" />
     <ClInclude Include="Render\DescriptorHeap.h" />
     <ClInclude Include="Render\DescriptorHeapPool.h" />
-    <ClInclude Include="Render\GUILayer.h" />
-    <ClInclude Include="Render\GUI\imconfig.h" />
-    <ClInclude Include="Render\GUI\imgui.h" />
-    <ClInclude Include="Render\GUI\imgui_internal.h" />
-    <ClInclude Include="Render\GUI\imstb_rectpack.h" />
-    <ClInclude Include="Render\GUI\imstb_textedit.h" />
-    <ClInclude Include="Render\GUI\imstb_truetype.h" />
     <ClInclude Include="Render\LinerAllocator.h" />
     <ClInclude Include="Render\PipelineState.h" />
     <ClInclude Include="Render\RayTracingState.h" />
@@ -119,29 +118,29 @@
     <ClInclude Include="Utils\Common.h" />
     <ClInclude Include="Utils\d3dx12.h" />
     <ClInclude Include="Utils\AnExample.h" />
+    <ClInclude Include="Utils\GUILayer.h" />
     <ClInclude Include="Utils\Image.h" />
     <ClInclude Include="Utils\Model.h" />
     <ClInclude Include="Utils\Timer.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GUI\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GUI\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GUI\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Render\AccelerationStructure.cpp" />
     <ClCompile Include="Render\CommandContext.cpp" />
     <ClCompile Include="Render\CommandQueue.cpp" />
     <ClCompile Include="Render\DescriptorHeap.cpp" />
     <ClCompile Include="Render\DescriptorHeapPool.cpp" />
-    <ClCompile Include="Render\GUILayer.cpp" />
-    <ClCompile Include="Render\GUI\imgui.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Render\GUI\imgui_draw.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Render\GUI\imgui_widgets.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="Render\LinerAllocator.cpp" />
     <ClCompile Include="Render\PipelineState.cpp" />
     <ClCompile Include="Render\RayTracingState.cpp" />
@@ -160,6 +159,7 @@
     </ClCompile>
     <ClCompile Include="Utils\Application.cpp" />
     <ClCompile Include="Utils\Common.cpp" />
+    <ClCompile Include="Utils\GUILayer.cpp" />
     <ClCompile Include="Utils\Image.cpp" />
     <ClCompile Include="Utils\Model.cpp" />
   </ItemGroup>

@@ -110,7 +110,7 @@ private:
     Render::GPUBuffer          *mSPVertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW    mSPVertexBufferView;
 
-    Render::GUILayer           *mGUI;
+    Utils::GUILayer            *mGUI;
 
     // profile
     Utils::Timer    mProfileTimer;

@@ -1,18 +1,18 @@
 #include "stdafx.h"
-#include "RenderCore.h"
-#include "RootSignature.h"
-#include "PipelineState.h"
-#include "CommandContext.h"
-#include "DescriptorHeap.h"
-#include "Sampler.h"
-#include "Resource/PixelBuffer.h"
-#include "Resource/ConstantBuffer.h"
-#include "Resource/GPUBuffer.h"
-#include "Resource/RenderTargetBuffer.h"
+#include "Render/RenderCore.h"
+#include "Render/RootSignature.h"
+#include "Render/PipelineState.h"
+#include "Render/CommandContext.h"
+#include "Render/DescriptorHeap.h"
+#include "Render/Sampler.h"
+#include "Render/Resource/PixelBuffer.h"
+#include "Render/Resource/ConstantBuffer.h"
+#include "Render/Resource/GPUBuffer.h"
+#include "Render/Resource/RenderTargetBuffer.h"
 #include "GUI/imgui.h"
 #include "GUILayer.h"
 
-namespace Render {
+namespace Utils {
 
 GUILayer::GUILayer(HWND hwnd, uint32_t width, uint32_t height)
 : mWidth(width)
@@ -26,7 +26,7 @@ GUILayer::GUILayer(HWND hwnd, uint32_t width, uint32_t height)
 , mGraphicsState(nullptr)
 , mConstBuffer(nullptr)
 {
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+    for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
         mVertexBuffer[i] = nullptr;
     }
     Initialize(hwnd);
@@ -62,7 +62,7 @@ void GUILayer::Initialize(HWND hwnd) {
     io.KeyMap[ImGuiKey_Y] = 'Y';
     io.KeyMap[ImGuiKey_Z] = 'Z';
 
-    mRootSignature = new RootSignature(RootSignature::Graphics, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
     mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
     mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
@@ -119,7 +119,7 @@ void GUILayer::Initialize(HWND hwnd) {
         { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
 
-    mGraphicsState = new GraphicsState();
+    mGraphicsState = new Render::GraphicsState();
     mGraphicsState->GetInputLayout() = { inputElements, _countof(inputElements) };
     mGraphicsState->GetRasterizerState().CullMode = D3D12_CULL_MODE_NONE;
     D3D12_BLEND_DESC &blendDesc = mGraphicsState->GetBlendState();
@@ -136,27 +136,27 @@ void GUILayer::Initialize(HWND hwnd) {
     mGraphicsState->CopyPixelShader(ps.Get());
     mGraphicsState->Create(mRootSignature);
 
-    mResourceHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
-    mSamplerHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
+    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
+    mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
 
     uint8_t *texturePixels = nullptr;
     int32_t textureWidth = 0;
     int32_t textureHeight = 0;
     io.Fonts->GetTexDataAsRGBA32(&texturePixels, &textureWidth, &textureHeight);
 
-    mFontTexture = new PixelBuffer(textureWidth * BytesPerPixel(DXGI_FORMAT_R8G8B8A8_UNORM), textureWidth, textureHeight, 1, DXGI_FORMAT_R8G8B8A8_UNORM);
-    gCommand->Begin();
-    gCommand->UploadTexture(mFontTexture, texturePixels);
-    gCommand->End(true);
+    mFontTexture = new Render::PixelBuffer(textureWidth * Render::BytesPerPixel(DXGI_FORMAT_R8G8B8A8_UNORM), textureWidth, textureHeight, 1, DXGI_FORMAT_R8G8B8A8_UNORM);
+    Render::gCommand->Begin();
+    Render::gCommand->UploadTexture(mFontTexture, texturePixels);
+    Render::gCommand->End(true);
     mFontTexture->CreateSRV(mResourceHeap->Allocate());
     io.Fonts->TexID = mFontTexture;
 
-    mSampler = new Sampler();
+    mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
 
-    mConstBuffer = new ConstantBuffer(sizeof(XMFLOAT4X4), 1);
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        mVertexBuffer[i] = new GPUBuffer(VERTEX_BUFFER_SIZE, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
+    mConstBuffer = new Render::ConstantBuffer(sizeof(XMFLOAT4X4), 1);
+    for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
+        mVertexBuffer[i] = new Render::GPUBuffer(VERTEX_BUFFER_SIZE, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE, true);
     }
 }
 
@@ -164,7 +164,7 @@ void GUILayer::Destroy(void) {
     ImGui::DestroyContext(mContext);
     mContext = nullptr;
 
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+    for (uint32_t i = 0; i < Render::FRAME_COUNT; ++i) {
         DeleteAndSetNull(mVertexBuffer[i]);
     }
     DeleteAndSetNull(mConstBuffer);
@@ -230,24 +230,24 @@ void GUILayer::EndFrame(uint32_t frameIdx) {
     mConstBuffer->CopyData(&matrix, sizeof(XMFLOAT4X4), 0, frameIdx);
 }
 
-void GUILayer::Draw(uint32_t frameIdx, RenderTargetBuffer *renderTarget) {
+void GUILayer::Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget) {
     if (!renderTarget) {
         return;
     }
 
     ImDrawData* drawData = ImGui::GetDrawData();
-    DescriptorHeap *heaps[] = { mResourceHeap, mSamplerHeap };
+    Render::DescriptorHeap *heaps[] = { mResourceHeap, mSamplerHeap };
 
-    gCommand->SetViewport(0, 0, float(mWidth), float(mHeight));
-    gCommand->SetRenderTarget(renderTarget, nullptr);
-    gCommand->SetPipelineState(mGraphicsState);
-    gCommand->SetRootSignature(mRootSignature);
-    gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, frameIdx));
-    gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
-    gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
-    gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    gCommand->SetVerticesAndIndices(mVertexView, mIndexView);
+    Render::gCommand->SetViewport(0, 0, float(mWidth), float(mHeight));
+    Render::gCommand->SetRenderTarget(renderTarget, nullptr);
+    Render::gCommand->SetPipelineState(mGraphicsState);
+    Render::gCommand->SetRootSignature(mRootSignature);
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+    Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, frameIdx));
+    Render::gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
+    Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
+    Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Render::gCommand->SetVerticesAndIndices(mVertexView, mIndexView);
 
     int32_t vtxOffset = 0;
     uint32_t idxOffset = 0;
@@ -260,10 +260,10 @@ void GUILayer::Draw(uint32_t frameIdx, RenderTargetBuffer *renderTarget) {
             } else {
                 const D3D12_RECT r = { long(drawCmd->ClipRect.x), long(drawCmd->ClipRect.y), long(drawCmd->ClipRect.z), long(drawCmd->ClipRect.w) };
                 if(r.left < r.right && r.top < r.bottom) {
-                    //PixelBuffer* texture = reinterpret_cast<PixelBuffer*>(drawCmd->TextureId);
-                    //gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
-                    gCommand->SetScissor(r);
-                    gCommand->DrawIndexed(drawCmd->ElemCount, idxOffset, vtxOffset);
+                    //Render::PixelBuffer* texture = reinterpret_cast<Render::PixelBuffer*>(drawCmd->TextureId);
+                    //Render::gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
+                    Render::gCommand->SetScissor(r);
+                    Render::gCommand->DrawIndexed(drawCmd->ElemCount, idxOffset, vtxOffset);
                 }
             }
             idxOffset += drawCmd->ElemCount;
