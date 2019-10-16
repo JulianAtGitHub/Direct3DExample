@@ -87,6 +87,8 @@ INLINE void RootSignature::SetDescriptorTable(uint32_t index, D3D12_DESCRIPTOR_R
         return;
     }
 
+    ASSERT_PRINT(descCount > 0, "Descriptor count must large than 0.");
+
     auto & param = mParameters[index];
     CleanupDescriptorRanges(param);
 
