@@ -334,5 +334,5 @@ Externals/
 !Externals/Revisions
 
 # obj model
-!Direct3DExample/Models/*.obj
-!Direct3DExample/Models/**/*.obj
+!Models/*.obj
+!Models/**/*.obj
