@@ -6,26 +6,6 @@
 
 namespace Utils {
 
-Image * Image::LoadFromBinary(const void *head, void *pixels) {
-    if (!head || !pixels) {
-        return nullptr;
-    }
-
-    Image *image = new Image();
-    const Head *other = (const Head *)head;
-    image->mHead = *other;
-    image->mMipLevels = 1;
-    // copy pixels
-    uint32_t dataSize = image->mHead.mBPP * image->mHead.mWidth * image->mHead.mHeight;
-    void *data = malloc(dataSize);
-    memcpy(data, pixels, dataSize);
-    image->mSlices.push_back(Slice(image->mHead.mWidth, image->mHead.mHeight, data));
-
-    image->GenerateMipmaps();
-
-    return image;
-}
-
 Image * Image::CreateFromFile(const char *filePath, bool hdr2ldr) {
     if (!filePath) {
         return nullptr;

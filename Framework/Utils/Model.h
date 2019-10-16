@@ -57,8 +57,6 @@ public:
 class Model {
 public:
     static Scene * LoadFromFile(const char *fileName);
-    static Scene * LoadFromMMB(const char *fileName);
-    static void SaveToMMB(const Scene *scene, const char *fileName);
 
     static Scene * CreateUnitQuad(void);
     static Scene * CreateUnitCube(void);
