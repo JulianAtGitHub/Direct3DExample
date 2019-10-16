@@ -25,6 +25,7 @@ public:
 
         }
 
+        std::string name;
         uint32_t indexOffset;
         uint32_t indexCount;
         XMFLOAT3 ambientColor;

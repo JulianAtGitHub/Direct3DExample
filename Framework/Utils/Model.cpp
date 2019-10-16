@@ -104,6 +104,7 @@ Scene * Model::LoadFromFile(const char *fileName) {
         assert(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE);
 
         Scene::Shape shape;
+        shape.name = mesh->mName.C_Str();
         shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
 
