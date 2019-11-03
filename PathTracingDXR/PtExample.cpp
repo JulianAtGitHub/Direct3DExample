@@ -496,7 +496,7 @@ void PtExample::BuildGeometry(void) {
     Render::gCommand->UploadBuffer(mMaterials, 0, materials, mMaterials->GetBufferSize());
     Render::gCommand->UploadBuffer(mLights, 0, lights, mLights->GetBufferSize());
 
-    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
+    mIndices->CreateRawBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
     mMaterials->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Material));

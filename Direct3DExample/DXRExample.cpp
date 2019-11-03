@@ -424,7 +424,7 @@ void DXRExample::BuildGeometry(void) {
     Render::gCommand->UploadBuffer(mGeometries, 0, geometries, mGeometries->GetBufferSize());
     Render::gCommand->UploadBuffer(mLights, 0, lights, mLights->GetBufferSize());
 
-    mIndices->CreateIndexBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
+    mIndices->CreateRawBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mIndices.size()));
     mVertices->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex));
     mGeometries->CreateStructBufferSRV(mDescriptorHeap->Allocate(), static_cast<uint32_t>(mScene->mShapes.size()), sizeof(Geometry));
     mLights->CreateStructBufferSRV(mDescriptorHeap->Allocate(), mLightCount, sizeof(Light));

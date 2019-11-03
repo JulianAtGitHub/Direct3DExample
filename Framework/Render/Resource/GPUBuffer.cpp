@@ -70,7 +70,7 @@ void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t c
     mHandle = handle;
 }
 
-void GPUBuffer::CreateIndexBufferSRV(const DescriptorHandle &handle, uint32_t count) {
+void GPUBuffer::CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count) {
     if (!mResource) {
         return;
     }

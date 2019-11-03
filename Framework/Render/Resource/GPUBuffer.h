@@ -16,7 +16,7 @@ public:
     D3D12_INDEX_BUFFER_VIEW FillIndexBufferView(size_t offset, uint32_t size, bool is16Bit = true);
 
     void CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size);
-    void CreateIndexBufferSRV(const DescriptorHandle &handle, uint32_t count);
+    void CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count);
 
     void UploadData(const void *data, size_t size, uint64_t offset = 0);
 
