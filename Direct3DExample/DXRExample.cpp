@@ -502,11 +502,16 @@ void DXRExample::PrepareScreenPass(void) {
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 8,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
+    D3D12_SHADER_BYTECODE vs;
+    D3D12_SHADER_BYTECODE ps;
+    vs.pShaderBytecode = ReadFileData("Display.vs.cso", vs.BytecodeLength);
+    ps.pShaderBytecode = ReadFileData("Display.ps.cso", ps.BytecodeLength);
+
     mSPGraphicsState = new Render::GraphicsState();
     mSPGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
     mSPGraphicsState->EnableDepth(false);
-    mSPGraphicsState->LoadVertexShader("Display.vs.cso");
-    mSPGraphicsState->LoadPixelShader("Display.ps.cso");
+    mSPGraphicsState->SetVertexShader(vs.pShaderBytecode, vs.BytecodeLength);
+    mSPGraphicsState->SetPixelShader(ps.pShaderBytecode, ps.BytecodeLength);
     mSPGraphicsState->Create(mSPRootSignature);
 
     float vertices[] = {
@@ -527,5 +532,8 @@ void DXRExample::PrepareScreenPass(void) {
     Render::gCommand->End(true);
 
     mSPVertexBufferView = mSPVertexBuffer->FillVertexBufferView(0, sizeof(vertices), 16);
+
+    free(const_cast<void *>(vs.pShaderBytecode));
+    free(const_cast<void *>(ps.pShaderBytecode));
 }
 

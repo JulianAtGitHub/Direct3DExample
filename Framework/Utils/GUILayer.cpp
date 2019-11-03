@@ -12,6 +12,9 @@
 #include "GUI/imgui.h"
 #include "GUILayer.h"
 
+#include "GuiVS.h"
+#include "GuiPS.h"
+
 namespace Utils {
 
 GUILayer::GUILayer(HWND hwnd, uint32_t width, uint32_t height)
@@ -68,51 +71,6 @@ void GUILayer::Initialize(HWND hwnd) {
     mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mRootSignature->Create();
 
-    const char* vsSource = " \
-        cbuffer vertexBuffer : register(b0) {\
-            float4x4 ProjectionMatrix; \
-        };\
-        struct VS_INPUT {\
-            float2 pos : POSITION;\
-            float2 uv  : TEXCOORD;\
-            float4 col : COLOR;\
-        };\
-        struct PS_INPUT {\
-            float4 pos : SV_POSITION;\
-            float4 col : COLOR;\
-            float2 uv  : TEXCOORD;\
-        };\
-        \
-        PS_INPUT main(VS_INPUT input) {\
-            PS_INPUT output;\
-            output.pos = mul( ProjectionMatrix, float4(input.pos.xy, 0.f, 1.f));\
-            output.col = input.col;\
-            output.uv  = input.uv;\
-            return output;\
-        } \
-        ";
-
-    const char* psSource = " \
-        struct PS_INPUT {\
-            float4 pos : SV_POSITION;\
-            float4 col : COLOR;\
-            float2 uv  : TEXCOORD;\
-        };\
-        SamplerState sampler0 : register(s0);\
-        Texture2D texture0 : register(t0);\
-        \
-        float4 main(PS_INPUT input) : SV_Target {\
-            float4 out_col = input.col * texture0.Sample(sampler0, input.uv); \
-            return out_col; \
-        } \
-        ";
-
-    WRL::ComPtr<ID3DBlob> vs;
-    WRL::ComPtr<ID3DBlob> ps;
-    WRL::ComPtr<ID3DBlob> error;
-    ASSERT_SUCCEEDED(D3DCompile(vsSource, strlen(vsSource), NULL, NULL, NULL, "main", "vs_5_0", 0, 0, &vs, &error));
-    ASSERT_SUCCEEDED(D3DCompile(psSource, strlen(psSource), NULL, NULL, NULL, "main", "ps_5_0", 0, 0, &ps, &error));
-
     D3D12_INPUT_ELEMENT_DESC inputElements[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 8,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -132,8 +90,8 @@ void GUILayer::Initialize(HWND hwnd) {
     blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
     mGraphicsState->EnableDepth(false);
-    mGraphicsState->CopyVertexShader(vs.Get());
-    mGraphicsState->CopyPixelShader(ps.Get());
+    mGraphicsState->SetVertexShader(gscGuiVS, sizeof(gscGuiVS));
+    mGraphicsState->SetPixelShader(gscGuiPS, sizeof(gscGuiPS));
     mGraphicsState->Create(mRootSignature);
 
     mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);

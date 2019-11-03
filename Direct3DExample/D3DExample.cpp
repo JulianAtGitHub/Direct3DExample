@@ -189,11 +189,16 @@ void D3DExample::LoadAssets(void) {
         { "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
 
+    D3D12_SHADER_BYTECODE vs;
+    D3D12_SHADER_BYTECODE ps;
+    vs.pShaderBytecode = ReadFileData("color.vs.cso", vs.BytecodeLength);
+    ps.pShaderBytecode = ReadFileData("color.ps.cso", ps.BytecodeLength);
+
     mGraphicsState = new Render::GraphicsState();
     mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
     mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
-    mGraphicsState->LoadVertexShader("color.vs.cso");
-    mGraphicsState->LoadPixelShader("color.ps.cso");
+    mGraphicsState->SetVertexShader(vs.pShaderBytecode, vs.BytecodeLength);
+    mGraphicsState->SetPixelShader(ps.pShaderBytecode, ps.BytecodeLength);
     mGraphicsState->Create(mRootSignature);
 
     mSampler = new Render::Sampler();
@@ -230,6 +235,9 @@ void D3DExample::LoadAssets(void) {
 
     // const buffer
     mConstBuffer = new Render::ConstantBuffer(sizeof(ConstBuffer), 1);
+
+    free(const_cast<void *>(vs.pShaderBytecode));
+    free(const_cast<void *>(ps.pShaderBytecode));
 }
 
 void D3DExample::PopulateCommandList(void) {

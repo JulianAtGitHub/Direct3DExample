@@ -13,6 +13,8 @@ public:
     virtual void Create(RootSignature *rootSignature) = 0;
 
 protected:
+    INLINE void SetShaderByteCode(D3D12_SHADER_BYTECODE &shader, const void *code, size_t length) { shader.pShaderBytecode = code; shader.BytecodeLength = length; }
+
     ID3D12PipelineState        *mPipelineState;
 };
 
@@ -38,17 +40,11 @@ public:
     INLINE DXGI_SAMPLE_DESC & GetSampleDesc(void) { return mDesc.SampleDesc; }
     INLINE D3D12_CACHED_PIPELINE_STATE & GetCachedPSO(void) { return mDesc.CachedPSO; }
 
-    INLINE void LoadVertexShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.VS); }
-    INLINE void LoadPixelShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.PS); }
-    INLINE void LoadGeometryShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.GS); }
-    INLINE void LoadHullShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.HS); }
-    INLINE void LoadDomainShader(const char *fileName) { LoadShaderByteCode(fileName, mDesc.DS); }
-
-    INLINE void CopyVertexShader(ID3DBlob *blob) { CopyShaderByteCode(blob, mDesc.VS); }
-    INLINE void CopyPixelShader(ID3DBlob *blob) { CopyShaderByteCode(blob, mDesc.PS); }
-    INLINE void CopyGeometryShader(ID3DBlob *blob) { CopyShaderByteCode(blob, mDesc.GS); }
-    INLINE void CopyHullShader(ID3DBlob *blob) { CopyShaderByteCode(blob, mDesc.HS); }
-    INLINE void CopyDomainShader(ID3DBlob *blob) { CopyShaderByteCode(blob, mDesc.DS); }
+    INLINE void SetVertexShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.VS, byteCode, length); }
+    INLINE void SetPixelShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.PS, byteCode, length); }
+    INLINE void SetGeometryShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.GS, byteCode, length); }
+    INLINE void SetHullShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.HS, byteCode, length); }
+    INLINE void SetDomainShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.DS, byteCode, length); }
 
     INLINE D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveType(void) const { return mDesc.PrimitiveTopologyType; };
     INLINE void SetPrimitiveType(D3D12_PRIMITIVE_TOPOLOGY_TYPE type) { mDesc.PrimitiveTopologyType = type; };
@@ -59,8 +55,6 @@ public:
 
 private:
     void Initialize(void);
-    void LoadShaderByteCode(const char *fileName, D3D12_SHADER_BYTECODE &byteCode);
-    void CopyShaderByteCode(ID3DBlob *blob, D3D12_SHADER_BYTECODE &byteCode);
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC  mDesc;
 };
