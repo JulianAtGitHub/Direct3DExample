@@ -35,6 +35,8 @@ void PixelBuffer::Initialize(void) {
         return;
     }
 
+    mUAVHandles.resize(mMipLevels);
+
     mUsageState = D3D12_RESOURCE_STATE_COPY_DEST;
 
     D3D12_RESOURCE_DESC texDesc = {};
@@ -76,7 +78,7 @@ void PixelBuffer::CreateSRV(const DescriptorHandle &handle) {
     mSRVHandle = handle;
 }
 
-void PixelBuffer::CreateUAV(const DescriptorHandle &handle) {
+void PixelBuffer::CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice) {
     if (!mResource) {
         return;
     }
@@ -84,10 +86,11 @@ void PixelBuffer::CreateUAV(const DescriptorHandle &handle) {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.Format = mFormat;
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+    uavDesc.Texture2D.MipSlice = mipSlice;
 
     gDevice->CreateUnorderedAccessView(mResource, nullptr, &uavDesc, handle.cpu);
 
-    mUAVHandle = handle;
+    mUAVHandles[mipSlice] = handle;
 }
 
 }

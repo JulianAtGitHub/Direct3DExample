@@ -15,24 +15,25 @@ public:
     INLINE uint32_t GetPitch(void) const { return mPitch; }
     INLINE uint32_t GetWidth(void) const { return mWidth; }
     INLINE uint32_t GetHeight(void) const { return mHeight; }
+    INLINE uint32_t GetMipLevels(void) const { return mMipLevels; }
     INLINE DXGI_FORMAT GetFormat(void) const { return mFormat; }
     INLINE const DescriptorHandle & GetSRVHandle(void) const { return mSRVHandle; }
-    INLINE const DescriptorHandle & GetUAVHandle(void) const { return mUAVHandle; }
+    INLINE const DescriptorHandle & GetUAVHandle(uint32_t mipSlice = 0) const { return mUAVHandles[mipSlice]; }
 
     void CreateSRV(const DescriptorHandle &handle);
-    void CreateUAV(const DescriptorHandle &handle);
+    void CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice = 0);
 
 protected:
     void Initialize(void);
 
-    uint32_t                mPitch; // bytes per row
-    uint32_t                mWidth;
-    uint32_t                mHeight;
-    uint32_t                mMipLevels;
-    DXGI_FORMAT             mFormat;
-    D3D12_RESOURCE_FLAGS    mFlag;
-    DescriptorHandle        mSRVHandle;
-    DescriptorHandle        mUAVHandle;
+    uint32_t                        mPitch; // bytes per row
+    uint32_t                        mWidth;
+    uint32_t                        mHeight;
+    uint32_t                        mMipLevels;
+    DXGI_FORMAT                     mFormat;
+    D3D12_RESOURCE_FLAGS            mFlag;
+    DescriptorHandle                mSRVHandle;
+    std::vector<DescriptorHandle>   mUAVHandles;
 };
 
 }
