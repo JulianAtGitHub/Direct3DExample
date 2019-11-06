@@ -402,9 +402,7 @@ void PtExample::InitScene(void) {
     mTextures.reserve(mScene->mImages.size());
     for (auto image : mScene->mImages) {
         Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetMipLevels(), image->GetDXGIFormat());
-        std::vector<D3D12_SUBRESOURCE_DATA> subResources;
-        image->GetSubResources(subResources);
-        Render::gCommand->UploadTexture(texture, subResources.data(), static_cast<uint32_t>(subResources.size()));
+        Render::gCommand->UploadTexture(texture, image->GetPixels());
         texture->CreateSRV(mDescriptorHeap->Allocate());
         mTextures.push_back(texture);
     }
