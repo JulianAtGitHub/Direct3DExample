@@ -39,5 +39,6 @@ extern void Terminate(void);
 
 extern uint32_t BitsPerPixel(DXGI_FORMAT format);
 extern uint32_t BytesPerPixel(DXGI_FORMAT format);
+extern bool IsSRGB(DXGI_FORMAT format);
 
 }
