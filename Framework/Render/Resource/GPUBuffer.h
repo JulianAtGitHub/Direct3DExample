@@ -15,8 +15,8 @@ public:
     D3D12_VERTEX_BUFFER_VIEW FillVertexBufferView(size_t offset, uint32_t size, uint32_t stride);
     D3D12_INDEX_BUFFER_VIEW FillIndexBufferView(size_t offset, uint32_t size, bool is16Bit = true);
 
-    void CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size);
-    void CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count);
+    void CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size, bool isResident = true);
+    void CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count, bool isResident = true);
 
     void UploadData(const void *data, size_t size, uint64_t offset = 0);
 

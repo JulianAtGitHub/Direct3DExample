@@ -53,7 +53,7 @@ void GPUBuffer::Initialize(void) {
     }
 }
 
-void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size) {
+void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t count, uint32_t size, bool isResident) {
     if (!mResource) {
         return;
     }
@@ -67,10 +67,12 @@ void GPUBuffer::CreateStructBufferSRV(const DescriptorHandle &handle, uint32_t c
     srvDesc.Buffer.StructureByteStride = size;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 
-    mHandle = handle;
+    if (isResident) {
+        mHandle = handle;
+    }
 }
 
-void GPUBuffer::CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count) {
+void GPUBuffer::CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t count, bool isResident) {
     if (!mResource) {
         return;
     }
@@ -84,7 +86,9 @@ void GPUBuffer::CreateRawBufferSRV(const DescriptorHandle &handle, uint32_t coun
     srvDesc.Buffer.StructureByteStride = 0;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 
-    mHandle = handle;
+    if (isResident) {
+        mHandle = handle;
+    }
 }
 
 void GPUBuffer::UploadData(const void *data, size_t size, uint64_t offset) {

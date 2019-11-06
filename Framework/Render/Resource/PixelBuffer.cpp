@@ -37,8 +37,6 @@ void PixelBuffer::Initialize(void) {
 
     mUAVHandles.resize(mMipLevels);
 
-    mUsageState = D3D12_RESOURCE_STATE_COPY_DEST;
-
     D3D12_RESOURCE_DESC texDesc = {};
     texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     texDesc.Width = mWidth;
@@ -62,7 +60,7 @@ void PixelBuffer::Initialize(void) {
     mResource->SetName(L"Texture");
 }
 
-void PixelBuffer::CreateSRV(const DescriptorHandle &handle) {
+void PixelBuffer::CreateSRV(const DescriptorHandle &handle, bool isResident) {
     if (!mResource) {
         return;
     }
@@ -75,10 +73,12 @@ void PixelBuffer::CreateSRV(const DescriptorHandle &handle) {
     srvDesc.Texture2D.MostDetailedMip = 0;
     gDevice->CreateShaderResourceView(mResource, &srvDesc, handle.cpu);
 
-    mSRVHandle = handle;
+    if (isResident) {
+        mSRVHandle = handle;
+    }
 }
 
-void PixelBuffer::CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice) {
+void PixelBuffer::CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice, bool isResident) {
     if (!mResource) {
         return;
     }
@@ -90,7 +90,9 @@ void PixelBuffer::CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice) {
 
     gDevice->CreateUnorderedAccessView(mResource, nullptr, &uavDesc, handle.cpu);
 
-    mUAVHandles[mipSlice] = handle;
+    if (isResident) {
+        mUAVHandles[mipSlice] = handle;
+    }
 }
 
 }

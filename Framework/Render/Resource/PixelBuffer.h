@@ -20,8 +20,8 @@ public:
     INLINE const DescriptorHandle & GetSRVHandle(void) const { return mSRVHandle; }
     INLINE const DescriptorHandle & GetUAVHandle(uint32_t mipSlice = 0) const { return mUAVHandles[mipSlice]; }
 
-    void CreateSRV(const DescriptorHandle &handle);
-    void CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice = 0);
+    void CreateSRV(const DescriptorHandle &handle, bool isResident = true);
+    void CreateUAV(const DescriptorHandle &handle, uint32_t mipSlice = 0, bool isResident = true);
 
 protected:
     void Initialize(void);
