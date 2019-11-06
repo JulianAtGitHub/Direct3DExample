@@ -8,6 +8,7 @@ public:
     ~DescriptorHeap(void);
 
     DescriptorHandle Allocate(void);
+    DescriptorHandle GetHandle(uint32_t index);
 
     INLINE ID3D12DescriptorHeap * Get(void) const { return mHeap; }
     INLINE uint32_t GetRemainingCount(void) const { return mRemainingCount; }

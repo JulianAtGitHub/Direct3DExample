@@ -54,4 +54,13 @@ DescriptorHandle DescriptorHeap::Allocate(void) {
                             mHeap->GetGPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize);
 }
 
+DescriptorHandle DescriptorHeap::GetHandle(uint32_t index) {
+    if (index >= mTotalCount) {
+        return DescriptorHandle();
+    }
+
+    return DescriptorHandle(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + index * mDescriptorSize,
+                            mHeap->GetGPUDescriptorHandleForHeapStart().ptr + index * mDescriptorSize);
+}
+
 }
