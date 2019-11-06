@@ -20,6 +20,9 @@
     <Filter Include="Sources\GUI">
       <UniqueIdentifier>{9605afeb-aee5-4d86-a25e-2710e675fd6f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\Shader">
+      <UniqueIdentifier>{72d536d1-b300-4fa2-b238-763db51f98ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -124,6 +127,9 @@
     <ClInclude Include="Utils\GUILayer.h">
       <Filter>Sources\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\MipsGenerator.h">
+      <Filter>Sources\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -204,8 +210,46 @@
     <ClCompile Include="Utils\GUILayer.cpp">
       <Filter>Sources\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\MipsGenerator.cpp">
+      <Filter>Sources\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Shader\GenerateMips.hlsli">
+      <Filter>Sources\Shader</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shader\GenerateMipsLinear.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsLinearOdd.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsLinearOddX.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsLinearOddY.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsSRGB.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsSRGBOdd.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsSRGBOddX.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GenerateMipsSRGBOddY.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GuiPS.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shader\GuiVS.hlsl">
+      <Filter>Sources\Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -18,8 +18,9 @@
 #include "Render/Resource/DepthStencilBuffer.h"
 
 #include "GUI/imgui.h"
-#include "Utils/GUILayer.h"
 
+#include "Utils/MipsGenerator.h"
+#include "Utils/GUILayer.h"
 #include "Utils/Timer.hpp"
 #include "Utils/Camera.hpp"
 #include "Utils/Model.h"
