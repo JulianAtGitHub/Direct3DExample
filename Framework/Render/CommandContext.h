@@ -54,10 +54,12 @@ public:
     void SetGraphicsRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
     void SetGraphicsRootShaderResourceView(uint32_t index, GPUResource *resource);
     void SetGraphicsRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
+    void SetGraphicsRootConstants(uint32_t index, const void *constants, uint32_t count); // count: number 32bit value
 
     void SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
     void SetComputeRootShaderResourceView(uint32_t index, GPUResource *resource);
     void SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle);
+    void SetComputeRootConstants(uint32_t index, const void *constants, uint32_t count); // count: number 32bit value
 
     void SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType);
     void SetVertices(const D3D12_VERTEX_BUFFER_VIEW &vertices);
@@ -65,11 +67,14 @@ public:
     void DrawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffset = 0);
     void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount = 1);
 
+    void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
+
     void BuildAccelerationStructure(AccelerationStructure *as);
     void SetRayTracingState(RayTracingState *state);
     void DispatchRay(RayTracingState *state, uint32_t width, uint32_t height, uint32_t depth = 1);
 
-    void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
+    void Dispatch(uint32_t GroupCountX, uint32_t GroupCountY, uint32_t GroupCountZ);
+    void Dispatch2D(uint32_t ThreadCountX, uint32_t ThreadCountY, size_t GroupSizeX = 8, size_t GroupSizeY = 8);
 
 private:
     void Initialize(void);
@@ -126,12 +131,20 @@ INLINE void CommandContext::SetGraphicsRootDescriptorTable(uint32_t index, const
     mCommandList->SetGraphicsRootDescriptorTable(index, handle.gpu);
 }
 
+INLINE void CommandContext::SetGraphicsRootConstants(uint32_t index, const void *constants, uint32_t count) {
+    mCommandList->SetGraphicsRoot32BitConstants(index, count, constants, 0);
+}
+
 INLINE void CommandContext::SetComputeRootConstantBufferView(uint32_t index, D3D12_GPU_VIRTUAL_ADDRESS address) {
     mCommandList->SetComputeRootConstantBufferView(index, address);
 }
 
 INLINE void CommandContext::SetComputeRootDescriptorTable(uint32_t index, const DescriptorHandle &handle) {
     mCommandList->SetComputeRootDescriptorTable(index, handle.gpu);
+}
+
+INLINE void CommandContext::SetComputeRootConstants(uint32_t index, const void *constants, uint32_t count) {
+    mCommandList->SetComputeRoot32BitConstants(index, count, constants, 0);
 }
 
 INLINE void CommandContext::SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY primitiveType) {
@@ -158,6 +171,14 @@ INLINE void CommandContext::DrawInstanced(uint32_t vertexCount, uint32_t instanc
 INLINE void CommandContext::ExecuteBundle(ID3D12GraphicsCommandList *bundle) {
     ASSERT_PRINT(bundle != nullptr);
     mCommandList->ExecuteBundle(bundle);
+}
+
+INLINE void CommandContext::Dispatch(uint32_t GroupCountX, uint32_t GroupCountY, uint32_t GroupCountZ) {
+    mCommandList->Dispatch(GroupCountX, GroupCountY, GroupCountZ);
+}
+
+INLINE void CommandContext::Dispatch2D(uint32_t ThreadCountX, uint32_t ThreadCountY, size_t GroupSizeX, size_t GroupSizeY) {
+    Dispatch(DivideByMultiple(ThreadCountX, GroupSizeX), DivideByMultiple(ThreadCountY, GroupSizeY), 1);
 }
 
 }

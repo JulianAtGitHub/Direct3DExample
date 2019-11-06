@@ -161,10 +161,12 @@ void CommandContext::UploadTexture(PixelBuffer *resource, const void *data) {
 }
 
 void CommandContext::UploadTexture(GPUResource *resource, D3D12_SUBRESOURCE_DATA *subDatas, uint32_t count) {
-    UINT64 uploadSize = GetRequiredIntermediateSize(resource->Get(), 0, count);
+    TransitResource(resource, D3D12_RESOURCE_STATE_COPY_DEST);
 
+    UINT64 uploadSize = GetRequiredIntermediateSize(resource->Get(), 0, count);
     LinerAllocator::MemoryBlock uploadMem = mCpuAllocator->Allocate(uploadSize);
     UpdateSubresources(mCommandList, resource->Get(), uploadMem.buffer->Get(), uploadMem.offset, 0, count, subDatas);
+
     TransitResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
