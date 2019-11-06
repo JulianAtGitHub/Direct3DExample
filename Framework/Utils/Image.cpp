@@ -47,11 +47,11 @@ Image * Image::CreateBitmapImage(const char *filePath) {
     uint32_t dataSize = image->mHead.mBPP * image->mHead.mWidth * image->mHead.mHeight;
     void *data = malloc(dataSize);
     memcpy(data, pixels, dataSize);
-    image->mSlices.push_back(Slice(width, height, data));
+    image->mPixels = data;
 
     stbi_image_free(pixels);
 
-    image->GenerateMipmaps();
+    image->CalculateMipLevles();
 
     return image;
 }
@@ -79,7 +79,7 @@ Image * Image::CreateHDRImage(const char *filePath) {
     uint32_t dataSize = image->mHead.mBPP * image->mHead.mWidth * image->mHead.mHeight;
     void *data = malloc(dataSize);
     memcpy(data, pixels, dataSize);
-    image->mSlices.push_back(Slice(width, height, data));
+    image->mPixels = data;
 
     stbi_image_free(pixels);
 
@@ -92,13 +92,14 @@ Image * Image::CreateCompressedImage(const char *filePath) {
 
 Image::Image(void)
 : mMipLevels(0)
+, mPixels(nullptr)
 {
 
 }
 
 Image::~Image(void) {
-    for (auto slice : mSlices) {
-        free(slice.mPixels);
+    if (mPixels) {
+        free(mPixels);
     }
 }
 
@@ -119,116 +120,25 @@ DXGI_FORMAT Image::GetDXGIFormat(void) {
     }
 }
 
-void Image::GetSubResources(std::vector<D3D12_SUBRESOURCE_DATA> &resources) {
-    resources.clear();
-    resources.reserve(mMipLevels);
-    for (auto slice : mSlices) {
-        resources.push_back({ slice.mPixels, slice.mWidth * mHead.mBPP, slice.mWidth * mHead.mBPP * slice.mHeight });
-    }
-}
-
-void Image::GenerateMipmaps(void) {
-    Slice next;
-    while (NextMipLevel(mSlices[mMipLevels - 1], next)) {
+void Image::CalculateMipLevles(void) {
+    uint32_t width = mHead.mWidth;
+    uint32_t height = mHead.mHeight;
+    while (width > 1 || height > 1) {
+        width >>= 1;
+        height >>= 1;
+        if (width == 0) { width = 1; }
+        if (height == 0) { height = 1; }
         ++ mMipLevels;
-        mSlices.push_back(next);
     }
 }
 
-bool Image::NextMipLevel(const Slice &src, Slice &dst) {
-    if (((src.mWidth >> 1) == 0 && (src.mHeight >> 1) == 0) || src.mPixels == nullptr) {
-        return false;
-    }
-
-    bool isHalfWidth = (src.mWidth > 1);
-    bool isHalfHeight = (src.mHeight > 1);
-
-    dst.mWidth = isHalfWidth ? src.mWidth >> 1 : src.mWidth;
-    dst.mHeight = isHalfHeight ? src.mHeight >> 1 : src.mHeight;
-    dst.mPixels = malloc(mHead.mBPP * dst.mWidth * dst.mHeight);
-
-    for (uint32_t i = 0; i < dst.mWidth; ++i) {
-        for (uint32_t j = 0; j < dst.mHeight; ++j) {
-            switch (mHead.mFormat) {
-                case R8: MergePixels_R8(src, dst, i, j, isHalfWidth ? 2 : 1, isHalfHeight ? 2 : 1); break;
-                case R8G8: MergePixels_R8G8(src, dst, i, j, isHalfWidth ? 2 : 1, isHalfHeight ? 2 : 1); break;
-                case R8G8B8A8: MergePixels_R8G8B8A8(src, dst, i, j, isHalfWidth ? 2 : 1, isHalfHeight ? 2 : 1); break;
-                default: break;
-            }
-        }
-    }
-
-    return true;
-}
-
-void Image::MergePixels_R8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor) {
-    const uint8_t *srcPixel = (const uint8_t *)src.mPixels + (dstV * heightFactor * src.mWidth + dstU * widthFactor) * mHead.mBPP;
-    uint8_t *dstPixel = (uint8_t *)dst.mPixels + (dstV * dst.mWidth + dstU) * mHead.mBPP;
-    
-    uint32_t r = 0;
-    for (uint32_t i = 0; i < widthFactor; ++i) {
-        for (uint32_t j = 0; j < heightFactor; ++j) {
-            r += *(srcPixel + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-        }
-    }
-
-    r /= (widthFactor * heightFactor);
-    *dstPixel = (uint8_t)r;
-}
-
-void Image::MergePixels_R8G8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor) {
-    const uint8_t *srcPixel = (const uint8_t *)src.mPixels + (dstV * heightFactor * src.mWidth + dstU * widthFactor) * mHead.mBPP;
-    uint8_t *dstPixel = (uint8_t *)dst.mPixels + (dstV * dst.mWidth + dstU) * mHead.mBPP;
-
-    uint32_t r = 0;
-    uint32_t g = 0;
-    for (uint32_t i = 0; i < widthFactor; ++i) {
-        for (uint32_t j = 0; j < heightFactor; ++j) {
-            r += *(srcPixel + 0 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-            g += *(srcPixel + 1 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-        }
-    }
-
-    r /= (widthFactor * heightFactor);
-    g /= (widthFactor * heightFactor);
-    *(dstPixel + 0) = (uint8_t)r;
-    *(dstPixel + 1) = (uint8_t)g;
-}
-
-void Image::MergePixels_R8G8B8A8(const Slice &src, Slice &dst, uint32_t dstU, uint32_t dstV, uint32_t widthFactor, uint32_t heightFactor) {
-    const uint8_t *srcPixel = (const uint8_t *)src.mPixels + (dstV * heightFactor * src.mWidth + dstU * widthFactor) * mHead.mBPP;
-    uint8_t *dstPixel = (uint8_t *)dst.mPixels + (dstV * dst.mWidth + dstU) * mHead.mBPP;
-
-    uint32_t r = 0;
-    uint32_t g = 0;
-    uint32_t b = 0;
-    uint32_t a = 0;
-    for (uint32_t i = 0; i < widthFactor; ++i) {
-        for (uint32_t j = 0; j < heightFactor; ++j) {
-            r += *(srcPixel + 0 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-            g += *(srcPixel + 1 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-            b += *(srcPixel + 2 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-            a += *(srcPixel + 3 + j * src.mWidth * mHead.mBPP + i * mHead.mBPP);
-        }
-    }
-
-    r /= (widthFactor * heightFactor);
-    g /= (widthFactor * heightFactor);
-    b /= (widthFactor * heightFactor);
-    a /= (widthFactor * heightFactor);
-    *(dstPixel + 0) = (uint8_t)r;
-    *(dstPixel + 1) = (uint8_t)g;
-    *(dstPixel + 2) = (uint8_t)b;
-    *(dstPixel + 3) = (uint8_t)a;
-}
-
-void * Image::GetPixel(const Slice &slice, uint32_t u, uint32_t v) {
-    if (u >= slice.mWidth || v >= slice.mHeight) {
+void * Image::GetPixel(uint32_t u, uint32_t v) {
+    if (u >= mHead.mWidth || v >= mHead.mHeight) {
         return nullptr;
     }
 
-    uint8_t *pixels = (uint8_t *)slice.mPixels;
-    pixels += slice.mWidth * mHead.mBPP * v + mHead.mBPP * u;
+    uint8_t *pixels = (uint8_t *)mPixels;
+    pixels += mHead.mWidth * mHead.mBPP * v + mHead.mBPP * u;
 
     return pixels;
 }
@@ -238,37 +148,28 @@ Image * Image::BumpMapToNormalMap(float strength, float level) {
         return nullptr;
     }
 
-    if (mSlices.size() == 0) {
-        return nullptr;
-    }
-
     Image *normal = new Image();
     normal->mHead = mHead;
     normal->mHead.mBPP = 4;
     normal->mMipLevels = mMipLevels;
 
     float dz = 1.0f / strength * (1.0f + std::powf(2.0f, level));
-
-    for (auto &slice : mSlices) {
-        Slice dst;
-        BumpMapToNormalMap(slice, dst, dz, Sobel);
-        normal->mSlices.push_back(dst);
-    }
+    BumpMapToNormalMap(*normal, dz, Sobel);
 
     return normal;
 }
 
 // ref from https://github.com/cpetry/NormalMap-Online
-void Image::BumpMapToNormalMap(const Slice &bump, Slice &normal, float dz, FilterType filter) {
-    if (!bump.mPixels) {
+void Image::BumpMapToNormalMap(Image &normal, float dz, FilterType filter) {
+    if (!mPixels) {
         return;
     }
 
-    normal.mWidth = bump.mWidth;
-    normal.mHeight = bump.mHeight;
-    normal.mPixels = malloc(normal.mWidth * normal.mHeight * 4);
+    normal.mHead.mWidth = mHead.mWidth;
+    normal.mHead.mHeight = mHead.mHeight;
+    normal.mPixels = malloc(normal.mHead.mWidth * normal.mHead.mHeight * 4);
 
-    XMINT2 dimensions = { (int)bump.mWidth, (int)bump.mHeight };
+    XMINT2 dimensions = { (int)mHead.mWidth, (int)mHead.mHeight };
     for (int u = 0; u < dimensions.x; ++u) {
         for (int v = 0; v < dimensions.y; ++v) {
             XMINT2 tlv = { u - 1, v - 1 };
@@ -295,14 +196,14 @@ void Image::BumpMapToNormalMap(const Slice &bump, Slice &normal, float dz, Filte
             rv  = { rv.x < dimensions.x ? rv.x : rv.x - dimensions.x, rv.y < dimensions.y ? rv.y : rv.y - dimensions.y };
             brv = { brv.x >= 0 ? brv.x : dimensions.x + brv.x, brv.y >= 0 ? brv.y : dimensions.y + brv.y };
             brv = { brv.x < dimensions.x ? brv.x : brv.x - dimensions.x, brv.y < dimensions.y ? brv.y : brv.y - dimensions.y };
-            float tl = (*(uint8_t *)GetPixel(bump, tlv.x, tlv.y)) / 255.0f;
-            float l  = (*(uint8_t *)GetPixel(bump,  lv.x,  lv.y)) / 255.0f;
-            float bl = (*(uint8_t *)GetPixel(bump, blv.x, blv.y)) / 255.0f;
-            float t  = (*(uint8_t *)GetPixel(bump,  tv.x,  tv.y)) / 255.0f;
-            float b  = (*(uint8_t *)GetPixel(bump,  bv.x,  bv.y)) / 255.0f;
-            float tr = (*(uint8_t *)GetPixel(bump, trv.x, trv.y)) / 255.0f;
-            float r  = (*(uint8_t *)GetPixel(bump,  rv.x,  rv.y)) / 255.0f;
-            float br = (*(uint8_t *)GetPixel(bump, brv.x, brv.y)) / 255.0f;
+            float tl = (*(uint8_t *)GetPixel(tlv.x, tlv.y)) / 255.0f;
+            float l  = (*(uint8_t *)GetPixel( lv.x,  lv.y)) / 255.0f;
+            float bl = (*(uint8_t *)GetPixel(blv.x, blv.y)) / 255.0f;
+            float t  = (*(uint8_t *)GetPixel( tv.x,  tv.y)) / 255.0f;
+            float b  = (*(uint8_t *)GetPixel( bv.x,  bv.y)) / 255.0f;
+            float tr = (*(uint8_t *)GetPixel(trv.x, trv.y)) / 255.0f;
+            float r  = (*(uint8_t *)GetPixel( rv.x,  rv.y)) / 255.0f;
+            float br = (*(uint8_t *)GetPixel(brv.x, brv.y)) / 255.0f;
             float dx = 0.0f;
             float dy = 0.0f;
             if (filter == Sobel) {
@@ -319,7 +220,7 @@ void Image::BumpMapToNormalMap(const Slice &bump, Slice &normal, float dz, Filte
             n.y *= 0.5f; n.y += 0.5f;
 
             uint8_t *pixels = (uint8_t *)normal.mPixels;
-            pixels += normal.mWidth * 4 * v + 4 * u;
+            pixels += normal.mHead.mWidth * 4 * v + 4 * u;
             pixels[0] = uint8_t(n.x * 255.0f);
             pixels[1] = uint8_t(n.y * 255.0f);
             pixels[2] = uint8_t(n.z * 255.0f);
