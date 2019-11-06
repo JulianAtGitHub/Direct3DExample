@@ -20,7 +20,7 @@ protected:
 
 class GraphicsState : public PipelineState {
 public:
-    GraphicsState(void);
+    GraphicsState(D3D12_PIPELINE_STATE_FLAGS flag = D3D12_PIPELINE_STATE_FLAG_NONE);
     virtual ~GraphicsState(void);
 
     INLINE void EnableDepth(bool enable) { mDesc.DepthStencilState.DepthEnable = enable; }
@@ -54,9 +54,28 @@ public:
     void Create(RootSignature *rootSignature);
 
 private:
-    void Initialize(void);
+    void Initialize(D3D12_PIPELINE_STATE_FLAGS flag);
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC  mDesc;
+};
+
+class ComputeState : public PipelineState {
+public:
+    ComputeState(D3D12_PIPELINE_STATE_FLAGS flag = D3D12_PIPELINE_STATE_FLAG_NONE);
+    virtual ~ComputeState(void);
+
+    INLINE D3D12_CACHED_PIPELINE_STATE & GetCachedPSO(void) { return mDesc.CachedPSO; }
+
+    INLINE D3D12_SHADER_BYTECODE & GetShader(void) { return mDesc.CS; }
+
+    INLINE void SetShader(const void *byteCode, size_t length) { SetShaderByteCode(mDesc.CS, byteCode, length); }
+
+    void Create(RootSignature *rootSignature);
+
+private:
+    void Initialize(D3D12_PIPELINE_STATE_FLAGS flag);
+
+    D3D12_COMPUTE_PIPELINE_STATE_DESC   mDesc;
 };
 
 }

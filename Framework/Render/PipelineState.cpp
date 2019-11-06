@@ -16,17 +16,17 @@ PipelineState::~PipelineState( void) {
     ReleaseAndSetNull(mPipelineState);
 }
 
-GraphicsState::GraphicsState(void)
+GraphicsState::GraphicsState(D3D12_PIPELINE_STATE_FLAGS flag)
 : PipelineState()
 {
-    Initialize();
+    Initialize(flag);
 }
 
 GraphicsState::~GraphicsState(void) {
 
 }
 
-void GraphicsState::Initialize(void) {
+void GraphicsState::Initialize(D3D12_PIPELINE_STATE_FLAGS flag) {
 
     DXGI_SAMPLE_DESC sampleDesc = {};
     sampleDesc.Count = 1;
@@ -42,6 +42,7 @@ void GraphicsState::Initialize(void) {
     mDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     mDesc.SampleDesc = sampleDesc;
     mDesc.NodeMask = 1;
+    mDesc.Flags = flag;
 }
 
 void GraphicsState::Create(RootSignature *rootSignature) {
@@ -50,6 +51,30 @@ void GraphicsState::Create(RootSignature *rootSignature) {
 
     mDesc.pRootSignature = rootSignature->Get();
     ASSERT_SUCCEEDED(gDevice->CreateGraphicsPipelineState(&mDesc, IID_PPV_ARGS(&mPipelineState)));
+}
+
+ComputeState::ComputeState(D3D12_PIPELINE_STATE_FLAGS flag)
+: PipelineState()
+{
+    Initialize(flag);
+}
+
+ComputeState::~ComputeState(void) {
+
+}
+
+void ComputeState::Initialize(D3D12_PIPELINE_STATE_FLAGS flag) {
+    mDesc = {};
+    mDesc.NodeMask = 1;
+    mDesc.Flags = flag;
+}
+
+void ComputeState::Create(RootSignature *rootSignature) {
+    ASSERT_PRINT((rootSignature != nullptr && rootSignature->Get() != nullptr));
+    ReleaseAndSetNull(mPipelineState);
+
+    mDesc.pRootSignature = rootSignature->Get();
+    ASSERT_SUCCEEDED(gDevice->CreateComputePipelineState(&mDesc, IID_PPV_ARGS(&mPipelineState)));
 }
 
 }
