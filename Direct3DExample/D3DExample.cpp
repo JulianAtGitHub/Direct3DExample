@@ -234,6 +234,7 @@ void D3DExample::LoadAssets(void) {
     for (auto texture : mTextures) {
         mipsGener->Dispatch(texture);
     }
+    delete mipsGener;
 
     // const buffer
     mConstBuffer = new Render::ConstantBuffer(sizeof(ConstBuffer), 1);
