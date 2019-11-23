@@ -1,3 +1,5 @@
+#pragma pack_matrix(row_major)
+
 #include "inputs.hlsli"
 
 cbuffer ConstBuffer : register(b0)

@@ -116,7 +116,7 @@ void D3DExample::Update(void) {
     XMMATRIX model = XMMatrixIdentity();
     XMMATRIX view = mCamera->GetViewMatrix();
     XMMATRIX proj = mCamera->GetProjectMatrix();
-    XMStoreFloat4x4(&constBuffer.mvp, ::XMMatrixTranspose(::XMMatrixMultiply(::XMMatrixMultiply(model, view), proj)));
+    XMStoreFloat4x4(&constBuffer.mvp, XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
 
     mConstBuffer->CopyData(&constBuffer, sizeof(constBuffer), 0, mCurrentFrame);
 }
