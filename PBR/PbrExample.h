@@ -1,5 +1,7 @@
 #pragma once
 
+class PbrDrawable;
+class PbrPass;
 class SkyboxPass;
 
 class PbrExample : public Utils::AnExample {
@@ -12,6 +14,12 @@ public:
     virtual void Render(void);
     virtual void Destroy(void);
 
+    virtual void OnKeyDown(uint8_t key);
+    virtual void OnKeyUp(uint8_t key);
+    virtual void OnMouseLButtonDown(int64_t pos);
+    virtual void OnMouseLButtonUp(int64_t pos);
+    virtual void OnMouseMove(int64_t pos);
+
 private:
     static std::string WindowTitle;
 
@@ -20,17 +28,18 @@ private:
     uint32_t mCurrentFrame;
     uint64_t mFenceValues[Render::FRAME_COUNT];
 
+    float   mSpeedX;
+    float   mSpeedZ;
+    bool    mIsRotating;
+    int64_t mLastMousePos;
+    int64_t mCurrentMousePos;
+
+    Render::PixelBuffer    *mEnvTexture;
+    Render::DescriptorHeap *mEnvTextureHeap;
+
+    Utils::Timer    mTimer;
     Utils::Camera  *mCamera;
-    SkyboxPass     *mSkybox;
-
-    Render::RootSignature      *mRootSignature;
-    Render::GraphicsState      *mGraphicsState;
-    Render::ConstantBuffer     *mConstBuffer;
-    Render::GPUBuffer          *mVertexBuffer;
-    Render::GPUBuffer          *mIndexBuffer;
-    D3D12_VERTEX_BUFFER_VIEW    mVertexBufferView;
-    D3D12_INDEX_BUFFER_VIEW     mIndexBufferView;
-
-    std::vector<Utils::Scene::Shape> mShapes;
-    
+    PbrDrawable    *mSphere;
+    PbrPass        *mPbrPass;
+    SkyboxPass     *mSkyboxPass;
 };

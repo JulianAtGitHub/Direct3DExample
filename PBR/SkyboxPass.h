@@ -6,7 +6,7 @@ public:
     ~SkyboxPass(void);
 
     void Update(uint32_t currentFrame, const XMFLOAT4X4 &viewMatrix, const XMFLOAT4X4 projMatrix);
-    void Render(uint32_t currentFrame);
+    void Render(uint32_t currentFrame, Render::DescriptorHeap *envTexHeap, uint32_t envTexIndex);
 
 private:
     void Initialize(void);
@@ -26,12 +26,10 @@ private:
     Render::RootSignature      *mRootSignature;
     Render::GraphicsState      *mGraphicsState;
     Render::ConstantBuffer     *mConstBuffer;
-    Render::GPUBuffer          *mVertexBuffer;
-    Render::GPUBuffer          *mIndexBuffer;
-    Render::DescriptorHeap     *mTextureHeap;
-    Render::PixelBuffer        *mEnvTexture;
     Render::DescriptorHeap     *mSamplerHeap;
     Render::Sampler            *mSampler;
+    Render::GPUBuffer          *mVertexBuffer;
+    Render::GPUBuffer          *mIndexBuffer;
     D3D12_VERTEX_BUFFER_VIEW    mVertexBufferView;
     D3D12_INDEX_BUFFER_VIEW     mIndexBufferView;
 };

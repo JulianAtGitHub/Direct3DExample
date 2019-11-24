@@ -51,8 +51,6 @@ SkyboxPass::SkyboxPass(void)
 , mConstBuffer(nullptr)
 , mVertexBuffer(nullptr)
 , mIndexBuffer(nullptr)
-, mTextureHeap(nullptr)
-, mEnvTexture(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
 {
@@ -76,8 +74,6 @@ void SkyboxPass::Initialize(void) {
 
     mGraphicsState = new Render::GraphicsState();
     mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
-    mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
-    mGraphicsState->GetRasterizerState().CullMode = D3D12_CULL_MODE_NONE;
     mGraphicsState->SetVertexShader(gscSkyboxVS, sizeof(gscSkyboxVS));
     mGraphicsState->SetPixelShader(gscSkyboxPS, sizeof(gscSkyboxPS));
     mGraphicsState->GetDepthStencilState().DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
@@ -90,36 +86,25 @@ void SkyboxPass::Initialize(void) {
     mVertexBuffer = new Render::GPUBuffer(verticesSize);
     mIndexBuffer = new Render::GPUBuffer(indicesSize);
 
-    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
-    Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
-    mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
-
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
+    mSampler->Create(mSamplerHeap->Allocate());
 
     // upload data
     Render::gCommand->Begin();
 
     Render::gCommand->UploadBuffer(mVertexBuffer, 0, msVertices, verticesSize);
     Render::gCommand->UploadBuffer(mIndexBuffer, 0, msIndices, indicesSize);
-    Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
 
     Render::gCommand->End(true);
 
     mVertexBufferView = mVertexBuffer->FillVertexBufferView(0, static_cast<uint32_t>(verticesSize), sizeof(XMFLOAT3));
     mIndexBufferView = mIndexBuffer->FillIndexBufferView(0, static_cast<uint32_t>(indicesSize));
-
-    mEnvTexture->CreateSRV(mTextureHeap->Allocate());
-    mSampler->Create(mSamplerHeap->Allocate());
-
-    delete image;
 }
 
 void SkyboxPass::Destroy(void) {
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mSampler);
-    DeleteAndSetNull(mTextureHeap);
-    DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mConstBuffer);
     DeleteAndSetNull(mIndexBuffer);
     DeleteAndSetNull(mVertexBuffer);
@@ -134,14 +119,18 @@ void SkyboxPass::Update(uint32_t currentFrame, const XMFLOAT4X4 &viewMatrix, con
     mConstBuffer->CopyData(&cb, sizeof(TransformCB), 0, currentFrame);
 }
 
-void SkyboxPass::Render(uint32_t currentFrame) {
+void SkyboxPass::Render(uint32_t currentFrame, Render::DescriptorHeap *envTexHeap, uint32_t envTexIndex) {
+    if (!envTexHeap) {
+        return;
+    }
+
     Render::gCommand->SetPipelineState(mGraphicsState);
     Render::gCommand->SetRootSignature(mRootSignature);
-    Render::DescriptorHeap *heaps[] = { mTextureHeap, mSamplerHeap };
+    Render::DescriptorHeap *heaps[] = { envTexHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, currentFrame));
-    Render::gCommand->SetGraphicsRootDescriptorTable(1, mEnvTexture->GetSRVHandle());
-    Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
+    Render::gCommand->SetGraphicsRootDescriptorTable(1, envTexHeap->GetHandle(envTexIndex));
+    Render::gCommand->SetGraphicsRootDescriptorTable(2, mSamplerHeap->GetHandle(0));
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
     Render::gCommand->DrawIndexed(INDEX_COUNT, 0);

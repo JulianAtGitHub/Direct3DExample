@@ -87,13 +87,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="PbrDrawable.h" />
     <ClInclude Include="PbrExample.h" />
+    <ClInclude Include="PbrPass.h" />
     <ClInclude Include="SkyboxPass.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PbrDrawable.cpp" />
     <ClCompile Include="PbrExample.cpp" />
     <ClCompile Include="PbrMain.cpp" />
+    <ClCompile Include="PbrPass.cpp" />
     <ClCompile Include="SkyboxPass.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

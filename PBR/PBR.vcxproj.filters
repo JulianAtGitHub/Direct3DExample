@@ -22,6 +22,12 @@
     <ClInclude Include="SkyboxPass.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="PbrPass.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="PbrDrawable.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -34,6 +40,12 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="SkyboxPass.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="PbrPass.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="PbrDrawable.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
