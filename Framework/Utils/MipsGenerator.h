@@ -40,4 +40,8 @@ private:
     Render::Sampler        *mSampler;
 };
 
+extern MipsGenerator  *gMipsGener;
+extern void CreateMipsGenerator(void);
+extern void DestroyMipsGenerator(void);
+
 }

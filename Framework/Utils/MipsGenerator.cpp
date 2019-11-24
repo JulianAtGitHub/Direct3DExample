@@ -152,4 +152,16 @@ void MipsGenerator::Dispatch(Render::PixelBuffer *resource) {
     delete resourceHeap;
 }
 
+MipsGenerator  *gMipsGener = nullptr;
+
+void CreateMipsGenerator(void) {
+    if (!gMipsGener && Render::gDevice) {
+        gMipsGener = new MipsGenerator();
+    }
+}
+
+void DestroyMipsGenerator(void) {
+    DeleteAndSetNull(gMipsGener);
+}
+
 }
