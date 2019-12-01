@@ -20,6 +20,7 @@ PbrExample::PbrExample(void)
 , mEnvTexture(nullptr)
 , mEnvTextureHeap(nullptr)
 , mCamera(nullptr)
+, mGUI(nullptr)
 , mSphere(nullptr)
 , mPbrPass(nullptr)
 , mSkyboxPass(nullptr)
@@ -66,6 +67,7 @@ void PbrExample::Init(HWND hwnd) {
     delete image;
 
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 1000.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
+    mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
@@ -81,6 +83,8 @@ void PbrExample::Init(HWND hwnd) {
 
 void PbrExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
+
+    DeleteAndSetNull(mGUI);
     DeleteAndSetNull(mLightsBuffer);
     DeleteAndSetNull(mEnvTextureHeap);
     DeleteAndSetNull(mEnvTexture);
@@ -94,6 +98,7 @@ void PbrExample::Destroy(void) {
 }
 
 void PbrExample::OnKeyDown(uint8_t key) {
+    mGUI->OnKeyDown(key);
     switch (key) {
         case 'W': mSpeedZ = 1.0f; break;
         case 'S': mSpeedZ = -1.0f; break;
@@ -104,6 +109,7 @@ void PbrExample::OnKeyDown(uint8_t key) {
 }
 
 void PbrExample::OnKeyUp(uint8_t key) {
+    mGUI->OnKeyUp(key);
     switch (key) {
         case 'W':
         case 'S': mSpeedZ = 0.0f; break;
@@ -113,18 +119,55 @@ void PbrExample::OnKeyUp(uint8_t key) {
     }
 }
 
+void PbrExample::OnChar(uint16_t cha) {
+    mGUI->OnChar(cha);
+}
+
 void PbrExample::OnMouseLButtonDown(int64_t pos) {
+    mGUI->OnMouseLButtonDown();
+    if (mGUI->IsHovered()) {
+        return;
+    }
+
     mIsRotating = true;
     mLastMousePos = pos;
     mCurrentMousePos = pos;
 }
 
 void PbrExample::OnMouseLButtonUp(int64_t pos) {
+    mGUI->OnMouseLButtonUp();
     mIsRotating = false;
 }
 
+void PbrExample::OnMouseRButtonDown(int64_t pos) {
+    if (mGUI->IsHovered()) {
+        return;
+    }
+    mGUI->OnMouseRButtonDown();
+}
+
+void PbrExample::OnMouseRButtonUp(int64_t pos) {
+    mGUI->OnMouseRButtonUp();
+}
+
+void PbrExample::OnMouseMButtonDown(int64_t pos) {
+    if (mGUI->IsHovered()) {
+        return;
+    }
+    mGUI->OnMouseMButtonDown();
+}
+
+void PbrExample::OnMouseMButtonUp(int64_t pos) {
+    mGUI->OnMouseMButtonUp();
+}
+
 void PbrExample::OnMouseMove(int64_t pos) {
+    mGUI->OnMouseMove(pos);
     mCurrentMousePos = pos;
+}
+
+void PbrExample::OnMouseWheel(uint64_t param) {
+    mGUI->OnMouseWheel(param);
 }
 
 void PbrExample::Update(void) {
@@ -155,11 +198,35 @@ void PbrExample::Update(void) {
 
     mSphere->Update(mCurrentFrame, *mCamera, mSettings);
     mSkyboxPass->Update(mCurrentFrame, *mCamera);
+
+    UpdateGUI(deltaSecond);
+}
+
+void PbrExample::UpdateGUI(float second) {
+    mGUI->BeginFrame(second);
+
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 300.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
+    ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::BeginChild("Settings");
+
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings");
+    ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
+
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
+    ImGui::ColorEdit3("Albdo", &(mSphere->GetMaterial().albdo.x));
+    ImGui::SliderFloat("Matelness", &(mSphere->GetMaterial().metalness), 0.04f, 1.0f);
+    ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.0f, 1.0f);
+
+    ImGui::EndChild();
+
+    ImGui::End();
+
+    mGUI->EndFrame(mCurrentFrame);
 }
 
 void PbrExample::Render(void) {
-    Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
-
     Render::gCommand->Begin();
 
     Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
@@ -173,7 +240,8 @@ void PbrExample::Render(void) {
 
     mPbrPass->PreviousRender();
     mPbrPass->Render(mCurrentFrame, mSphere);
-    //mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    mGUI->Draw(mCurrentFrame, Render::gRenderTarget[mCurrentFrame]);
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 
@@ -182,4 +250,5 @@ void PbrExample::Render(void) {
     ASSERT_SUCCEEDED(Render::gSwapChain->Present(1, 0));
 
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
+    Render::gCommand->GetQueue()->WaitForFence(mFenceValues[mCurrentFrame]);
 }

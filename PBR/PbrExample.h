@@ -18,36 +18,45 @@ public:
 
     virtual void OnKeyDown(uint8_t key);
     virtual void OnKeyUp(uint8_t key);
+    virtual void OnChar(uint16_t cha);
     virtual void OnMouseLButtonDown(int64_t pos);
     virtual void OnMouseLButtonUp(int64_t pos);
+    virtual void OnMouseRButtonDown(int64_t pos);
+    virtual void OnMouseRButtonUp(int64_t pos);
+    virtual void OnMouseMButtonDown(int64_t pos);
+    virtual void OnMouseMButtonUp(int64_t pos);
     virtual void OnMouseMove(int64_t pos);
+    virtual void OnMouseWheel(uint64_t param);
 
 private:
     static constexpr uint32_t LIGHT_COUNT = 4;
-
     static std::string WindowTitle;
 
-    uint32_t mWidth;
-    uint32_t mHeight;
-    uint32_t mCurrentFrame;
-    uint64_t mFenceValues[Render::FRAME_COUNT];
+    void UpdateGUI(float second);
 
-    float   mSpeedX;
-    float   mSpeedZ;
-    bool    mIsRotating;
-    int64_t mLastMousePos;
-    int64_t mCurrentMousePos;
+    uint32_t                mWidth;
+    uint32_t                mHeight;
+    uint32_t                mCurrentFrame;
+    uint64_t                mFenceValues[Render::FRAME_COUNT];
 
-    SettingsCB  mSettings;
-    LightCB     mLights[LIGHT_COUNT];
+    float                   mSpeedX;
+    float                   mSpeedZ;
+    bool                    mIsRotating;
+    int64_t                 mLastMousePos;
+    int64_t                 mCurrentMousePos;
+
+    SettingsCB              mSettings;
+    LightCB                 mLights[LIGHT_COUNT];
 
     Render::GPUBuffer      *mLightsBuffer;
     Render::PixelBuffer    *mEnvTexture;
     Render::DescriptorHeap *mEnvTextureHeap;
 
-    Utils::Timer    mTimer;
-    Utils::Camera  *mCamera;
-    PbrDrawable    *mSphere;
-    PbrPass        *mPbrPass;
-    SkyboxPass     *mSkyboxPass;
+    Utils::Timer            mTimer;
+    Utils::Camera          *mCamera;
+    Utils::GUILayer        *mGUI;
+
+    PbrDrawable            *mSphere;
+    PbrPass                *mPbrPass;
+    SkyboxPass             *mSkyboxPass;
 };
