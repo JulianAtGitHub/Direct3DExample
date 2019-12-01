@@ -2,26 +2,32 @@
 #include "PbrDrawable.h"
 
 
-PbrDrawable::PbrDrawable(Utils::Scene *scene)
-: mConstBuffer(nullptr)
-, mTextureHeap(nullptr)
+PbrDrawable::PbrDrawable(void)
+: mSettingsCB(nullptr)
+, mCameraCB(nullptr)
+, mMaterialCB(nullptr)
+, mResourceHeap(nullptr)
 , mVertexBuffer(nullptr)
 , mIndexBuffer(nullptr)
 {
-    Initialize(scene);
+
 }
 
 PbrDrawable::~PbrDrawable(void) {
     Destroy();
 }
 
-void PbrDrawable::Initialize(Utils::Scene *scene) {
-    ASSERT_PRINT(scene);
-    if (!scene) {
+void PbrDrawable::Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uint32_t numLight) {
+    ASSERT_PRINT(scene && lights);
+    if (!scene || !lights) {
         return;
     }
 
-    mConstBuffer = new Render::ConstantBuffer(sizeof(XMFLOAT4X4), 1);
+    mMaterial = { {0.5f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
+
+    mSettingsCB = new Render::ConstantBuffer(sizeof(SettingsCB), 1);
+    mCameraCB = new Render::ConstantBuffer(sizeof(CameraCB), 1);
+    mMaterialCB = new Render::ConstantBuffer(sizeof(MaterialCB), 1);
 
     size_t verticesSize = scene->mVertices.size() * sizeof(Utils::Scene::Vertex);
     size_t indicesSize = scene->mIndices.size() * sizeof(uint32_t);
@@ -32,12 +38,13 @@ void PbrDrawable::Initialize(Utils::Scene *scene) {
     mVertexBufferView = mVertexBuffer->FillVertexBufferView(0, static_cast<uint32_t>(verticesSize), sizeof(Utils::Scene::Vertex));
     mIndexBufferView = mIndexBuffer->FillIndexBufferView(0, static_cast<uint32_t>(indicesSize), false);
 
+    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size()) + 1);
+    lights->CreateStructBufferSRV(mResourceHeap->Allocate(), numLight, sizeof(LightCB), false);
     if (scene->mImages.size() > 0) {
-        mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size()));
         mTextures.reserve(scene->mImages.size());
         for (auto image : scene->mImages) {
             Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetMipLevels(), image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            texture->CreateSRV(mTextureHeap->Allocate());
+            texture->CreateSRV(mResourceHeap->Allocate());
             mTextures.push_back(texture);
         }
     }
@@ -60,17 +67,29 @@ void PbrDrawable::Initialize(Utils::Scene *scene) {
 }
 
 void PbrDrawable::Destroy(void) {
+    DeleteAndSetNull(mSettingsCB);
+    DeleteAndSetNull(mCameraCB);
+    DeleteAndSetNull(mMaterialCB);
     for (auto texture : mTextures) {
         delete texture;
     }
     mTextures.clear();
-    DeleteAndSetNull(mTextureHeap);
-    DeleteAndSetNull(mConstBuffer);
+    DeleteAndSetNull(mResourceHeap);
     DeleteAndSetNull(mIndexBuffer);
     DeleteAndSetNull(mVertexBuffer);
 }
 
-void PbrDrawable::Update(uint32_t currentFrame, const XMFLOAT4X4 &mvp) {
-    mConstBuffer->CopyData(&mvp, sizeof(XMFLOAT4X4), 0, currentFrame);
+void PbrDrawable::Update(uint32_t currentFrame, Utils::Camera &camera, const SettingsCB &settings) {
+    XMMATRIX model = XMMatrixIdentity();
+    XMMATRIX view = camera.GetViewMatrix();
+    XMMATRIX proj = camera.GetProjectMatrix();
+
+    CameraCB cameraCB;
+    XMStoreFloat4x4(&(cameraCB.mvp), XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
+    XMStoreFloat4(&(cameraCB.position), camera.GetPosition());
+
+    mSettingsCB->CopyData(&settings, sizeof(SettingsCB), 0, currentFrame);
+    mCameraCB->CopyData(&cameraCB, sizeof(CameraCB), 0, currentFrame);
+    mMaterialCB->CopyData(&mMaterial, sizeof(MaterialCB), 0, currentFrame);
 }
 

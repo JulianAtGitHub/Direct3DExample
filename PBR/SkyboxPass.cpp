@@ -112,10 +112,10 @@ void SkyboxPass::Destroy(void) {
     DeleteAndSetNull(mRootSignature);
 }
 
-void SkyboxPass::Update(uint32_t currentFrame, const XMFLOAT4X4 &viewMatrix, const XMFLOAT4X4 projMatrix) {
+void SkyboxPass::Update(uint32_t currentFrame, Utils::Camera &camera) {
     TransformCB cb;
-    cb.ViewMat = viewMatrix;
-    cb.ProjMat = projMatrix;
+    XMStoreFloat4x4(&(cb.ViewMat), camera.GetViewMatrix());
+    XMStoreFloat4x4(&(cb.ProjMat), camera.GetProjectMatrix());
     mConstBuffer->CopyData(&cb, sizeof(TransformCB), 0, currentFrame);
 }
 

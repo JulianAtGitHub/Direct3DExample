@@ -5,7 +5,7 @@ public:
     SkyboxPass(void);
     ~SkyboxPass(void);
 
-    void Update(uint32_t currentFrame, const XMFLOAT4X4 &viewMatrix, const XMFLOAT4X4 projMatrix);
+    void Update(uint32_t currentFrame, Utils::Camera &camera);
     void Render(uint32_t currentFrame, Render::DescriptorHeap *envTexHeap, uint32_t envTexIndex);
 
 private:

@@ -16,6 +16,7 @@ PbrExample::PbrExample(void)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
+, mLightsBuffer(nullptr)
 , mEnvTexture(nullptr)
 , mEnvTextureHeap(nullptr)
 , mCamera(nullptr)
@@ -44,6 +45,14 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
+    mSettings = { false, LIGHT_COUNT };
+    mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
+    mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
+    mLights[2] = { {-10.0f,-10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
+    mLights[3] = { { 10.0f,-10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
+
+    mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
+
     Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
     mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
     mEnvTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
@@ -51,15 +60,17 @@ void PbrExample::Init(HWND hwnd) {
 
     Render::gCommand->Begin();
     Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
+    Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
     Render::gCommand->End(true);
 
     delete image;
 
-    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 1000.0f, XMFLOAT4(0.0f, 0.0f, 5.0f, 0.0f));
+    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 1000.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
-    mSphere = new PbrDrawable(sphere);
+    mSphere = new PbrDrawable();
+    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT);
     delete sphere;
 
     mPbrPass = new PbrPass();
@@ -70,7 +81,7 @@ void PbrExample::Init(HWND hwnd) {
 
 void PbrExample::Destroy(void) {
     Render::gCommand->GetQueue()->WaitForIdle();
-
+    DeleteAndSetNull(mLightsBuffer);
     DeleteAndSetNull(mEnvTextureHeap);
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mCamera);
@@ -141,19 +152,9 @@ void PbrExample::Update(void) {
     }
 
     mCamera->UpdateMatrixs();
-    XMMATRIX model = XMMatrixIdentity();
-    XMMATRIX view = mCamera->GetViewMatrix();
-    XMMATRIX proj = mCamera->GetProjectMatrix();
 
-    XMFLOAT4X4 mvp;
-    XMStoreFloat4x4(&mvp, XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
-    mSphere->Update(mCurrentFrame, mvp);
-
-    XMFLOAT4X4 viewMat;
-    XMFLOAT4X4 projMat;
-    XMStoreFloat4x4(&viewMat, view);
-    XMStoreFloat4x4(&projMat, proj);
-    mSkyboxPass->Update(mCurrentFrame, viewMat, projMat);
+    mSphere->Update(mCurrentFrame, *mCamera, mSettings);
+    mSkyboxPass->Update(mCurrentFrame, *mCamera);
 }
 
 void PbrExample::Render(void) {
@@ -172,7 +173,7 @@ void PbrExample::Render(void) {
 
     mPbrPass->PreviousRender();
     mPbrPass->Render(mCurrentFrame, mSphere);
-    mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    //mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 

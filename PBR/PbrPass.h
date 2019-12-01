@@ -4,6 +4,14 @@ class PbrDrawable;
 
 class PbrPass {
 public:
+    enum RootSignatureSlot {
+        SettingsSlot = 0,
+        CameraSlot,
+        MaterialSlot,
+        LightsSlot,
+        SlotCount
+    };
+
     PbrPass(void);
     ~PbrPass(void);
 

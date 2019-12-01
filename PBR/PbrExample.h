@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Shaders/types.pbr.h"
+
 class PbrDrawable;
 class PbrPass;
 class SkyboxPass;
@@ -21,6 +23,8 @@ public:
     virtual void OnMouseMove(int64_t pos);
 
 private:
+    static constexpr uint32_t LIGHT_COUNT = 4;
+
     static std::string WindowTitle;
 
     uint32_t mWidth;
@@ -34,6 +38,10 @@ private:
     int64_t mLastMousePos;
     int64_t mCurrentMousePos;
 
+    SettingsCB  mSettings;
+    LightCB     mLights[LIGHT_COUNT];
+
+    Render::GPUBuffer      *mLightsBuffer;
     Render::PixelBuffer    *mEnvTexture;
     Render::DescriptorHeap *mEnvTextureHeap;
 

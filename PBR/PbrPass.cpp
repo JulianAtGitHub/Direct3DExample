@@ -18,8 +18,11 @@ PbrPass::~PbrPass(void) {
 }
 
 void PbrPass::Initialize(void) {
-    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-    mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 4, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    mRootSignature->SetDescriptor(SettingsSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+    mRootSignature->SetDescriptor(CameraSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
+    mRootSignature->SetDescriptor(MaterialSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
+    mRootSignature->SetDescriptorTable(LightsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
     mRootSignature->Create();
 
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -59,10 +62,13 @@ void PbrPass::Render(uint32_t currentFrame, PbrDrawable *drawable) {
         return;
     }
 
-    //Render::DescriptorHeap *heaps[] = { mShaderResourceHeap, mSamplerHeap };
-    //Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
-    Render::gCommand->SetGraphicsRootConstantBufferView(0, drawable->GetConstBuffer()->GetGPUAddress(0, currentFrame));
-    //Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
+    Render::DescriptorHeap * resourceHeap = drawable->GetResourceHeap();
+    Render::DescriptorHeap *heaps[] = { resourceHeap, mSamplerHeap };
+    Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+    Render::gCommand->SetGraphicsRootConstantBufferView(0, drawable->GetSettingsCB(currentFrame));
+    Render::gCommand->SetGraphicsRootConstantBufferView(1, drawable->GetCameraCB(currentFrame));
+    Render::gCommand->SetGraphicsRootConstantBufferView(2, drawable->GetMaterialCB(currentFrame));
+    Render::gCommand->SetGraphicsRootDescriptorTable(3, resourceHeap->GetHandle(0));
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(drawable->GetVertexBufferView(), drawable->GetIndexBufferView());
 
