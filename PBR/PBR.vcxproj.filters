@@ -28,6 +28,9 @@
     <ClInclude Include="PbrDrawable.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\types.pbr.h">
+      <Filter>Resource Files\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
