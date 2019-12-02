@@ -6,9 +6,15 @@ class PbrPass {
 public:
     enum RootSignatureSlot {
         SettingsSlot = 0,
-        CameraSlot,
+        TransformSlot,
         MaterialSlot,
         LightsSlot,
+        NormalTexSlot,
+        AlbdoTexSlot,
+        MetalnessTexSlot,
+        RoughnessTexSlot,
+        AOTexSlot,
+        SamplerSlot,
         SlotCount
     };
 

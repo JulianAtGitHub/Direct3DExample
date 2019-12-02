@@ -403,7 +403,7 @@ void DXRExample::BuildGeometry(void) {
         geometries[i].indexCount = shape.indexCount;
         geometries[i].isOpacity = shape.isOpacity ? 1 : 0;
         geometries[i].reserve = 0;
-        geometries[i].texInfo = { shape.diffuseTex, shape.ambientTex, shape.specularTex, shape.normalTex };
+        geometries[i].texInfo = { shape.albdoTex, shape.metalnessTex, shape.roughnessTex, shape.normalTex };
         geometries[i].ambientColor = float4(shape.ambientColor.x, shape.ambientColor.y, shape.ambientColor.z, 1.0f);
         geometries[i].diffuseColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
         geometries[i].specularColor = float4(shape.specularColor.x, shape.specularColor.y, shape.specularColor.z, 1.0f);

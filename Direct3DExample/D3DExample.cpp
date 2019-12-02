@@ -259,10 +259,10 @@ void D3DExample::PopulateCommandList(void) {
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
     for (uint32_t j = 0; j < mScene->mShapes.size(); ++j) {
         const Utils::Scene::Shape &shape = mScene->mShapes[j];
-        if (shape.diffuseTex == Utils::Scene::TEX_INDEX_INVALID) {
+        if (shape.albdoTex == Utils::Scene::TEX_INDEX_INVALID) {
             continue;
         }
-        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.diffuseTex]->GetSRVHandle());
+        Render::gCommand->SetGraphicsRootDescriptorTable(1, mTextures[shape.albdoTex]->GetSRVHandle());
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }
 

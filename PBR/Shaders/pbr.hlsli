@@ -20,9 +20,15 @@ struct PSInput {
 };
 
 ConstantBuffer<SettingsCB>  Settings    : register(b0);
-ConstantBuffer<CameraCB>    Camera      : register(b1);
+ConstantBuffer<TransformCB> Transform   : register(b1);
 ConstantBuffer<MaterialCB>  Material    : register(b2);
-StructuredBuffer<LightCB>   Lights      : register(t0, space0);
+StructuredBuffer<LightCB>   Lights      : register(t0);
+Texture2D<float4>           NormalTex   : register(t1);
+Texture2D<float4>           AlbdoTex    : register(t2);
+Texture2D<float4>           MetalnessTex: register(t3);
+Texture2D<float4>           RoughnessTex: register(t4);
+Texture2D<float4>           AOTex       : register(t5);
+SamplerState                Sampler     : register(s0);
 
 static const float M_PI = 3.14159265359f;
 static const float3 F0_MIN = float3(0.04f, 0.04f, 0.04f);
@@ -69,28 +75,55 @@ inline float3 FresnelSchlick(float cosTheta, float3 F0) {
 PSInput VSMain(VSInput input) {
     PSInput ret;
 
-    ret.position = mul(float4(input.position, 1.0f), Camera.mvp);
-    ret.worldPos = input.position;
+    ret.position = mul(float4(input.position, 1.0f), Transform.mvp);
+    ret.worldPos = mul(float4(input.position, 1.0f), Transform.model).xyz;
     ret.uv = input.texCoord;
-    ret.normal = input.normal;
-    ret.tangent = input.tangent;
-    ret.bitangent = input.bitangent;
+    ret.normal = mul(input.normal, (float3x3)Transform.model);
+    ret.tangent = mul(input.tangent, (float3x3)Transform.model);
+    ret.bitangent = mul(input.bitangent, (float3x3)Transform.model);
 
     return ret;
 }
 
 #ifdef PBR_PS
 
-//Texture2D Tex : register(t0);
-//SamplerState Sampler : register(s0);
+struct PixelSample {
+    float3  normal;
+    float3  albdo;
+    float   metalness;
+    float   roughness;
+    float   ao;
+};
+
+void EvaluatePixel(in PSInput input, inout PixelSample ps) {
+    if (Settings.enableTexture) {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.bitangent), normalize(input.normal));
+        float3 normal = NormalTex.Sample(Sampler, input.uv).rgb;
+        normal = normalize(normal * 2.0f - 1.0f);
+        ps.normal = normalize(mul(normal, TBN));
+
+        ps.albdo = AlbdoTex.Sample(Sampler, input.uv).rgb;
+        ps.metalness = MetalnessTex.Sample(Sampler, input.uv).r;
+        ps.roughness = RoughnessTex.Sample(Sampler, input.uv).r;
+        ps.ao = AOTex.Sample(Sampler, input.uv).r;
+
+    } else {
+        ps.normal = normalize(input.normal);
+        ps.albdo = Material.albdo;
+        ps.metalness = Material.metalness;
+        ps.roughness = Material.roughness;
+        ps.ao = Material.ao;
+    }
+}
 
 float4 PSMain(PSInput input) : SV_TARGET {
-    // return Tex.Sample(Sampler, input.uv);
+    PixelSample ps;
+    EvaluatePixel(input, ps);
 
-    float3 N = normalize(input.normal);
-    float3 V = normalize(Camera.position.xyz - input.worldPos);
+    float3 N = ps.normal;
+    float3 V = normalize(Transform.cameraPos.xyz - input.worldPos);
 
-    float3 F0 = lerp(F0_MIN, Material.albdo, Material.metalness);
+    float3 F0 = lerp(F0_MIN, ps.albdo, ps.metalness);
 
     float3 Lo = float3(0.0f, 0.0f, 0.0f);
     for (uint i = 0; i < Settings.numLight; ++i) {
@@ -102,24 +135,24 @@ float4 PSMain(PSInput input) : SV_TARGET {
         float3 radiance = Lights[i].color * attenuation;
 
         // cook-torrance brdf
-        float D = DistributionGGX(N, H, Material.roughness);
-        float G = GeometrySmith(N, V, L, Material.roughness);
+        float D = DistributionGGX(N, H, ps.roughness);
+        float G = GeometrySmith(N, V, L, ps.roughness);
         float3 F = FresnelSchlick(saturate(dot(H, V)), F0);
 
         float3 Ks = F;
         float3 Kd = float3(1.0f, 1.0f, 1.0f) - Ks;
         // pure matel do not have refraction
-        Kd *= 1.0f - Material.metalness;
+        Kd *= 1.0f - ps.metalness;
 
         float NotV = saturate(dot(N, V));
         float NotL = saturate(dot(N, L));
         float3 specular = (D * G * F) / max(4.0f * NotV * NotL, 0.001f);
-        float3 brdf = Kd * Material.albdo / M_PI + specular;
+        float3 brdf = Kd * ps.albdo / M_PI + specular;
 
         Lo += (brdf * radiance * NotL);
     }
 
-    float3 ambient = float3(0.03f, 0.03f, 0.03f) * Material.albdo * Material.ao;
+    float3 ambient = float3(0.03f, 0.03f, 0.03f) * ps.albdo * ps.ao;
     float3 color = ambient + Lo;
 
     // HDR tonemap

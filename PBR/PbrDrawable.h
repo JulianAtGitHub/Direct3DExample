@@ -12,7 +12,7 @@ public:
 
     INLINE MaterialCB & GetMaterial(void) { return mMaterial; }
     INLINE D3D12_GPU_VIRTUAL_ADDRESS GetSettingsCB(uint32_t currentFrame) { return mSettingsCB->GetGPUAddress(0, currentFrame); }
-    INLINE D3D12_GPU_VIRTUAL_ADDRESS GetCameraCB(uint32_t currentFrame) const { return mCameraCB->GetGPUAddress(0, currentFrame); }
+    INLINE D3D12_GPU_VIRTUAL_ADDRESS GetTransformCB(uint32_t currentFrame) const { return mTransformCB->GetGPUAddress(0, currentFrame); }
     INLINE D3D12_GPU_VIRTUAL_ADDRESS GetMaterialCB(uint32_t currentFrame) const { return mMaterialCB->GetGPUAddress(0, currentFrame); }
     INLINE const D3D12_VERTEX_BUFFER_VIEW & GetVertexBufferView(void) const { return mVertexBufferView; }
     INLINE const D3D12_INDEX_BUFFER_VIEW & GetIndexBufferView(void) const { return mIndexBufferView; }
@@ -23,7 +23,7 @@ private:
     void Destroy(void);
 
     Render::ConstantBuffer             *mSettingsCB;
-    Render::ConstantBuffer             *mCameraCB;
+    Render::ConstantBuffer             *mTransformCB;
     MaterialCB                          mMaterial;
     Render::ConstantBuffer             *mMaterialCB;
     Render::DescriptorHeap             *mResourceHeap;

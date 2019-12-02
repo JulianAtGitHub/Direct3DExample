@@ -475,8 +475,8 @@ void PtExample::BuildGeometry(void) {
         geometries[i].reserve1 = 0;
         materials[i].type = LambertianMat;
         materials[i].normalTex = shape.normalTex;
-        materials[i].albedoTex = shape.diffuseTex;
-        materials[i].roughnessTex = shape.specularTex;
+        materials[i].albedoTex = shape.albdoTex;
+        materials[i].roughnessTex = shape.roughnessTex;
         materials[i].albedoColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
         materials[i].emissiveColor = float3(shape.emissiveColor.x, shape.emissiveColor.y, shape.emissiveColor.z);
         materials[i].roughness = 0.1f;

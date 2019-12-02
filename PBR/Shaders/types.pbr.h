@@ -9,13 +9,15 @@
 #endif
 
 struct SettingsCB {
-    bool    enableIBL;
+    uint    enableTexture;
+    uint    enableIBL;
     uint    numLight;
 };
 
-struct CameraCB {
+struct TransformCB {
+    float4x4 model;
     float4x4 mvp;
-    float4   position;
+    float4   cameraPos;
 };
 
 struct MaterialCB {

@@ -121,10 +121,11 @@ Scene * Model::LoadFromFile(const char *fileName) {
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, color)) { shape.emissiveColor = XMFLOAT3(color.r, color.g, color.b); }
 
         aiString texture;
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), texture)) { shape.ambientTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture)) { shape.diffuseTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), texture)) { shape.specularTex = AddImage(images, texture); }
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), texture)) { shape.normalTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture)) { shape.albdoTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), texture)) { shape.metalnessTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), texture)) { shape.roughnessTex = AddImage(images, texture); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), texture)) { shape.aoTex = AddImage(images, texture); }
         if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), texture)) { shape.isOpacity = false; }
 
         out->mShapes.push_back(shape);

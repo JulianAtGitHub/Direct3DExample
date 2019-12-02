@@ -4,7 +4,7 @@
 
 PbrDrawable::PbrDrawable(void)
 : mSettingsCB(nullptr)
-, mCameraCB(nullptr)
+, mTransformCB(nullptr)
 , mMaterialCB(nullptr)
 , mResourceHeap(nullptr)
 , mVertexBuffer(nullptr)
@@ -26,7 +26,7 @@ void PbrDrawable::Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uin
     mMaterial = { {0.5f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
 
     mSettingsCB = new Render::ConstantBuffer(sizeof(SettingsCB), 1);
-    mCameraCB = new Render::ConstantBuffer(sizeof(CameraCB), 1);
+    mTransformCB = new Render::ConstantBuffer(sizeof(TransformCB), 1);
     mMaterialCB = new Render::ConstantBuffer(sizeof(MaterialCB), 1);
 
     size_t verticesSize = scene->mVertices.size() * sizeof(Utils::Scene::Vertex);
@@ -68,7 +68,7 @@ void PbrDrawable::Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uin
 
 void PbrDrawable::Destroy(void) {
     DeleteAndSetNull(mSettingsCB);
-    DeleteAndSetNull(mCameraCB);
+    DeleteAndSetNull(mTransformCB);
     DeleteAndSetNull(mMaterialCB);
     for (auto texture : mTextures) {
         delete texture;
@@ -84,12 +84,13 @@ void PbrDrawable::Update(uint32_t currentFrame, Utils::Camera &camera, const Set
     XMMATRIX view = camera.GetViewMatrix();
     XMMATRIX proj = camera.GetProjectMatrix();
 
-    CameraCB cameraCB;
-    XMStoreFloat4x4(&(cameraCB.mvp), XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
-    XMStoreFloat4(&(cameraCB.position), camera.GetPosition());
+    TransformCB transform;
+    XMStoreFloat4x4(&(transform.model), model);
+    XMStoreFloat4x4(&(transform.mvp), XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
+    XMStoreFloat4(&(transform.cameraPos), camera.GetPosition());
 
     mSettingsCB->CopyData(&settings, sizeof(SettingsCB), 0, currentFrame);
-    mCameraCB->CopyData(&cameraCB, sizeof(CameraCB), 0, currentFrame);
+    mTransformCB->CopyData(&transform, sizeof(TransformCB), 0, currentFrame);
     mMaterialCB->CopyData(&mMaterial, sizeof(MaterialCB), 0, currentFrame);
 }
 

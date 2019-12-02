@@ -46,7 +46,7 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
-    mSettings = { false, LIGHT_COUNT };
+    mSettings = { 1, 0, LIGHT_COUNT };
     mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[2] = { {-10.0f,-10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
@@ -66,11 +66,30 @@ void PbrExample::Init(HWND hwnd) {
 
     delete image;
 
-    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.1f, 1000.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
+    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
+
+    sphere->mImages.reserve(5);
+    Utils::Scene::Shape &shape = sphere->mShapes[0];
+
+    shape.normalTex = 0; 
+    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\normal.png"));
+
+    shape.albdoTex = 1; 
+    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\albedo.png"));
+
+    shape.metalnessTex = 2; 
+    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\metallic.png"));
+
+    shape.roughnessTex = 3; 
+    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\roughness.png"));
+
+    shape.aoTex = 4; 
+    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
+
     mSphere = new PbrDrawable();
     mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT);
     delete sphere;
@@ -212,12 +231,13 @@ void PbrExample::UpdateGUI(float second) {
     ImGui::BeginChild("Settings");
 
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings");
+    ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
     ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
 
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
     ImGui::ColorEdit3("Albdo", &(mSphere->GetMaterial().albdo.x));
     ImGui::SliderFloat("Matelness", &(mSphere->GetMaterial().metalness), 0.04f, 1.0f);
-    ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.0f, 1.0f);
+    ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.04f, 1.0f);
 
     ImGui::EndChild();
 

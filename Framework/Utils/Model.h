@@ -16,10 +16,11 @@ public:
         , diffuseColor(0.0f, 0.0f, 0.0f)
         , specularColor(0.0f, 0.0f, 0.0f)
         , emissiveColor(0.0f, 0.0f, 0.0f)
-        , ambientTex(TEX_INDEX_INVALID)
-        , diffuseTex(TEX_INDEX_INVALID)
-        , specularTex(TEX_INDEX_INVALID)
         , normalTex(TEX_INDEX_INVALID)
+        , albdoTex(TEX_INDEX_INVALID)
+        , metalnessTex(TEX_INDEX_INVALID)
+        , roughnessTex(TEX_INDEX_INVALID)
+        , aoTex(TEX_INDEX_INVALID)
         , isOpacity(true) 
         {
 
@@ -32,10 +33,11 @@ public:
         XMFLOAT3 diffuseColor;
         XMFLOAT3 specularColor;
         XMFLOAT3 emissiveColor;
-        uint32_t ambientTex;    // metallic
-        uint32_t diffuseTex;    // albedo
-        uint32_t specularTex;   // roughness
-        uint32_t normalTex;     // normal
+        uint32_t normalTex;
+        uint32_t albdoTex;
+        uint32_t metalnessTex;
+        uint32_t roughnessTex;
+        uint32_t aoTex;
         bool     isOpacity;
     };
 
