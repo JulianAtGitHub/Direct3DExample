@@ -260,7 +260,9 @@ void PbrExample::Render(void) {
 
     mPbrPass->PreviousRender();
     mPbrPass->Render(mCurrentFrame, mSphere);
-    mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    if (mSettings.enableIBL) {
+        mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    }
     mGUI->Draw(mCurrentFrame, Render::gRenderTarget[mCurrentFrame]);
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
