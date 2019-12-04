@@ -95,6 +95,10 @@ struct PixelSample {
     float   ao;
 };
 
+inline float3 SRGBToLinear(float3 x) {
+    return x < 0.04045f ? x / 12.92f : pow((x + 0.055f) / 1.055f, 2.4f);
+}
+
 void EvaluatePixel(in PSInput input, inout PixelSample ps) {
     if (Settings.enableTexture) {
         float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.bitangent), normalize(input.normal));
@@ -102,7 +106,7 @@ void EvaluatePixel(in PSInput input, inout PixelSample ps) {
         normal = normalize(normal * 2.0f - 1.0f);
         ps.normal = normalize(mul(normal, TBN));
 
-        ps.albdo = AlbdoTex.Sample(Sampler, input.uv).rgb;
+        ps.albdo = SRGBToLinear(AlbdoTex.Sample(Sampler, input.uv).rgb);
         ps.metalness = MetalnessTex.Sample(Sampler, input.uv).r;
         ps.roughness = RoughnessTex.Sample(Sampler, input.uv).r;
         ps.ao = AOTex.Sample(Sampler, input.uv).r;
@@ -158,7 +162,8 @@ float4 PSMain(PSInput input) : SV_TARGET {
     // HDR tonemap
     color = color / (color + 1.0f);
     // gamma correction
-    color = pow(color, 1.0f / 2.2f);
+    float g = 1.0f / 2.2f;
+    color = pow(color, float3(g, g, g));
 
     return float4(color, 1.0f);
 }
