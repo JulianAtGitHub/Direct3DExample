@@ -31,6 +31,9 @@
     <ClInclude Include="Shaders\types.pbr.h">
       <Filter>Resource Files\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="IrradiancePass.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +54,9 @@
     <ClCompile Include="PbrDrawable.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="IrradiancePass.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -58,6 +64,12 @@
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Shaders\skybox.hlsli">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Shaders\constants.hlsli">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Shaders\Irradiance.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -72,6 +84,9 @@
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\skybox.vs.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Irradiance.cs.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
