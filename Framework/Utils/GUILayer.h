@@ -20,6 +20,8 @@ public:
     GUILayer(HWND hwnd, uint32_t width, uint32_t height);
     ~GUILayer(void);
 
+    bool AddImage(Render::PixelBuffer *image);
+
     void BeginFrame(float deltaTime);
     void EndFrame(uint32_t frameIdx);
     void Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget);
@@ -40,6 +42,9 @@ public:
     void OnMouseWheel(uint64_t param);
 
 private:
+    const static uint32_t   RESOURCE_COUNT      = 32;
+    const static size_t     VERTEX_BUFFER_SIZE  = 0x200000; // 2MB
+
     void Initialize(HWND hwnd);
     void Destroy(void);
 
@@ -59,7 +64,7 @@ private:
     D3D12_VERTEX_BUFFER_VIEW    mVertexView;
     D3D12_INDEX_BUFFER_VIEW     mIndexView;
 
-    const static size_t VERTEX_BUFFER_SIZE    = 0x200000; // 2MB
+    std::map<const void *, uint32_t> mResourceMap;
 };
 
 }

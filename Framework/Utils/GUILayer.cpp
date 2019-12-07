@@ -94,7 +94,7 @@ void GUILayer::Initialize(HWND hwnd) {
     mGraphicsState->SetPixelShader(gscGuiPS, sizeof(gscGuiPS));
     mGraphicsState->Create(mRootSignature);
 
-    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
+    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, RESOURCE_COUNT);
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
 
     uint8_t *texturePixels = nullptr;
@@ -106,8 +106,8 @@ void GUILayer::Initialize(HWND hwnd) {
     Render::gCommand->Begin();
     Render::gCommand->UploadTexture(mFontTexture, texturePixels);
     Render::gCommand->End(true);
-    mFontTexture->CreateSRV(mResourceHeap->Allocate());
     io.Fonts->TexID = mFontTexture;
+    AddImage(mFontTexture);
 
     mSampler = new Render::Sampler();
     mSampler->Create(mSamplerHeap->Allocate());
@@ -132,6 +132,21 @@ void GUILayer::Destroy(void) {
     DeleteAndSetNull(mSamplerHeap);
     DeleteAndSetNull(mRootSignature);
     DeleteAndSetNull(mGraphicsState);
+}
+
+bool GUILayer::AddImage(Render::PixelBuffer *image) {
+    if (!image || !mResourceHeap->GetRemainingCount()) {
+        return false;
+    }
+
+    // Already added
+    if (mResourceMap.find(image) != mResourceMap.end()) {
+        return true;
+    }
+
+    image->CreateSRV(mResourceHeap->Allocate(), false);
+    mResourceMap[image] = RESOURCE_COUNT - mResourceHeap->GetRemainingCount() - 1;
+    return true;
 }
 
 void GUILayer::BeginFrame(float deltaTime) {
@@ -202,7 +217,6 @@ void GUILayer::Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget)
     Render::gCommand->SetRootSignature(mRootSignature);
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, frameIdx));
-    Render::gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
     Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexView, mIndexView);
@@ -218,8 +232,10 @@ void GUILayer::Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget)
             } else {
                 const D3D12_RECT r = { long(drawCmd->ClipRect.x), long(drawCmd->ClipRect.y), long(drawCmd->ClipRect.z), long(drawCmd->ClipRect.w) };
                 if(r.left < r.right && r.top < r.bottom) {
-                    //Render::PixelBuffer* texture = reinterpret_cast<Render::PixelBuffer*>(drawCmd->TextureId);
-                    //Render::gCommand->SetGraphicsRootDescriptorTable(1, mFontTexture->GetSRVHandle());
+                    auto it = mResourceMap.find(drawCmd->TextureId);
+                    if (it != mResourceMap.end()) {
+                        Render::gCommand->SetGraphicsRootDescriptorTable(1, mResourceHeap->GetHandle(it->second));
+                    }
                     Render::gCommand->SetScissor(r);
                     Render::gCommand->DrawIndexed(drawCmd->ElemCount, idxOffset, vtxOffset);
                 }
