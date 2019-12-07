@@ -26,6 +26,7 @@ CommandContext::CommandContext(const D3D12_COMMAND_LIST_TYPE type)
 , mFenceValue(0)
 , mCpuAllocator(nullptr)
 , mGpuAllocator(nullptr)
+, mIsBegin(false)
 {
     Initialize();
 }
@@ -54,6 +55,11 @@ void CommandContext::Destroy(void) {
 }
 
 void CommandContext::Begin(PipelineState *pipeline) {
+    ASSERT_PRINT(!mIsBegin);
+    if (mIsBegin) {
+        return;
+    }
+
     ID3D12PipelineState *pipelineState = pipeline ? pipeline->GetPipelineState() : nullptr;
     mCommandAlloctor = mQueue->QueryAllocator();
     if (mCommandList) {
@@ -64,9 +70,16 @@ void CommandContext::Begin(PipelineState *pipeline) {
             ASSERT_SUCCEEDED(mCommandList->QueryInterface(IID_PPV_ARGS(&mDXRCommandList)));
         }
     }
+
+    mIsBegin = true;
 }
 
 uint64_t CommandContext::End(bool waitUtilComplete) {
+    ASSERT_PRINT(mIsBegin);
+    if (!mIsBegin) {
+        return 0;
+    }
+
     if (!mCommandList) {
         return 0;
     }
@@ -82,6 +95,8 @@ uint64_t CommandContext::End(bool waitUtilComplete) {
     if (waitUtilComplete) {
         mQueue->WaitForFence(fenceValue);
     }
+
+    mIsBegin = false;
 
     return fenceValue;
 }

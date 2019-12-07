@@ -21,6 +21,7 @@ public:
     INLINE CommandQueue * GetQueue(void) const { return mQueue; }
     INLINE ID3D12GraphicsCommandList * GetCommandList(void) const { return mCommandList; }
     INLINE ID3D12GraphicsCommandList4 * GetDXRCommandList(void) const { return mDXRCommandList; }
+    INLINE bool IsBegin(void) const { return mIsBegin; }
 
     void Begin(PipelineState *pipeline = nullptr);
     uint64_t End(bool waitUtilComplete = false);
@@ -94,6 +95,7 @@ private:
     uint64_t                        mFenceValue;
     LinerAllocator                 *mCpuAllocator;
     LinerAllocator                 *mGpuAllocator;
+    bool                            mIsBegin;
 };
 
 INLINE void CommandContext::SetViewport(const D3D12_VIEWPORT& viewport) {
