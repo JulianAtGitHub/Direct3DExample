@@ -28,23 +28,15 @@ MipsGenerator::MipsGenerator(void)
 }
 
 MipsGenerator::~MipsGenerator(void) {
-    DeleteAndSetNull(mSampler);
-    DeleteAndSetNull(mSamplerHeap);
-    DeleteAndSetNull(mRootSignature);
-
-    for (uint32_t i = 0; i < ColorSpaceMax; ++i) {
-        for (uint32_t j = 0; j < SizeTypeMax; ++j) {
-            DeleteAndSetNull(mPipelineState[i][j]);
-        }
-    }
+    Destroy();
 }
 
 void MipsGenerator::Initialize(void) {
-    mRootSignature = new Render::RootSignature(Render::RootSignature::Compute, 4);
-    mRootSignature->SetConstants(0, 4, 0);
-    mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-    mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
-    mRootSignature->SetDescriptorTable(3, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4, 0);
+    mRootSignature = new Render::RootSignature(Render::RootSignature::Compute, RootSigSlotMax);
+    mRootSignature->SetConstants(ConstantSlot, 4, 0);
+    mRootSignature->SetDescriptorTable(SourceTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+    mRootSignature->SetDescriptorTable(SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
+    mRootSignature->SetDescriptorTable(OutputsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4, 0);
     mRootSignature->Create();
 
     for (uint32_t i = 0; i < ColorSpaceMax; ++i) {
@@ -76,7 +68,23 @@ void MipsGenerator::Initialize(void) {
     mSampler->Create(mSamplerHeap->Allocate());
 }
 
+void MipsGenerator::Destroy(void) {
+    DeleteAndSetNull(mSampler);
+    DeleteAndSetNull(mSamplerHeap);
+    DeleteAndSetNull(mRootSignature);
+
+    for (uint32_t i = 0; i < ColorSpaceMax; ++i) {
+        for (uint32_t j = 0; j < SizeTypeMax; ++j) {
+            DeleteAndSetNull(mPipelineState[i][j]);
+        }
+    }
+}
+
 void MipsGenerator::Dispatch(Render::PixelBuffer *resource) {
+    if (Render::gCommand->IsBegin()) {
+        return;
+    }
+
     if (!resource) {
         return;
     }
@@ -103,8 +111,8 @@ void MipsGenerator::Dispatch(Render::PixelBuffer *resource) {
     Render::DescriptorHeap *heaps[] = { resourceHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
 
-    Render::gCommand->SetComputeRootDescriptorTable(1, resourceHeap->GetHandle(0));
-    Render::gCommand->SetComputeRootDescriptorTable(2, mSampler->GetHandle());
+    Render::gCommand->SetComputeRootDescriptorTable(SourceTexSlot, resourceHeap->GetHandle(0));
+    Render::gCommand->SetComputeRootDescriptorTable(SamplerSlot, mSampler->GetHandle());
 
     ColorSpace space = Render::IsSRGB(resource->GetFormat()) ? SRGBSpace : LinearSpace;
     uint32_t mipsCount = mipLevels - 1;
@@ -135,8 +143,8 @@ void MipsGenerator::Dispatch(Render::PixelBuffer *resource) {
         uint32_t constants[] = {topMip, newMips, 0, 0};
         *(float *)(constants + 2) = 1.0f / dstWidth;
         *(float *)(constants + 3) = 1.0f / dstHeight;
-        Render::gCommand->SetComputeRootConstants(0, constants, 4);
-        Render::gCommand->SetComputeRootDescriptorTable(3, resourceHeap->GetHandle(1 + topMip));
+        Render::gCommand->SetComputeRootConstants(ConstantSlot, constants, 4);
+        Render::gCommand->SetComputeRootDescriptorTable(OutputsSlot, resourceHeap->GetHandle(1 + topMip));
 
         Render::gCommand->Dispatch2D(dstWidth, dstHeight);
 

@@ -19,6 +19,7 @@ public:
 
 private:
     void Initialize(void);
+    void Destroy(void);
 
     enum ColorSpace {
         LinearSpace,
@@ -32,6 +33,14 @@ private:
         X_EVEN_Y_ODD,
         X_ODD_Y_ODD,
         SizeTypeMax
+    };
+
+    enum RootSigSlot {
+        ConstantSlot,
+        SourceTexSlot,
+        SamplerSlot,
+        OutputsSlot,
+        RootSigSlotMax
     };
 
     Render::RootSignature  *mRootSignature;
