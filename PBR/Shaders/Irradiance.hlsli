@@ -1,5 +1,5 @@
 
-#include "constants.hlsli"
+#include "utils.hlsli"
 
 cbuffer CB0 : register(b0) {
     float2  TexelSize;      // 1.0 / OutMip1.Dimensions
@@ -8,22 +8,6 @@ cbuffer CB0 : register(b0) {
 Texture2D<float4>   EnvTex  : register(t0);
 SamplerState        Sampler : register(s0);
 RWTexture2D<float4> OutTex  : register(u0);
-
-inline float2 DirToLatLong(float3 dir) {
-    float3 p = normalize(dir);
-    float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
-    float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, 1.0f - v);
-}
-
-inline float3 LatLongToDir(float2 ll) {
-    ll = saturate(ll);
-    float3 dir;
-    dir.y = 1.0f - 2.0f * ll.y;
-    dir.x = -sin(ll.x * M_PI * 2.0f);
-    dir.z = cos(ll.x * M_PI * 2.0f);
-    return normalize(dir);
-}
 
 [numthreads(BLOCK_SIZE, BLOCK_SIZE, 1)]
 void Main(uint3 DTid : SV_DispatchThreadID) {

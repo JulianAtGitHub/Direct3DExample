@@ -1,3 +1,5 @@
+#ifndef _CONSTANTS_HLSLI_
+#define _CONSTANTS_HLSLI_
 
 #define M_E         2.71828182845904523536   // e
 #define M_LOG2E     1.44269504088896340736   // log2(e)
@@ -14,3 +16,5 @@
 #define M_SQRT1_2   0.707106781186547524401  // 1/sqrt(2)
 
 #define F0_MIN      float3(0.04f, 0.04f, 0.04f)
+
+#endif // _CONSTANTS_HLSLI_

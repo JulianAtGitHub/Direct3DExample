@@ -1,6 +1,6 @@
 #pragma pack_matrix(row_major)
 
-#include "constants.hlsli"
+#include "utils.hlsli"
 
 struct VSInput
 {
@@ -35,13 +35,6 @@ PSInput VSMain(VSInput input) {
 Texture2D EnvTex : register(t0);
 
 SamplerState Sampler : register(s0);
-
-inline float2 DirToLatLong(float3 dir) {
-    float3 p = normalize(dir);
-    float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
-    float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, 1.0f - v);
-}
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float2 uv = DirToLatLong(input.direction);

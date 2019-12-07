@@ -7,7 +7,7 @@ public:
     PbrDrawable(void);
     ~PbrDrawable(void);
 
-    void Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uint32_t numLight);
+    void Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uint32_t numLight, Render::PixelBuffer *irradianceTex);
     void Update(uint32_t currentFrame, Utils::Camera &camera, const SettingsCB &settings);
 
     INLINE MaterialCB & GetMaterial(void) { return mMaterial; }

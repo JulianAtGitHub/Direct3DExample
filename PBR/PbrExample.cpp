@@ -48,7 +48,7 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
-    mAppSettings = { false, false, false };
+    mAppSettings = { true, false, false };
     mSettings = { 1, 0, LIGHT_COUNT };
     mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
@@ -107,7 +107,7 @@ void PbrExample::Init(HWND hwnd) {
     sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
 
     mSphere = new PbrDrawable();
-    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT);
+    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT, mIrrTexture);
     delete sphere;
 
     mPbrPass = new PbrPass();

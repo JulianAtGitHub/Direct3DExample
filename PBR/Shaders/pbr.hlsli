@@ -1,7 +1,7 @@
 #pragma pack_matrix(row_major)
 
-#include "constants.hlsli"
 #include "types.pbr.h"
+#include "utils.hlsli"
 
 struct VSInput {
     float3 position : POSITION;
@@ -20,55 +20,17 @@ struct PSInput {
     float3 bitangent: Bitangent;
 };
 
-ConstantBuffer<SettingsCB>  Settings    : register(b0);
-ConstantBuffer<TransformCB> Transform   : register(b1);
-ConstantBuffer<MaterialCB>  Material    : register(b2);
-StructuredBuffer<LightCB>   Lights      : register(t0);
-Texture2D<float4>           NormalTex   : register(t1);
-Texture2D<float4>           AlbdoTex    : register(t2);
-Texture2D<float4>           MetalnessTex: register(t3);
-Texture2D<float4>           RoughnessTex: register(t4);
-Texture2D<float4>           AOTex       : register(t5);
-SamplerState                Sampler     : register(s0);
-
-//--------------- D G F ---------------------
-
-float DistributionGGX(float3 N, float3 H, float R) {
-    float a = R * R;
-    float a2 = a * a;
-    float NDotH = saturate(dot(N, H));
-    float NDotH2 = NDotH * NDotH;
-
-    float denom = (NDotH2 * (a2 - 1.0f) + 1.0f);
-    denom = M_PI * denom * denom;
-
-    return a2 / denom;
-}
-
-inline float GeometryShlickGGX(float NdotV, float R) {
-#ifdef ENABLE_IBL
-    float k = (R * R) / 2.0f;
-#else
-    float r = (R + 1.0f);
-    float k = (r * r) / 8.0f;
-#endif
-    return NdotV / (NdotV * (1.0f - k) + k);
-}
-
-float GeometrySmith(float3 N, float3 V, float3 L, float R) {
-    float NotV = saturate(dot(N, V));
-    float NotL = saturate(dot(N, L));
-
-    float ggx1 = GeometryShlickGGX(NotV, R);
-    float ggx2 = GeometryShlickGGX(NotL, R);
-    return ggx1 * ggx2;
-}
-
-inline float3 FresnelSchlick(float cosTheta, float3 F0) {
-    return F0 + (float3(1.0f, 1.0f, 1.0f) - F0) * pow(1.0f - cosTheta, 5.0f);
-}
-
-//--------------- Shader Main ---------------------
+ConstantBuffer<SettingsCB>  Settings        : register(b0);
+ConstantBuffer<TransformCB> Transform       : register(b1);
+ConstantBuffer<MaterialCB>  Material        : register(b2);
+StructuredBuffer<LightCB>   Lights          : register(t0);
+Texture2D<float4>           IrradianceTex   : register(t1);
+Texture2D<float4>           NormalTex       : register(t2);
+Texture2D<float4>           AlbdoTex        : register(t3);
+Texture2D<float4>           MetalnessTex    : register(t4);
+Texture2D<float4>           RoughnessTex    : register(t5);
+Texture2D<float4>           AOTex           : register(t6);
+SamplerState                Sampler         : register(s0);
 
 PSInput VSMain(VSInput input) {
     PSInput ret;
@@ -90,10 +52,6 @@ struct PixelSample {
     float   roughness;
     float   ao;
 };
-
-inline float3 SRGBToLinear(float3 x) {
-    return x < 0.04045f ? x / 12.92f : pow((x + 0.055f) / 1.055f, 2.4f);
-}
 
 void EvaluatePixel(in PSInput input, inout PixelSample ps) {
     if (Settings.enableTexture) {
@@ -152,8 +110,19 @@ float4 PSMain(PSInput input) : SV_TARGET {
         Lo += (brdf * radiance * NotL);
     }
 
-    float3 ambient = float3(0.03f, 0.03f, 0.03f) * ps.albdo * ps.ao;
-    float3 color = ambient + Lo;
+    float3 color = Lo;
+
+    if (Settings.enableIBL) {
+        float3 Ks = FresnelSchlickRoughness(saturate(dot(N, V)), F0, ps.roughness);
+        float3 Kd = float3(1.0f, 1.0f, 1.0f) - Ks;
+        Kd *= 1.0f - ps.metalness;
+        float3 irradiance = IrradianceTex.SampleLevel(Sampler, DirToLatLong(N), 0).rgb;
+        float3 ambient = Kd * irradiance * ps.albdo * ps.ao;
+        color += ambient;
+    } else {
+        float3 ambient = float3(0.03f, 0.03f, 0.03f) * ps.albdo * ps.ao;
+        color += ambient;
+    }
 
     // HDR tonemap
     color = color / (color + 1.0f);

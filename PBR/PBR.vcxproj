@@ -113,6 +113,7 @@
     <None Include="Shaders\Irradiance.hlsli" />
     <None Include="Shaders\pbr.hlsli" />
     <None Include="Shaders\skybox.hlsli" />
+    <None Include="Shaders\utils.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Irradiance.cs.hlsl">

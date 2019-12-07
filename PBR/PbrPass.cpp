@@ -23,11 +23,12 @@ void PbrPass::Initialize(void) {
     mRootSignature->SetDescriptor(TransformSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 1);
     mRootSignature->SetDescriptor(MaterialSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 2);
     mRootSignature->SetDescriptorTable(LightsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-    mRootSignature->SetDescriptorTable(NormalTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-    mRootSignature->SetDescriptorTable(AlbdoTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
-    mRootSignature->SetDescriptorTable(MetalnessTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
-    mRootSignature->SetDescriptorTable(RoughnessTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
-    mRootSignature->SetDescriptorTable(AOTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
+    mRootSignature->SetDescriptorTable(IrradianceTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+    mRootSignature->SetDescriptorTable(NormalTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+    mRootSignature->SetDescriptorTable(AlbdoTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
+    mRootSignature->SetDescriptorTable(MetalnessTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
+    mRootSignature->SetDescriptorTable(RoughnessTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
+    mRootSignature->SetDescriptorTable(AOTexSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
     mRootSignature->SetDescriptorTable(SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mRootSignature->Create();
 
@@ -75,16 +76,17 @@ void PbrPass::Render(uint32_t currentFrame, PbrDrawable *drawable) {
     Render::gCommand->SetGraphicsRootConstantBufferView(TransformSlot, drawable->GetTransformCB(currentFrame));
     Render::gCommand->SetGraphicsRootConstantBufferView(MaterialSlot, drawable->GetMaterialCB(currentFrame));
     Render::gCommand->SetGraphicsRootDescriptorTable(LightsSlot, resourceHeap->GetHandle(0));
+    Render::gCommand->SetGraphicsRootDescriptorTable(IrradianceTexSlot, resourceHeap->GetHandle(1));
     Render::gCommand->SetGraphicsRootDescriptorTable(SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(drawable->GetVertexBufferView(), drawable->GetIndexBufferView());
-
+    uint32_t texOffset = 2;
     for (auto &shape : drawable->GetShapes()) {
-        Render::gCommand->SetGraphicsRootDescriptorTable(NormalTexSlot, resourceHeap->GetHandle(shape.normalTex + 1));
-        Render::gCommand->SetGraphicsRootDescriptorTable(AlbdoTexSlot, resourceHeap->GetHandle(shape.albdoTex + 1));
-        Render::gCommand->SetGraphicsRootDescriptorTable(MetalnessTexSlot, resourceHeap->GetHandle(shape.metalnessTex + 1));
-        Render::gCommand->SetGraphicsRootDescriptorTable(RoughnessTexSlot, resourceHeap->GetHandle(shape.roughnessTex + 1));
-        Render::gCommand->SetGraphicsRootDescriptorTable(AOTexSlot, resourceHeap->GetHandle(shape.albdoTex + 1));
+        Render::gCommand->SetGraphicsRootDescriptorTable(NormalTexSlot, resourceHeap->GetHandle(shape.normalTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(AlbdoTexSlot, resourceHeap->GetHandle(shape.albdoTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(MetalnessTexSlot, resourceHeap->GetHandle(shape.metalnessTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(RoughnessTexSlot, resourceHeap->GetHandle(shape.roughnessTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(AOTexSlot, resourceHeap->GetHandle(shape.albdoTex + texOffset));
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }
 }

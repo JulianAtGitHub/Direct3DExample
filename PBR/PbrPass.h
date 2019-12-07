@@ -9,6 +9,7 @@ public:
         TransformSlot,
         MaterialSlot,
         LightsSlot,
+        IrradianceTexSlot,
         NormalTexSlot,
         AlbdoTexSlot,
         MetalnessTexSlot,
