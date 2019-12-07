@@ -1,5 +1,7 @@
 #pragma pack_matrix(row_major)
 
+#include "constants.hlsli"
+
 struct VSInput
 {
     float3 position : POSITION;
@@ -30,11 +32,6 @@ PSInput VSMain(VSInput input) {
     return ret;
 }
 
-
-#ifdef SKYBOX_PS
-
-#define M_1_PI 0.318309886f
-
 Texture2D EnvTex : register(t0);
 
 SamplerState Sampler : register(s0);
@@ -43,7 +40,7 @@ inline float2 DirToLatLong(float3 dir) {
     float3 p = normalize(dir);
     float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
     float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, 1.0 - v);
+    return float2(u, 1.0f - v);
 }
 
 float4 PSMain(PSInput input) : SV_TARGET {
@@ -57,4 +54,3 @@ float4 PSMain(PSInput input) : SV_TARGET {
     return float4(envColor.rgb, 1.0f);
 }
 
-#endif

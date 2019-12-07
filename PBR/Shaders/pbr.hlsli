@@ -1,5 +1,6 @@
 #pragma pack_matrix(row_major)
 
+#include "constants.hlsli"
 #include "types.pbr.h"
 
 struct VSInput {
@@ -29,9 +30,6 @@ Texture2D<float4>           MetalnessTex: register(t3);
 Texture2D<float4>           RoughnessTex: register(t4);
 Texture2D<float4>           AOTex       : register(t5);
 SamplerState                Sampler     : register(s0);
-
-static const float M_PI = 3.14159265359f;
-static const float3 F0_MIN = float3(0.04f, 0.04f, 0.04f);
 
 //--------------- D G F ---------------------
 
@@ -85,8 +83,6 @@ PSInput VSMain(VSInput input) {
     return ret;
 }
 
-#ifdef PBR_PS
-
 struct PixelSample {
     float3  normal;
     float3  albdo;
@@ -127,7 +123,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     float3 N = ps.normal;
     float3 V = normalize(Transform.cameraPos.xyz - input.worldPos);
 
-    float3 F0 = lerp(F0_MIN, ps.albdo, ps.metalness);
+    float3 F0 = lerp(F0_MIN, ps.albdo, float3(ps.metalness, ps.metalness, ps.metalness));
 
     float3 Lo = float3(0.0f, 0.0f, 0.0f);
     for (uint i = 0; i < Settings.numLight; ++i) {
@@ -168,7 +164,6 @@ float4 PSMain(PSInput input) : SV_TARGET {
     return float4(color, 1.0f);
 }
 
-#endif
 
 
 
