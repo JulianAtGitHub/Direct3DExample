@@ -3,6 +3,7 @@
 #include "PbrDrawable.h"
 #include "PbrPass.h"
 #include "SkyboxPass.h"
+#include "IrradiancePass.h"
 
 std::string PbrExample::WindowTitle = "PBR Example";
 
@@ -18,7 +19,8 @@ PbrExample::PbrExample(void)
 , mCurrentMousePos(0)
 , mLightsBuffer(nullptr)
 , mEnvTexture(nullptr)
-, mEnvTextureHeap(nullptr)
+, mIrrTexture(nullptr)
+, mTextureHeap(nullptr)
 , mCamera(nullptr)
 , mGUI(nullptr)
 , mSphere(nullptr)
@@ -46,6 +48,7 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
+    mAppSettings = { false, false, false };
     mSettings = { 1, 0, LIGHT_COUNT };
     mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
@@ -54,10 +57,17 @@ void PbrExample::Init(HWND hwnd) {
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
 
+    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2);
+
     Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
     mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
-    mEnvTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
-    mEnvTexture->CreateSRV(mEnvTextureHeap->Allocate());
+    mEnvTexture->CreateSRV(mTextureHeap->Allocate());
+
+    uint32_t irrWidth = mEnvTexture->GetWidth() >> 1;
+    uint32_t irrHeight = mEnvTexture->GetHeight() >> 1;
+    uint32_t irrPitch = Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT) * irrWidth;
+    mIrrTexture = new Render::PixelBuffer(irrPitch, irrWidth, irrHeight, 1, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mIrrTexture->CreateSRV(mTextureHeap->Allocate());
 
     Render::gCommand->Begin();
     Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
@@ -66,8 +76,14 @@ void PbrExample::Init(HWND hwnd) {
 
     delete image;
 
+    IrradiancePass *irrPass = new IrradiancePass();
+    irrPass->Dispatch(mEnvTexture, mIrrTexture);
+    delete irrPass;
+
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
+    mGUI->AddImage(mEnvTexture);
+    mGUI->AddImage(mIrrTexture);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
@@ -105,8 +121,9 @@ void PbrExample::Destroy(void) {
 
     DeleteAndSetNull(mGUI);
     DeleteAndSetNull(mLightsBuffer);
-    DeleteAndSetNull(mEnvTextureHeap);
+    DeleteAndSetNull(mTextureHeap);
     DeleteAndSetNull(mEnvTexture);
+    DeleteAndSetNull(mIrrTexture);
     DeleteAndSetNull(mCamera);
     DeleteAndSetNull(mSphere);
     DeleteAndSetNull(mPbrPass);
@@ -197,10 +214,10 @@ void PbrExample::Update(void) {
         int32_t deltaX = GET_X_LPARAM(mCurrentMousePos) - GET_X_LPARAM(mLastMousePos);
         int32_t deltaY = GET_Y_LPARAM(mCurrentMousePos) - GET_Y_LPARAM(mLastMousePos);
         if (deltaX) {
-            mCamera->RotateY(XMConvertToRadians(-deltaX * 0.2f));
+            mCamera->RotateY(XMConvertToRadians(-deltaX * 0.1f));
         }
         if (deltaY) {
-            mCamera->RotateX(XMConvertToRadians(-deltaY * 0.2f));
+            mCamera->RotateX(XMConvertToRadians(-deltaY * 0.1f));
         }
 
         mLastMousePos = mCurrentMousePos;
@@ -227,10 +244,14 @@ void PbrExample::UpdateGUI(float second) {
     ImGui::SetNextWindowSize(ImVec2(350.0f, 300.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::BeginChild("Options");
 
-    ImGui::BeginChild("Settings");
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Application");
+    ImGui::Checkbox("Enable Skybox", &mAppSettings.enableSkybox);
+    ImGui::Checkbox("IBL Image", &mAppSettings.showImageIBL);
+    ImGui::Checkbox("Irradiance Image", &mAppSettings.showImageIrradiance);
 
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Settings");
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
     ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
     ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
 
@@ -240,8 +261,26 @@ void PbrExample::UpdateGUI(float second) {
     ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.04f, 1.0f);
 
     ImGui::EndChild();
-
     ImGui::End();
+
+    if (mAppSettings.showImageIBL) {
+        ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
+        ImGui::Begin("IBL Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::BeginChild("IBL Image");
+        ImGui::Image(mEnvTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        ImGui::EndChild();
+        ImGui::End();
+    }
+    if (mAppSettings.showImageIrradiance) {
+        ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(360.0f, 320.0f), ImGuiCond_Once);
+        ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::BeginChild("Irradiance Image");
+        ImGui::Image(mIrrTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        ImGui::EndChild();
+        ImGui::End();
+    }
 
     mGUI->EndFrame(mCurrentFrame);
 }
@@ -260,8 +299,8 @@ void PbrExample::Render(void) {
 
     mPbrPass->PreviousRender();
     mPbrPass->Render(mCurrentFrame, mSphere);
-    if (mSettings.enableIBL) {
-        mSkyboxPass->Render(mCurrentFrame, mEnvTextureHeap, 0);
+    if (mAppSettings.enableSkybox) {
+        mSkyboxPass->Render(mCurrentFrame, mTextureHeap, 0);
     }
     mGUI->Draw(mCurrentFrame, Render::gRenderTarget[mCurrentFrame]);
 

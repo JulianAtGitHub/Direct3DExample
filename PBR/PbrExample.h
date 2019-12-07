@@ -29,6 +29,12 @@ public:
     virtual void OnMouseWheel(uint64_t param);
 
 private:
+    struct AppSettings {
+        bool enableSkybox;
+        bool showImageIBL;
+        bool showImageIrradiance;
+    };
+
     static constexpr uint32_t LIGHT_COUNT = 4;
     static std::string WindowTitle;
 
@@ -45,12 +51,14 @@ private:
     int64_t                 mLastMousePos;
     int64_t                 mCurrentMousePos;
 
+    AppSettings             mAppSettings;
     SettingsCB              mSettings;
     LightCB                 mLights[LIGHT_COUNT];
 
     Render::GPUBuffer      *mLightsBuffer;
     Render::PixelBuffer    *mEnvTexture;
-    Render::DescriptorHeap *mEnvTextureHeap;
+    Render::PixelBuffer    *mIrrTexture;
+    Render::DescriptorHeap *mTextureHeap;
 
     Utils::Timer            mTimer;
     Utils::Camera          *mCamera;
