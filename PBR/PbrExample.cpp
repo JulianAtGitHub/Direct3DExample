@@ -65,8 +65,12 @@ void PbrExample::Init(HWND hwnd) {
 
     uint32_t irrWidth = mEnvTexture->GetWidth() >> 1;
     uint32_t irrHeight = mEnvTexture->GetHeight() >> 1;
-    uint32_t irrPitch = Render::BytesPerPixel(DXGI_FORMAT_R32G32B32A32_FLOAT) * irrWidth;
-    mIrrTexture = new Render::PixelBuffer(irrPitch, irrWidth, irrHeight, 1, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    DXGI_FORMAT irrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    if (Render::gTypedUAVLoadSupport_R16G16B16A16_FLOAT) {
+        irrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    }
+    uint32_t irrPitch = Render::BytesPerPixel(irrFormat) * irrWidth;
+    mIrrTexture = new Render::PixelBuffer(irrPitch, irrWidth, irrHeight, 1, irrFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mIrrTexture->CreateSRV(mTextureHeap->Allocate());
 
     Render::gCommand->Begin();
