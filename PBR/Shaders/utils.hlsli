@@ -15,10 +15,11 @@ inline float2 DirToLatLong(float3 dir) {
 
 inline float3 LatLongToDir(float2 ll) {
     ll = saturate(ll);
-    float3 dir;
-    dir.y = 1.0f - 2.0f * ll.y;
-    dir.x = -sin(ll.x * M_PI * 2.0f);
-    dir.z = cos(ll.x * M_PI * 2.0f);
+    float phi = 2.0f * M_PI * ll.x;
+    float theta = M_PI * (1.0f - ll.y);
+
+    // spherical coordinate to cartesian coordinate
+    float3 dir = float3(sin(theta) * cos(phi), cos(theta), -sin(theta) * sin(phi));
     return normalize(dir);
 }
 

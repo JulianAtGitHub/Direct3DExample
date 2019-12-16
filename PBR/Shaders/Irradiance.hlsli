@@ -26,7 +26,7 @@ void Main(uint3 DTid : SV_DispatchThreadID) {
     for (float phi = 0.0f; phi < 2 * M_PI; phi += delta) {
         for (float theta = 0.0f; theta < M_PI_2; theta += delta) {
             // spherical to cartesian (in tangent space)
-            float3 tangent = float3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
+            float3 tangent = float3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
             // tangent space to world
             float3 sampleDir = tangent.x * right + tangent.y * up + tangent.z * normal;
 
