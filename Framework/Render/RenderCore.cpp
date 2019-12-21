@@ -22,6 +22,7 @@ DepthStencilBuffer *gDepthStencil               = nullptr;
 // feature abilities
 bool                gRootSignatureSupport_Version_1_1 = false;
 bool                gTypedUAVLoadSupport_R11G11B10_FLOAT = false;
+bool                gTypedUAVLoadSupport_R16G16_FLOAT = false;
 bool                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = false;
 bool                gHDROutputSupport = false;
 bool                gRayTracingSupport = false;
@@ -145,16 +146,22 @@ void Initialize(HWND hwnd) {
         if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureData, sizeof(featureData)))) {
             if (featureData.TypedUAVLoadAdditionalFormats) {
                 D3D12_FEATURE_DATA_FORMAT_SUPPORT support = {
-                    DXGI_FORMAT_R11G11B10_FLOAT, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE
+                    DXGI_FORMAT_UNKNOWN, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE
                 };
 
+                support.Format = DXGI_FORMAT_R11G11B10_FLOAT;
                 if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
                     (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
                     gTypedUAVLoadSupport_R11G11B10_FLOAT = true;
                 }
 
-                support.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+                support.Format = DXGI_FORMAT_R16G16_FLOAT;
+                if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
+                    (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
+                    gTypedUAVLoadSupport_R16G16_FLOAT = true;
+                }
 
+                support.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
                 if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
                     (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0) {
                     gTypedUAVLoadSupport_R16G16B16A16_FLOAT = true;
