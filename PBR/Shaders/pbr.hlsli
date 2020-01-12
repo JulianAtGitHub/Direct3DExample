@@ -60,7 +60,7 @@ void EvaluatePixel(in PSInput input, inout PixelSample ps) {
         normal = normalize(normal * 2.0f - 1.0f);
         ps.normal = normalize(mul(normal, TBN));
 
-        ps.albdo = SRGBToLinear(AlbdoTex.Sample(Sampler, input.uv).rgb);
+        ps.albdo = SRGBToLinear_Opt(AlbdoTex.Sample(Sampler, input.uv).rgb);
         ps.metalness = MetalnessTex.Sample(Sampler, input.uv).r;
         ps.roughness = RoughnessTex.Sample(Sampler, input.uv).r;
         ps.ao = AOTex.Sample(Sampler, input.uv).r;
@@ -125,10 +125,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     }
 
     // HDR tonemap
-    color = color / (color + 1.0f);
-    // gamma correction
-    float g = 1.0f / 2.2f;
-    color = pow(color, float3(g, g, g));
+    color = TonemapFilmic2(color);
 
     return float4(color, 1.0f);
 }

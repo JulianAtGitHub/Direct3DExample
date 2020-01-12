@@ -67,8 +67,31 @@ inline float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float R) {
 
 //--------------- Others ---------------------
 
+inline float3 LinearToSRGB(float3 x) {
+    return x < 0.0031308f ? 12.92f * x : 1.055f * pow(abs(x), 1.0f / 2.4f) - 0.055f;
+}
 inline float3 SRGBToLinear(float3 x) {
     return x < 0.04045f ? x / 12.92f : pow((x + 0.055f) / 1.055f, 2.4f);
+}
+
+inline float3 LinearToSRGB_Opt(float3 x) {
+    return pow(x, 0.454545454f);
+}
+inline float3 SRGBToLinear_Opt(float3 x) {
+    return pow(x, 2.2f);
+}
+
+inline float3 TonemapReinhard(float3 color)
+{
+    color = color / (color + 1.0f);
+    return LinearToSRGB_Opt(color);
+}
+
+// Output color space is SRGB 
+inline float3 TonemapFilmic2(float3 color)
+{
+    float3 x = max(float3(0.0f, 0.0f, 0.0f), color - 0.004f);
+    return (x * (6.2f * x + 0.5f)) / (x * (6.2f * x + 1.7f) + 0.06f);
 }
 
 #endif //_UTILS_HLSLI_
