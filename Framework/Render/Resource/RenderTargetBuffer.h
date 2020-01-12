@@ -17,7 +17,8 @@ public:
 private:
     void Initialize(ID3D12Resource *resource);
 
-    XMFLOAT4   mClearedColor;
+    D3D12_RENDER_TARGET_VIEW_DESC   mViewDesc;
+    XMFLOAT4                        mClearedColor;
 };
 
 }

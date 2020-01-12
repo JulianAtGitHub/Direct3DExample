@@ -27,6 +27,20 @@ void RenderTargetBuffer::Initialize(ID3D12Resource *resource) {
     mHeight = static_cast<uint32_t>(desc.Height);
     mPitch = mWidth * BytesPerPixel(desc.Format);
     mFormat = desc.Format;
+
+    // Setup output view to SRGB color space
+    // https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/converting-data-color-space
+    mViewDesc = {};
+    switch (mFormat) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+            mViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+            mViewDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+        default: 
+            mViewDesc.Format = mFormat; 
+            break;
+    }
+    mViewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 }
 
 void RenderTargetBuffer::CreateView(const DescriptorHandle &handle) {
@@ -34,7 +48,7 @@ void RenderTargetBuffer::CreateView(const DescriptorHandle &handle) {
         return;
     }
 
-    gDevice->CreateRenderTargetView(mResource, nullptr, handle.cpu);
+    gDevice->CreateRenderTargetView(mResource, &mViewDesc, handle.cpu);
     mSRVHandle = handle;
 }
 
