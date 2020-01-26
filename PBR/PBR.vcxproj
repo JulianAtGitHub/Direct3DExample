@@ -87,6 +87,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BRDFIntegrationPass.h" />
     <ClInclude Include="IrradiancePass.h" />
     <ClInclude Include="PbrDrawable.h" />
     <ClInclude Include="PbrExample.h" />
@@ -97,6 +98,7 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BRDFIntegrationPass.cpp" />
     <ClCompile Include="IrradiancePass.cpp" />
     <ClCompile Include="PbrDrawable.cpp" />
     <ClCompile Include="PbrExample.cpp" />
@@ -117,6 +119,18 @@
     <None Include="Shaders\utils.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\BRDFIntegration.cs.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Main</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Main</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.1</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">gscBRDFIntegration</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">gscBRDFIntegration</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)$(Platform)\$(Configuration)\CompiledShaders\%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)$(Platform)\$(Configuration)\CompiledShaders\%(Filename).h</HeaderFileOutput>
+    </FxCompile>
     <FxCompile Include="Shaders\Irradiance.cs.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Main</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>

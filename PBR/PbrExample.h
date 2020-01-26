@@ -34,6 +34,7 @@ private:
         bool showEnvironmentImage;
         bool showIrradianceImage;
         bool showPrefilteredImage;
+        bool showBRDFLookupImage;
     };
 
     static constexpr uint32_t LIGHT_COUNT = 4;
@@ -60,6 +61,7 @@ private:
     Render::PixelBuffer    *mEnvTexture;
     Render::PixelBuffer    *mIrrTexture;
     Render::PixelBuffer    *mBlurredTexture;
+    Render::PixelBuffer    *mBRDFLookupTexture;
     Render::DescriptorHeap *mTextureHeap;
 
     Utils::Timer            mTimer;

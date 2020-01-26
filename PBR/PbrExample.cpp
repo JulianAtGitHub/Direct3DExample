@@ -5,6 +5,7 @@
 #include "SkyboxPass.h"
 #include "IrradiancePass.h"
 #include "PrefilteredEnvPass.h"
+#include "BRDFIntegrationPass.h"
 
 std::string PbrExample::WindowTitle = "PBR Example";
 
@@ -22,6 +23,7 @@ PbrExample::PbrExample(void)
 , mEnvTexture(nullptr)
 , mIrrTexture(nullptr)
 , mBlurredTexture(nullptr)
+, mBRDFLookupTexture(nullptr)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
 , mGUI(nullptr)
@@ -50,7 +52,7 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
-    mAppSettings = { true, false, false, false };
+    mAppSettings = { true, false, false, false, false };
     mSettings = { 1, 0, LIGHT_COUNT };
     mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
@@ -59,7 +61,7 @@ void PbrExample::Init(HWND hwnd) {
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
 
-    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3);
+    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
 
     Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
     mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
@@ -82,6 +84,15 @@ void PbrExample::Init(HWND hwnd) {
     mBlurredTexture = new Render::PixelBuffer(blurredPitch, blurredWidth, blurredWidth >> 1, blurredMips, blurredFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mBlurredTexture->CreateSRV(mTextureHeap->Allocate());
 
+    DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
+    if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
+        brdfFormat = DXGI_FORMAT_R16G16_FLOAT;
+    }
+    uint32_t brdfSize = 512;
+    uint32_t brdfPitch = Render::BytesPerPixel(brdfFormat) * brdfSize;
+    mBRDFLookupTexture = new Render::PixelBuffer(brdfPitch, brdfSize, brdfSize, 1, brdfFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mBRDFLookupTexture->CreateSRV(mTextureHeap->Allocate());
+
     Render::gCommand->Begin();
     Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
     Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
@@ -97,11 +108,16 @@ void PbrExample::Init(HWND hwnd) {
     pfePass->Dispatch(mEnvTexture, mBlurredTexture);
     delete pfePass;
 
+    BRDFIntegrationPass *brdfPass = new BRDFIntegrationPass();
+    brdfPass->Dispatch(mBRDFLookupTexture);
+    delete brdfPass;
+
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
     mGUI->AddImage(mEnvTexture);
     mGUI->AddImage(mIrrTexture);
     mGUI->AddImage(mBlurredTexture);
+    mGUI->AddImage(mBRDFLookupTexture);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
@@ -143,6 +159,7 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mIrrTexture);
     DeleteAndSetNull(mBlurredTexture);
+    DeleteAndSetNull(mBRDFLookupTexture);
     DeleteAndSetNull(mCamera);
     DeleteAndSetNull(mSphere);
     DeleteAndSetNull(mPbrPass);
@@ -260,7 +277,7 @@ void PbrExample::Update(void) {
 void PbrExample::UpdateGUI(float second) {
     mGUI->BeginFrame(second);
 
-    ImGui::SetNextWindowSize(ImVec2(350.0f, 300.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 350.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::BeginChild("Options");
@@ -269,6 +286,7 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("Environment Image", &mAppSettings.showEnvironmentImage);
             ImGui::Checkbox("Irradiance Image", &mAppSettings.showIrradianceImage);
             ImGui::Checkbox("Prefiltered Image", &mAppSettings.showPrefilteredImage);
+            ImGui::Checkbox("BRDF Lookup Image", &mAppSettings.showBRDFLookupImage);
 
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
             ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
@@ -282,7 +300,7 @@ void PbrExample::UpdateGUI(float second) {
     ImGui::End();
 
     if (mAppSettings.showEnvironmentImage) {
-        ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(530.0f, 300.0f), ImGuiCond_Always);
         ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
         ImGui::Begin("Environment Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Environment Image");
@@ -291,8 +309,8 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::End();
     }
     if (mAppSettings.showIrradianceImage) {
-        ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
-        ImGui::SetNextWindowPos(ImVec2(360.0f, 320.0f), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(530.0f, 300.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(360.0f, 310.0f), ImGuiCond_Once);
         ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Irradiance Image");
                 ImGui::Image(mIrrTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
@@ -300,8 +318,8 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::End();
     }
     if (mAppSettings.showPrefilteredImage) {
-        ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Always);
-        ImGui::SetNextWindowPos(ImVec2(360.0f, 640.0f), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 190.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(360.0f, 615.0f), ImGuiCond_Once);
         ImGui::Begin("Prefiltered Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Prefiltered Image");
                 const char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
@@ -311,6 +329,17 @@ void PbrExample::UpdateGUI(float second) {
                 float width = static_cast<float>(mBlurredTexture->GetWidth() >> curItem);
                 float height = static_cast<float>(mBlurredTexture->GetHeight() >> curItem);
                 ImGui::Image(mBlurredTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImGui::EndChild();
+        ImGui::End();
+    }
+    if (mAppSettings.showBRDFLookupImage) {
+        ImGui::SetNextWindowSize(ImVec2(530.0f, 550.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(900.0f, 5.0f), ImGuiCond_Once);
+        ImGui::Begin("BRDF Lookup Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::BeginChild("BRDF Lookup Image");
+                float width = static_cast<float>(mBRDFLookupTexture->GetWidth());
+                float height = static_cast<float>(mBRDFLookupTexture->GetHeight());
+                ImGui::Image(mBRDFLookupTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }

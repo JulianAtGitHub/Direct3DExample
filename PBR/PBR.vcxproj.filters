@@ -37,6 +37,9 @@
     <ClInclude Include="PrefilteredEnvPass.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="BRDFIntegrationPass.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -61,6 +64,9 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="PrefilteredEnvPass.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="BRDFIntegrationPass.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -96,6 +102,9 @@
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PrefilteredEnv.cs.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BRDFIntegration.cs.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

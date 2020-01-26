@@ -19,18 +19,14 @@ inline float DistributionGGX(float3 N, float3 H, float R) {
 }
 
 inline float GeometryShlickGGX(float NdotV, float R) {
-#ifdef ENABLE_IBL
-    float k = (R * R) / 2.0f;
-#else
     float r = (R + 1.0f);
     float k = (r * r) / 8.0f;
-#endif
     return NdotV / (NdotV * (1.0f - k) + k);
 }
 
 inline float GeometrySmith(float3 N, float3 V, float3 L, float R) {
-    float NotV = saturate(dot(N, V));
-    float NotL = saturate(dot(N, L));
+    float NotV = max(dot(N, V), 0.0f);
+    float NotL = max(dot(N, L), 0.0f);
 
     float ggx1 = GeometryShlickGGX(NotV, R);
     float ggx2 = GeometryShlickGGX(NotL, R);
@@ -44,6 +40,40 @@ inline float3 FresnelSchlick(float cosTheta, float3 F0) {
 inline float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float R) {
     float3 FR = float3(1.0f - R, 1.0f - R, 1.0f - R);
     return F0 + (max(FR, F0) - F0) * pow(1.0f - cosTheta, 5.0f);
+}
+
+float3 ImportanceSampleGGX(float2 Xi, float3 N, float R) {
+    float a = R * R;
+
+    float phi = 2.0f * M_PI * Xi.x;
+    float cosTheta = sqrt((1.0f - Xi.y) / (1.0f + (a * a - 1.0f) * Xi.y));
+    float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+
+    // spherical coordinates to cartesian coordinates in tangent space
+    float3 H = float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+
+    float3 up = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+    float3 tangent = normalize(cross(up, N));
+    float3 bitangent = cross(N, tangent);
+
+    // tangent space to world space
+    float3 sampleDir = tangent * H.x + bitangent * H.y + N * H.z;
+
+    return normalize(sampleDir);
+}
+
+inline float GeometryShlickGGX_IBL(float NdotV, float R) {
+    float k = (R * R) / 2.0f;
+    return NdotV / (NdotV * (1.0f - k) + k);
+}
+
+inline float GeometrySmith_IBL(float3 N, float3 V, float3 L, float R) {
+    float NotV = max(dot(N, V), 0.0f);
+    float NotL = max(dot(N, L), 0.0f);
+
+    float ggx1 = GeometryShlickGGX_IBL(NotV, R);
+    float ggx2 = GeometryShlickGGX_IBL(NotL, R);
+    return ggx1 * ggx2;
 }
 
 //--------------- Hammersley ---------------------
