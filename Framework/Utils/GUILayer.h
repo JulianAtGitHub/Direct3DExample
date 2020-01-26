@@ -21,6 +21,7 @@ public:
     ~GUILayer(void);
 
     bool AddImage(Render::PixelBuffer *image);
+    bool SetImageMipLevel(Render::PixelBuffer *image, uint32_t mipLevel);
 
     void BeginFrame(float deltaTime);
     void EndFrame(uint32_t frameIdx);
@@ -64,7 +65,11 @@ private:
     D3D12_VERTEX_BUFFER_VIEW    mVertexView;
     D3D12_INDEX_BUFFER_VIEW     mIndexView;
 
-    std::map<const void *, uint32_t> mResourceMap;
+    struct ResourceInfo {
+        uint32_t handlerIndex;
+        uint32_t mipLevel;
+    };
+    std::map<const void *, ResourceInfo> mResourceMap;
 };
 
 }

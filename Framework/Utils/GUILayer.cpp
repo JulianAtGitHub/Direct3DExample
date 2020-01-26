@@ -65,10 +65,11 @@ void GUILayer::Initialize(HWND hwnd) {
     io.KeyMap[ImGuiKey_Y] = 'Y';
     io.KeyMap[ImGuiKey_Z] = 'Z';
 
-    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 4, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-    mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-    mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
+    mRootSignature->SetConstants(1, 1, 1, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptorTable(3, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mRootSignature->Create();
 
     D3D12_INPUT_ELEMENT_DESC inputElements[] = {
@@ -145,7 +146,26 @@ bool GUILayer::AddImage(Render::PixelBuffer *image) {
     }
 
     image->CreateSRV(mResourceHeap->Allocate(), false);
-    mResourceMap[image] = RESOURCE_COUNT - mResourceHeap->GetRemainingCount() - 1;
+    mResourceMap[image] = { RESOURCE_COUNT - mResourceHeap->GetRemainingCount() - 1, 0 };
+    return true;
+}
+
+bool GUILayer::SetImageMipLevel(Render::PixelBuffer *image, uint32_t mipLevel) {
+    if (!image) {
+        return false;
+    }
+
+    if (mipLevel >= image->GetMipLevels()) {
+        return false;
+    }
+
+    // Already added
+    if (mResourceMap.find(image) == mResourceMap.end()) {
+        return false;
+    }
+
+    auto &info = mResourceMap[image];
+    info.mipLevel = mipLevel;
     return true;
 }
 
@@ -217,7 +237,7 @@ void GUILayer::Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget)
     Render::gCommand->SetRootSignature(mRootSignature);
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, frameIdx));
-    Render::gCommand->SetGraphicsRootDescriptorTable(2, mSampler->GetHandle());
+    Render::gCommand->SetGraphicsRootDescriptorTable(3, mSampler->GetHandle());
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexView, mIndexView);
 
@@ -232,10 +252,13 @@ void GUILayer::Draw(uint32_t frameIdx, Render::RenderTargetBuffer *renderTarget)
             } else {
                 const D3D12_RECT r = { long(drawCmd->ClipRect.x), long(drawCmd->ClipRect.y), long(drawCmd->ClipRect.z), long(drawCmd->ClipRect.w) };
                 if(r.left < r.right && r.top < r.bottom) {
+                    float mipLevel = 0;
                     auto it = mResourceMap.find(drawCmd->TextureId);
                     if (it != mResourceMap.end()) {
-                        Render::gCommand->SetGraphicsRootDescriptorTable(1, mResourceHeap->GetHandle(it->second));
+                        Render::gCommand->SetGraphicsRootDescriptorTable(2, mResourceHeap->GetHandle(it->second.handlerIndex));
+                        mipLevel = float(it->second.mipLevel);
                     }
+                    Render::gCommand->SetGraphicsRootConstants(1, &mipLevel, 1);
                     Render::gCommand->SetScissor(r);
                     Render::gCommand->DrawIndexed(drawCmd->ElemCount, idxOffset, vtxOffset);
                 }

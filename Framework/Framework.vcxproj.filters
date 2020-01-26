@@ -219,6 +219,9 @@
     <None Include="Shader\GenerateMips.hlsli">
       <Filter>Sources\Shader</Filter>
     </None>
+    <None Include="Shader\Gui.hlsli">
+      <Filter>Sources\Shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shader\GenerateMipsLinear.hlsl">
