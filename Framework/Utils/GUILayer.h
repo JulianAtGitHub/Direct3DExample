@@ -43,6 +43,14 @@ public:
     void OnMouseWheel(uint64_t param);
 
 private:
+    enum RootSigSlot {
+        TransformSlot,
+        ConstantSlot,
+        TextureSlot,
+        SamplerSlot,
+        RootSigSlotMax
+    };
+
     const static uint32_t   RESOURCE_COUNT      = 32;
     const static size_t     VERTEX_BUFFER_SIZE  = 0x200000; // 2MB
 
