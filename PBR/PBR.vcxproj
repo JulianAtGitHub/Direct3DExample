@@ -91,6 +91,7 @@
     <ClInclude Include="PbrDrawable.h" />
     <ClInclude Include="PbrExample.h" />
     <ClInclude Include="PbrPass.h" />
+    <ClInclude Include="PrefilteredEnvPass.h" />
     <ClInclude Include="Shaders\types.pbr.h" />
     <ClInclude Include="SkyboxPass.h" />
     <ClInclude Include="stdafx.h" />
@@ -101,6 +102,7 @@
     <ClCompile Include="PbrExample.cpp" />
     <ClCompile Include="PbrMain.cpp" />
     <ClCompile Include="PbrPass.cpp" />
+    <ClCompile Include="PrefilteredEnvPass.cpp" />
     <ClCompile Include="SkyboxPass.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -110,7 +112,6 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\constants.hlsli" />
-    <None Include="Shaders\Irradiance.hlsli" />
     <None Include="Shaders\pbr.hlsli" />
     <None Include="Shaders\skybox.hlsli" />
     <None Include="Shaders\utils.hlsli" />
@@ -155,6 +156,18 @@
       </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </AdditionalOptions>
+    </FxCompile>
+    <FxCompile Include="Shaders\PrefilteredEnv.cs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.1</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">gscPrefilteredEnv</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)$(Platform)\$(Configuration)\CompiledShaders\%(Filename).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">gscPrefilteredEnv</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)$(Platform)\$(Configuration)\CompiledShaders\%(Filename).h</HeaderFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Main</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Main</EntryPointName>
     </FxCompile>
     <FxCompile Include="Shaders\skybox.ps.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PSMain</EntryPointName>

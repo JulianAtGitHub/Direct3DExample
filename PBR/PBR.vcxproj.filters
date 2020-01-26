@@ -34,6 +34,9 @@
     <ClInclude Include="IrradiancePass.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="PrefilteredEnvPass.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +60,9 @@
     <ClCompile Include="IrradiancePass.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="PrefilteredEnvPass.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -67,9 +73,6 @@
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Shaders\constants.hlsli">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="Shaders\Irradiance.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Shaders\utils.hlsli">
@@ -90,6 +93,9 @@
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Irradiance.cs.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PrefilteredEnv.cs.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

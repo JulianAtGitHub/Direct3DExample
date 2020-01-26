@@ -4,6 +4,7 @@
 #include "PbrPass.h"
 #include "SkyboxPass.h"
 #include "IrradiancePass.h"
+#include "PrefilteredEnvPass.h"
 
 std::string PbrExample::WindowTitle = "PBR Example";
 
@@ -20,6 +21,7 @@ PbrExample::PbrExample(void)
 , mLightsBuffer(nullptr)
 , mEnvTexture(nullptr)
 , mIrrTexture(nullptr)
+, mBlurredTexture(nullptr)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
 , mGUI(nullptr)
@@ -48,7 +50,7 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
-    mAppSettings = { true, false, false };
+    mAppSettings = { true, false, false, false };
     mSettings = { 1, 0, LIGHT_COUNT };
     mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
     mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
@@ -57,7 +59,7 @@ void PbrExample::Init(HWND hwnd) {
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
 
-    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2);
+    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3);
 
     Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
     mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
@@ -73,6 +75,13 @@ void PbrExample::Init(HWND hwnd) {
     mIrrTexture = new Render::PixelBuffer(irrPitch, irrWidth, irrHeight, 1, irrFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     mIrrTexture->CreateSRV(mTextureHeap->Allocate());
 
+    DXGI_FORMAT blurredFormat = irrFormat;
+    uint32_t blurredWidth = 256;
+    uint32_t blurredPitch = Render::BytesPerPixel(blurredFormat) * blurredWidth;
+    uint32_t blurredMips = 6;
+    mBlurredTexture = new Render::PixelBuffer(blurredPitch, blurredWidth, blurredWidth >> 1, blurredMips, blurredFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mBlurredTexture->CreateSRV(mTextureHeap->Allocate());
+
     Render::gCommand->Begin();
     Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
     Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
@@ -84,10 +93,15 @@ void PbrExample::Init(HWND hwnd) {
     irrPass->Dispatch(mEnvTexture, mIrrTexture);
     delete irrPass;
 
+    PrefilteredEnvPass *pfePass = new PrefilteredEnvPass();
+    pfePass->Dispatch(mEnvTexture, mBlurredTexture);
+    delete pfePass;
+
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
     mGUI->AddImage(mEnvTexture);
     mGUI->AddImage(mIrrTexture);
+    mGUI->AddImage(mBlurredTexture);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
     ASSERT_PRINT(sphere);
@@ -128,6 +142,7 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mTextureHeap);
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mIrrTexture);
+    DeleteAndSetNull(mBlurredTexture);
     DeleteAndSetNull(mCamera);
     DeleteAndSetNull(mSphere);
     DeleteAndSetNull(mPbrPass);
@@ -248,41 +263,55 @@ void PbrExample::UpdateGUI(float second) {
     ImGui::SetNextWindowSize(ImVec2(350.0f, 300.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::BeginChild("Options");
+        ImGui::BeginChild("Options");
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Application");
+            ImGui::Checkbox("Enable Skybox", &mAppSettings.enableSkybox);
+            ImGui::Checkbox("Environment Image", &mAppSettings.showEnvironmentImage);
+            ImGui::Checkbox("Irradiance Image", &mAppSettings.showIrradianceImage);
+            ImGui::Checkbox("Prefiltered Image", &mAppSettings.showPrefilteredImage);
 
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Application");
-    ImGui::Checkbox("Enable Skybox", &mAppSettings.enableSkybox);
-    ImGui::Checkbox("IBL Image", &mAppSettings.showImageIBL);
-    ImGui::Checkbox("Irradiance Image", &mAppSettings.showImageIrradiance);
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
+            ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
+            ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
 
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
-    ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
-    ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
-
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
-    ImGui::ColorEdit3("Albdo", &(mSphere->GetMaterial().albdo.x));
-    ImGui::SliderFloat("Matelness", &(mSphere->GetMaterial().metalness), 0.04f, 1.0f);
-    ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.04f, 1.0f);
-
-    ImGui::EndChild();
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
+            ImGui::ColorEdit3("Albdo", &(mSphere->GetMaterial().albdo.x));
+            ImGui::SliderFloat("Matelness", &(mSphere->GetMaterial().metalness), 0.04f, 1.0f);
+            ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.04f, 1.0f);
+        ImGui::EndChild();
     ImGui::End();
 
-    if (mAppSettings.showImageIBL) {
+    if (mAppSettings.showEnvironmentImage) {
         ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
         ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
-        ImGui::Begin("IBL Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("IBL Image");
-        ImGui::Image(mEnvTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-        ImGui::EndChild();
+        ImGui::Begin("Environment Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::BeginChild("Environment Image");
+                ImGui::Image(mEnvTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImGui::EndChild();
         ImGui::End();
     }
-    if (mAppSettings.showImageIrradiance) {
+    if (mAppSettings.showIrradianceImage) {
         ImGui::SetNextWindowSize(ImVec2(550.0f, 300.0f), ImGuiCond_Always);
         ImGui::SetNextWindowPos(ImVec2(360.0f, 320.0f), ImGuiCond_Once);
         ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("Irradiance Image");
-        ImGui::Image(mIrrTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-        ImGui::EndChild();
+            ImGui::BeginChild("Irradiance Image");
+                ImGui::Image(mIrrTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImGui::EndChild();
+        ImGui::End();
+    }
+    if (mAppSettings.showPrefilteredImage) {
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(360.0f, 640.0f), ImGuiCond_Once);
+        ImGui::Begin("Prefiltered Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::BeginChild("Prefiltered Image");
+                const char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
+                static int curItem = 0;
+                ImGui::Combo("Mipmap Level", &curItem, mipItems, IM_ARRAYSIZE(mipItems));
+                mGUI->SetImageMipLevel(mBlurredTexture, curItem);
+                float width = static_cast<float>(mBlurredTexture->GetWidth() >> curItem);
+                float height = static_cast<float>(mBlurredTexture->GetHeight() >> curItem);
+                ImGui::Image(mBlurredTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImGui::EndChild();
         ImGui::End();
     }
 

@@ -66,8 +66,8 @@ void IrradiancePass::Dispatch(Render::PixelBuffer *envTex, Render::PixelBuffer *
     Render::DescriptorHeap *heaps[] = { resourceHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
 
-    XMFLOAT2 constant(1.0f / irrTex->GetWidth(), 1.0f / irrTex->GetHeight());
-    Render::gCommand->SetComputeRootConstants(ConstantSlot, &constant, 2);
+    float constants[] = { 1.0f / irrTex->GetWidth(), 1.0f / irrTex->GetHeight() };
+    Render::gCommand->SetComputeRootConstants(ConstantSlot, constants, _countof(constants));
     Render::gCommand->SetComputeRootDescriptorTable(EnvTexSlot, resourceHeap->GetHandle(0));
     Render::gCommand->SetComputeRootDescriptorTable(SamplerSlot, mSampler->GetHandle());
     Render::gCommand->SetComputeRootDescriptorTable(IrrTexSlot, resourceHeap->GetHandle(1));

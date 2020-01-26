@@ -31,8 +31,9 @@ public:
 private:
     struct AppSettings {
         bool enableSkybox;
-        bool showImageIBL;
-        bool showImageIrradiance;
+        bool showEnvironmentImage;
+        bool showIrradianceImage;
+        bool showPrefilteredImage;
     };
 
     static constexpr uint32_t LIGHT_COUNT = 4;
@@ -58,6 +59,7 @@ private:
     Render::GPUBuffer      *mLightsBuffer;
     Render::PixelBuffer    *mEnvTexture;
     Render::PixelBuffer    *mIrrTexture;
+    Render::PixelBuffer    *mBlurredTexture;
     Render::DescriptorHeap *mTextureHeap;
 
     Utils::Timer            mTimer;

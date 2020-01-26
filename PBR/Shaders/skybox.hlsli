@@ -2,6 +2,14 @@
 
 #include "utils.hlsli"
 
+cbuffer TransformCB : register(b0) {
+    float4x4 ViewMat;
+    float4x4 ProjMat;
+};
+
+Texture2D EnvTex : register(t0);
+SamplerState Sampler : register(s0);
+
 struct VSInput
 {
     float3 position : POSITION;
@@ -11,11 +19,6 @@ struct PSInput
 {
     float4 position : SV_Position;
     float3 direction: TexCoord0;
-};
-
-cbuffer TransformCB : register(b0) {
-    float4x4 ViewMat;
-    float4x4 ProjMat;
 };
 
 PSInput VSMain(VSInput input) {
@@ -31,10 +34,6 @@ PSInput VSMain(VSInput input) {
     ret.position = clipPos.xyww;
     return ret;
 }
-
-Texture2D EnvTex : register(t0);
-
-SamplerState Sampler : register(s0);
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float2 uv = DirToLatLong(input.direction);

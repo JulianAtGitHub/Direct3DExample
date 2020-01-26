@@ -4,28 +4,9 @@
 #ifndef _UTILS_HLSLI_
 #define _UTILS_HLSLI_
 
-//--------------- Spherical & Cartesian ---------------------
-
-inline float2 DirToLatLong(float3 dir) {
-    float3 p = normalize(dir);
-    float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
-    float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, 1.0f - v);
-}
-
-inline float3 LatLongToDir(float2 ll) {
-    ll = saturate(ll);
-    float phi = 2.0f * M_PI * ll.x;
-    float theta = M_PI * (1.0f - ll.y);
-
-    // spherical coordinate to cartesian coordinate
-    float3 dir = float3(sin(theta) * cos(phi), cos(theta), -sin(theta) * sin(phi));
-    return normalize(dir);
-}
-
 //--------------- GGX D G F ---------------------
 
-float DistributionGGX(float3 N, float3 H, float R) {
+inline float DistributionGGX(float3 N, float3 H, float R) {
     float a = R * R;
     float a2 = a * a;
     float NDotH = saturate(dot(N, H));
@@ -47,7 +28,7 @@ inline float GeometryShlickGGX(float NdotV, float R) {
     return NdotV / (NdotV * (1.0f - k) + k);
 }
 
-float GeometrySmith(float3 N, float3 V, float3 L, float R) {
+inline float GeometrySmith(float3 N, float3 V, float3 L, float R) {
     float NotV = saturate(dot(N, V));
     float NotL = saturate(dot(N, L));
 
@@ -63,6 +44,43 @@ inline float3 FresnelSchlick(float cosTheta, float3 F0) {
 inline float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float R) {
     float3 FR = float3(1.0f - R, 1.0f - R, 1.0f - R);
     return F0 + (max(FR, F0) - F0) * pow(1.0f - cosTheta, 5.0f);
+}
+
+//--------------- Hammersley ---------------------
+
+// Hammersley sequence on hemi-sphere
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+
+inline float RadicalInverse_VdC(uint bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10; // 0x100000000
+}
+
+inline float2 Hammersley2D(uint i, uint N) {
+    return float2(float(i)/float(N), RadicalInverse_VdC(i));
+}
+
+//--------------- Spherical & Cartesian ---------------------
+
+inline float2 DirToLatLong(float3 dir) {
+    float3 p = normalize(dir);
+    float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
+    float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
+    return float2(u, 1.0f - v);
+}
+
+inline float3 LatLongToDir(float2 ll) {
+    ll = saturate(ll);
+    float phi = 2.0f * M_PI * ll.x;
+    float theta = M_PI * (1.0f - ll.y);
+
+    // spherical coordinate to cartesian coordinate (right-hand)
+    float3 dir = float3(sin(theta) * cos(phi), cos(theta), -sin(theta) * sin(phi));
+    return normalize(dir);
 }
 
 //--------------- Others ---------------------
