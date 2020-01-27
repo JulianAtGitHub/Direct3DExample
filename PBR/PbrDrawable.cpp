@@ -17,13 +17,15 @@ PbrDrawable::~PbrDrawable(void) {
     Destroy();
 }
 
-void PbrDrawable::Initialize(Utils::Scene *scene, 
+void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene, 
                              Render::GPUBuffer *lights, uint32_t numLight, 
                              Render::PixelBuffer *irradianceTex, Render::PixelBuffer *blurredEnvTex, Render::PixelBuffer *brdfLookupTex) {
     ASSERT_PRINT(scene && lights && irradianceTex);
     if (!scene || !lights || !irradianceTex || !blurredEnvTex || !brdfLookupTex) {
         return;
     }
+
+    mName = name;
 
     mMaterial = { {1.0f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
 

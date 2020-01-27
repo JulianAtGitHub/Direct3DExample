@@ -16,6 +16,7 @@ PbrExample::PbrExample(void)
 , mCurrentFrame(0)
 , mSpeedX(0)
 , mSpeedZ(0)
+, mSpeedBoost(1.0f)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
@@ -27,7 +28,7 @@ PbrExample::PbrExample(void)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
 , mGUI(nullptr)
-, mSphere(nullptr)
+, mDrawIndex(0)
 , mPbrPass(nullptr)
 , mSkyboxPass(nullptr)
 {
@@ -119,33 +120,98 @@ void PbrExample::Init(HWND hwnd) {
     mGUI->AddImage(mBlurredEnvTexture);
     mGUI->AddImage(mBRDFLookupTexture);
 
-    Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
-    ASSERT_PRINT(sphere);
-
-    sphere->mImages.reserve(5);
-    Utils::Scene::Shape &shape = sphere->mShapes[0];
-
-    shape.normalTex = 0; 
-    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\normal.png"));
-
-    shape.albdoTex = 1; 
-    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\albedo.png"));
-
-    shape.metalnessTex = 2; 
-    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\metallic.png"));
-
-    shape.roughnessTex = 3; 
-    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\roughness.png"));
-
-    shape.aoTex = 4; 
-    sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
-
-    mSphere = new PbrDrawable();
-    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
-    delete sphere;
-
     mPbrPass = new PbrPass();
     mSkyboxPass = new SkyboxPass();
+
+    // Sphere
+    {
+        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
+        ASSERT_PRINT(model);
+
+        model->mImages.reserve(5);
+        Utils::Scene::Shape &shape = model->mShapes[0];
+
+        shape.normalTex = 0; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\normal.png"));
+
+        shape.albdoTex = 1; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\albedo.png"));
+
+        shape.metalnessTex = 2; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\metallic.png"));
+
+        shape.roughnessTex = 3; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\roughness.png"));
+
+        shape.aoTex = 4; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
+
+        PbrDrawable *drawable = new PbrDrawable();
+        drawable->Initialize("Sphere", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        mDrawables.push_back(drawable);
+
+        delete model;
+    }
+
+    // Monkey
+    {
+        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\monkey.obj");
+        ASSERT_PRINT(model);
+
+        model->mImages.reserve(5);
+        Utils::Scene::Shape &shape = model->mShapes[0];
+
+        shape.normalTex = 0; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\normal.png"));
+
+        shape.albdoTex = 1; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\albedo.png"));
+
+        shape.metalnessTex = 2; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\metallic.png"));
+
+        shape.roughnessTex = 3; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\roughness.png"));
+
+        shape.aoTex = 4; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\ao.png"));
+
+        PbrDrawable *drawable = new PbrDrawable();
+        drawable->Initialize("Monkey", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        mDrawables.push_back(drawable);
+
+        delete model;
+    }
+
+    // Dragon
+    {
+        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\dragon.obj");
+        ASSERT_PRINT(model);
+
+        model->mImages.reserve(5);
+        Utils::Scene::Shape &shape = model->mShapes[0];
+
+        shape.normalTex = 0; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\normal.png"));
+
+        shape.albdoTex = 1; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\albedo.png"));
+
+        shape.metalnessTex = 2; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\metallic.png"));
+
+        shape.roughnessTex = 3; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\roughness.png"));
+
+        shape.aoTex = 4; 
+        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\ao.png"));
+
+        PbrDrawable *drawable = new PbrDrawable();
+        drawable->Initialize("Dragon", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        mDrawables.push_back(drawable);
+
+        delete model;
+    }
 
     mTimer.Reset();
 }
@@ -161,7 +227,10 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mBlurredEnvTexture);
     DeleteAndSetNull(mBRDFLookupTexture);
     DeleteAndSetNull(mCamera);
-    DeleteAndSetNull(mSphere);
+    for (auto drawable : mDrawables) {
+        delete drawable;
+    }
+    mDrawables.clear();
     DeleteAndSetNull(mPbrPass);
     DeleteAndSetNull(mSkyboxPass);
 
@@ -176,6 +245,7 @@ void PbrExample::OnKeyDown(uint8_t key) {
         case 'S': mSpeedZ = -1.0f; break;
         case 'A': mSpeedX = -1.0f; break;
         case 'D': mSpeedX = 1.0f; break;
+        case 0x10: mSpeedBoost = 5.0f; break; // shift
         default: break;
     }
 }
@@ -187,6 +257,7 @@ void PbrExample::OnKeyUp(uint8_t key) {
         case 'S': mSpeedZ = 0.0f; break;
         case 'A':
         case 'D': mSpeedX = 0.0f; break;
+        case 0x10: mSpeedBoost = 1.0f; break; // shift
         default: break;
     }
 }
@@ -260,15 +331,17 @@ void PbrExample::Update(void) {
     }
 
     if (mSpeedZ != 0.0f) {
-        mCamera->MoveForward(deltaSecond * mSpeedZ * 0.5f);
+        mCamera->MoveForward(deltaSecond * mSpeedZ * mSpeedBoost);
     }
     if (mSpeedX != 0.0f) {
-        mCamera->MoveRight(deltaSecond * mSpeedX * 0.5f);
+        mCamera->MoveRight(deltaSecond * mSpeedX * mSpeedBoost);
     }
 
     mCamera->UpdateMatrixs();
 
-    mSphere->Update(mCurrentFrame, *mCamera, mSettings);
+    for (auto drawable : mDrawables) {
+        drawable->Update(mCurrentFrame, *mCamera, mSettings);
+    }
     mSkyboxPass->Update(mCurrentFrame, *mCamera);
 
     UpdateGUI(deltaSecond);
@@ -277,7 +350,7 @@ void PbrExample::Update(void) {
 void PbrExample::UpdateGUI(float second) {
     mGUI->BeginFrame(second);
 
-    ImGui::SetNextWindowSize(ImVec2(350.0f, 350.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 360.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::BeginChild("Options");
@@ -292,10 +365,18 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
             ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
 
+            constexpr uint32_t MODEL_COUNT = 8;
+            static const char* models[MODEL_COUNT] = { };
+            for (size_t i = 0; i < mDrawables.size(); ++i) {
+                models[i] = mDrawables[i]->GetName().c_str();
+            }
+            ImGui::Combo("Model", (int *)&mDrawIndex, models, static_cast<int>(mDrawables.size()));
+
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
-            ImGui::ColorEdit3("Albdo", &(mSphere->GetMaterial().albdo.x));
-            ImGui::SliderFloat("Matelness", &(mSphere->GetMaterial().metalness), 0.04f, 1.0f);
-            ImGui::SliderFloat("Roughness", &(mSphere->GetMaterial().roughness), 0.04f, 1.0f);
+            PbrDrawable *drawable = mDrawables[mDrawIndex];
+            ImGui::ColorEdit3("Albdo", &(drawable->GetMaterial().albdo.x));
+            ImGui::SliderFloat("Matelness", &(drawable->GetMaterial().metalness), 0.04f, 1.0f);
+            ImGui::SliderFloat("Roughness", &(drawable->GetMaterial().roughness), 0.04f, 1.0f);
         ImGui::EndChild();
     ImGui::End();
 
@@ -322,7 +403,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 615.0f), ImGuiCond_Once);
         ImGui::Begin("Prefiltered Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Prefiltered Image");
-                const char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
+                const static char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
                 static int curItem = 0;
                 ImGui::Combo("Mipmap Level", &curItem, mipItems, IM_ARRAYSIZE(mipItems));
                 mGUI->SetImageMipLevel(mBlurredEnvTexture, curItem);
@@ -360,7 +441,7 @@ void PbrExample::Render(void) {
     Render::gCommand->ClearDepth(Render::gDepthStencil);
 
     mPbrPass->PreviousRender();
-    mPbrPass->Render(mCurrentFrame, mSphere);
+    mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex]);
     if (mAppSettings.enableSkybox) {
         mSkyboxPass->Render(mCurrentFrame, mTextureHeap, 0);
     }

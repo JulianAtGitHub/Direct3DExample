@@ -14,11 +14,12 @@ public:
     PbrDrawable(void);
     ~PbrDrawable(void);
 
-    void Initialize(Utils::Scene *scene, 
+    void Initialize(const std::string &name, Utils::Scene *scene, 
                     Render::GPUBuffer *lights, uint32_t numLight, 
                     Render::PixelBuffer *irradianceTex, Render::PixelBuffer *blurredEnvTex, Render::PixelBuffer *brdfLookupTex);
     void Update(uint32_t currentFrame, Utils::Camera &camera, const SettingsCB &settings);
 
+    INLINE const std::string & GetName(void) const { return mName; }
     INLINE MaterialCB & GetMaterial(void) { return mMaterial; }
     INLINE D3D12_GPU_VIRTUAL_ADDRESS GetSettingsCB(uint32_t currentFrame) { return mSettingsCB->GetGPUAddress(0, currentFrame); }
     INLINE D3D12_GPU_VIRTUAL_ADDRESS GetTransformCB(uint32_t currentFrame) const { return mTransformCB->GetGPUAddress(0, currentFrame); }
@@ -31,9 +32,10 @@ public:
 private:
     void Destroy(void);
 
+    std::string                         mName;
+    MaterialCB                          mMaterial;
     Render::ConstantBuffer             *mSettingsCB;
     Render::ConstantBuffer             *mTransformCB;
-    MaterialCB                          mMaterial;
     Render::ConstantBuffer             *mMaterialCB;
     Render::DescriptorHeap             *mResourceHeap;
     std::vector<Render::PixelBuffer *>  mTextures;

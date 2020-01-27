@@ -49,6 +49,7 @@ private:
 
     float                   mSpeedX;
     float                   mSpeedZ;
+    float                   mSpeedBoost;
     bool                    mIsRotating;
     int64_t                 mLastMousePos;
     int64_t                 mCurrentMousePos;
@@ -68,7 +69,8 @@ private:
     Utils::Camera          *mCamera;
     Utils::GUILayer        *mGUI;
 
-    PbrDrawable            *mSphere;
-    PbrPass                *mPbrPass;
-    SkyboxPass             *mSkyboxPass;
+    std::vector<PbrDrawable *>  mDrawables;
+    uint32_t                    mDrawIndex;
+    PbrPass                    *mPbrPass;
+    SkyboxPass                 *mSkyboxPass;
 };
