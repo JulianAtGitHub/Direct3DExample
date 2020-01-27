@@ -25,11 +25,13 @@ ConstantBuffer<TransformCB> Transform       : register(b1);
 ConstantBuffer<MaterialCB>  Material        : register(b2);
 StructuredBuffer<LightCB>   Lights          : register(t0);
 Texture2D<float4>           IrradianceTex   : register(t1);
-Texture2D<float4>           NormalTex       : register(t2);
-Texture2D<float4>           AlbdoTex        : register(t3);
-Texture2D<float4>           MetalnessTex    : register(t4);
-Texture2D<float4>           RoughnessTex    : register(t5);
-Texture2D<float4>           AOTex           : register(t6);
+Texture2D<float4>           BlurredEnvTex   : register(t2);
+Texture2D<float2>           BRDFLookupTex   : register(t3);
+Texture2D<float4>           NormalTex       : register(t4);
+Texture2D<float4>           AlbdoTex        : register(t5);
+Texture2D<float4>           MetalnessTex    : register(t6);
+Texture2D<float4>           RoughnessTex    : register(t7);
+Texture2D<float4>           AOTex           : register(t8);
 SamplerState                Sampler         : register(s0);
 
 PSInput VSMain(VSInput input) {
@@ -74,12 +76,15 @@ void EvaluatePixel(in PSInput input, inout PixelSample ps) {
     }
 }
 
+#define MAX_REFLECTION_LOD 4.0f
+
 float4 PSMain(PSInput input) : SV_TARGET {
     PixelSample ps;
     EvaluatePixel(input, ps);
 
     float3 N = ps.normal;
     float3 V = normalize(Transform.cameraPos.xyz - input.worldPos);
+    float NotV = max(dot(N, V), 0.0f);
 
     float3 F0 = lerp(F0_MIN, ps.albdo, float3(ps.metalness, ps.metalness, ps.metalness));
 
@@ -102,22 +107,29 @@ float4 PSMain(PSInput input) : SV_TARGET {
         // pure matel do not have refraction
         Kd *= 1.0f - ps.metalness;
 
-        float NotV = saturate(dot(N, V));
-        float NotL = saturate(dot(N, L));
+        float NotL = max(dot(N, L), 0.0f);
         float3 specular = (D * G * F) / max(4.0f * NotV * NotL, 0.001f);
-        float3 brdf = Kd * ps.albdo / M_PI + specular;
 
-        Lo += (brdf * radiance * NotL);
+        Lo += (Kd * ps.albdo * M_1_PI + specular) * radiance * NotL;
     }
 
     float3 color = Lo;
 
+    // environment color
     if (Settings.enableIBL) {
         float3 Ks = FresnelSchlickRoughness(saturate(dot(N, V)), F0, ps.roughness);
         float3 Kd = float3(1.0f, 1.0f, 1.0f) - Ks;
         Kd *= 1.0f - ps.metalness;
+
         float3 irradiance = IrradianceTex.SampleLevel(Sampler, DirToLatLong(N), 0).rgb;
-        float3 ambient = Kd * irradiance * ps.albdo * ps.ao;
+        float3 diffuse = irradiance * ps.albdo;
+
+        float3 R = reflect(-V, N);
+        float3 blurredEnvColor = BlurredEnvTex.SampleLevel(Sampler, DirToLatLong(R), MAX_REFLECTION_LOD * ps.roughness).rgb;
+        float2 envBRDF = BRDFLookupTex.SampleLevel(Sampler, float2(NotV, ps.roughness), 0).rg;
+        float3 specular = blurredEnvColor * (Ks * envBRDF.x + envBRDF.y);
+
+        float3 ambient = (Kd * diffuse + specular) * ps.ao;
         color += ambient;
     } else {
         float3 ambient = float3(0.03f, 0.03f, 0.03f) * ps.albdo * ps.ao;
@@ -125,7 +137,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     }
 
     // HDR tonemap
-    color = TonemapFilmic2(color);
+    color = TonemapReinhard(color);
 
     return float4(color, 1.0f);
 }

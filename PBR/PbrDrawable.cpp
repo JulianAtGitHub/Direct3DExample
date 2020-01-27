@@ -17,13 +17,15 @@ PbrDrawable::~PbrDrawable(void) {
     Destroy();
 }
 
-void PbrDrawable::Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uint32_t numLight, Render::PixelBuffer *irradianceTex) {
+void PbrDrawable::Initialize(Utils::Scene *scene, 
+                             Render::GPUBuffer *lights, uint32_t numLight, 
+                             Render::PixelBuffer *irradianceTex, Render::PixelBuffer *blurredEnvTex, Render::PixelBuffer *brdfLookupTex) {
     ASSERT_PRINT(scene && lights && irradianceTex);
-    if (!scene || !lights || !irradianceTex) {
+    if (!scene || !lights || !irradianceTex || !blurredEnvTex || !brdfLookupTex) {
         return;
     }
 
-    mMaterial = { {0.5f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
+    mMaterial = { {1.0f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
 
     mSettingsCB = new Render::ConstantBuffer(sizeof(SettingsCB), 1);
     mTransformCB = new Render::ConstantBuffer(sizeof(TransformCB), 1);
@@ -38,9 +40,13 @@ void PbrDrawable::Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uin
     mVertexBufferView = mVertexBuffer->FillVertexBufferView(0, static_cast<uint32_t>(verticesSize), sizeof(Utils::Scene::Vertex));
     mIndexBufferView = mIndexBuffer->FillIndexBufferView(0, static_cast<uint32_t>(indicesSize), false);
 
-    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size()) + 2);
+    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size()) + 4);
+
     lights->CreateStructBufferSRV(mResourceHeap->Allocate(), numLight, sizeof(LightCB), false);
     irradianceTex->CreateSRV(mResourceHeap->Allocate(), false);
+    blurredEnvTex->CreateSRV(mResourceHeap->Allocate(), false);
+    brdfLookupTex->CreateSRV(mResourceHeap->Allocate(), false);
+
     if (scene->mImages.size() > 0) {
         mTextures.reserve(scene->mImages.size());
         for (auto image : scene->mImages) {

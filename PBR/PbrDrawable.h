@@ -4,10 +4,19 @@
 
 class PbrDrawable {
 public:
+    enum TextureIndex {
+        IrradianceIdx = 1,
+        BlurredEnvIdx,
+        BRDFLookupIdx,
+        MatTexOffset
+    };
+
     PbrDrawable(void);
     ~PbrDrawable(void);
 
-    void Initialize(Utils::Scene *scene, Render::GPUBuffer *lights, uint32_t numLight, Render::PixelBuffer *irradianceTex);
+    void Initialize(Utils::Scene *scene, 
+                    Render::GPUBuffer *lights, uint32_t numLight, 
+                    Render::PixelBuffer *irradianceTex, Render::PixelBuffer *blurredEnvTex, Render::PixelBuffer *brdfLookupTex);
     void Update(uint32_t currentFrame, Utils::Camera &camera, const SettingsCB &settings);
 
     INLINE MaterialCB & GetMaterial(void) { return mMaterial; }

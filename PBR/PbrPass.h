@@ -10,6 +10,8 @@ public:
         MaterialSlot,
         LightsSlot,
         IrradianceTexSlot,
+        BlurredEnvTexSlot,
+        BRDFLookupTexSlot,
         NormalTexSlot,
         AlbdoTexSlot,
         MetalnessTexSlot,

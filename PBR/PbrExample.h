@@ -60,7 +60,7 @@ private:
     Render::GPUBuffer      *mLightsBuffer;
     Render::PixelBuffer    *mEnvTexture;
     Render::PixelBuffer    *mIrrTexture;
-    Render::PixelBuffer    *mBlurredTexture;
+    Render::PixelBuffer    *mBlurredEnvTexture;
     Render::PixelBuffer    *mBRDFLookupTexture;
     Render::DescriptorHeap *mTextureHeap;
 

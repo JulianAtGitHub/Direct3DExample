@@ -22,7 +22,7 @@ PbrExample::PbrExample(void)
 , mLightsBuffer(nullptr)
 , mEnvTexture(nullptr)
 , mIrrTexture(nullptr)
-, mBlurredTexture(nullptr)
+, mBlurredEnvTexture(nullptr)
 , mBRDFLookupTexture(nullptr)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
@@ -53,11 +53,11 @@ void PbrExample::Init(HWND hwnd) {
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
     mAppSettings = { true, false, false, false, false };
-    mSettings = { 1, 0, LIGHT_COUNT };
-    mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
-    mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
-    mLights[2] = { {-10.0f,-10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
-    mLights[3] = { { 10.0f,-10.0f, 10.0f }, 0, { 300.0f, 300.0f, 300.0f }, 0.0f };
+    mSettings = { 1, 1, LIGHT_COUNT };
+    mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[2] = { {-10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[3] = { { 10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
 
@@ -81,8 +81,8 @@ void PbrExample::Init(HWND hwnd) {
     uint32_t blurredWidth = 256;
     uint32_t blurredPitch = Render::BytesPerPixel(blurredFormat) * blurredWidth;
     uint32_t blurredMips = 6;
-    mBlurredTexture = new Render::PixelBuffer(blurredPitch, blurredWidth, blurredWidth >> 1, blurredMips, blurredFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mBlurredTexture->CreateSRV(mTextureHeap->Allocate());
+    mBlurredEnvTexture = new Render::PixelBuffer(blurredPitch, blurredWidth, blurredWidth >> 1, blurredMips, blurredFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    mBlurredEnvTexture->CreateSRV(mTextureHeap->Allocate());
 
     DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
     if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
@@ -105,18 +105,18 @@ void PbrExample::Init(HWND hwnd) {
     delete irrPass;
 
     PrefilteredEnvPass *pfePass = new PrefilteredEnvPass();
-    pfePass->Dispatch(mEnvTexture, mBlurredTexture);
+    pfePass->Dispatch(mEnvTexture, mBlurredEnvTexture);
     delete pfePass;
 
     BRDFIntegrationPass *brdfPass = new BRDFIntegrationPass();
     brdfPass->Dispatch(mBRDFLookupTexture);
     delete brdfPass;
 
-    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 3.0f, 0.0f));
+    mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 5.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
     mGUI->AddImage(mEnvTexture);
     mGUI->AddImage(mIrrTexture);
-    mGUI->AddImage(mBlurredTexture);
+    mGUI->AddImage(mBlurredEnvTexture);
     mGUI->AddImage(mBRDFLookupTexture);
 
     Utils::Scene *sphere = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\sphere.obj");
@@ -141,7 +141,7 @@ void PbrExample::Init(HWND hwnd) {
     sphere->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
 
     mSphere = new PbrDrawable();
-    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT, mIrrTexture);
+    mSphere->Initialize(sphere, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
     delete sphere;
 
     mPbrPass = new PbrPass();
@@ -158,7 +158,7 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mTextureHeap);
     DeleteAndSetNull(mEnvTexture);
     DeleteAndSetNull(mIrrTexture);
-    DeleteAndSetNull(mBlurredTexture);
+    DeleteAndSetNull(mBlurredEnvTexture);
     DeleteAndSetNull(mBRDFLookupTexture);
     DeleteAndSetNull(mCamera);
     DeleteAndSetNull(mSphere);
@@ -325,10 +325,10 @@ void PbrExample::UpdateGUI(float second) {
                 const char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
                 static int curItem = 0;
                 ImGui::Combo("Mipmap Level", &curItem, mipItems, IM_ARRAYSIZE(mipItems));
-                mGUI->SetImageMipLevel(mBlurredTexture, curItem);
-                float width = static_cast<float>(mBlurredTexture->GetWidth() >> curItem);
-                float height = static_cast<float>(mBlurredTexture->GetHeight() >> curItem);
-                ImGui::Image(mBlurredTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                mGUI->SetImageMipLevel(mBlurredEnvTexture, curItem);
+                float width = static_cast<float>(mBlurredEnvTexture->GetWidth() >> curItem);
+                float height = static_cast<float>(mBlurredEnvTexture->GetHeight() >> curItem);
+                ImGui::Image(mBlurredEnvTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
