@@ -35,9 +35,12 @@ private:
         bool showIrradianceImage;
         bool showPrefilteredImage;
         bool showBRDFLookupImage;
+        bool enableTexture;
+        bool enableIBL;
+        uint32_t pbrPassState;
     };
 
-    static constexpr uint32_t LIGHT_COUNT = 4;
+    static constexpr uint32_t LIGHT_COUNT = 5;
     static std::string WindowTitle;
 
     void UpdateGUI(float second);
@@ -53,6 +56,7 @@ private:
     bool                    mIsRotating;
     int64_t                 mLastMousePos;
     int64_t                 mCurrentMousePos;
+    bool                    mDirtyFlag;
 
     AppSettings             mAppSettings;
     SettingsCB              mSettings;

@@ -20,6 +20,7 @@ PbrExample::PbrExample(void)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
+, mDirtyFlag(false)
 , mLightsBuffer(nullptr)
 , mEnvTexture(nullptr)
 , mIrrTexture(nullptr)
@@ -53,12 +54,13 @@ void PbrExample::Init(HWND hwnd) {
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
-    mAppSettings = { true, false, false, false, false };
-    mSettings = { 1, 1, LIGHT_COUNT };
-    mLights[0] = { {-10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
-    mLights[1] = { { 10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
-    mLights[2] = { {-10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
-    mLights[3] = { { 10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mAppSettings = { true, false, false, false, false, true, true, 3 };
+    mSettings = { LIGHT_COUNT, { 1.5f, 1.5f, 1.5f } };
+    mLights[0] = { {  0.0f,  0.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[1] = { {-10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[2] = { { 10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[3] = { {-10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mLights[4] = { { 10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
 
@@ -341,7 +343,7 @@ void PbrExample::Update(void) {
 void PbrExample::UpdateGUI(float second) {
     mGUI->BeginFrame(second);
 
-    ImGui::SetNextWindowSize(ImVec2(350.0f, 360.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 420.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::BeginChild("Options");
@@ -353,8 +355,6 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("BRDF Lookup Image", &mAppSettings.showBRDFLookupImage);
 
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
-            ImGui::Checkbox("Enable Texture", (bool *)&mSettings.enableTexture);
-            ImGui::Checkbox("Enable IBL", (bool *)&mSettings.enableIBL);
 
             constexpr uint32_t MODEL_COUNT = 8;
             static const char* models[MODEL_COUNT] = { };
@@ -363,11 +363,78 @@ void PbrExample::UpdateGUI(float second) {
             }
             ImGui::Combo("Model", (int *)&mDrawIndex, models, static_cast<int>(mDrawables.size()));
 
-            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
-            PbrDrawable *drawable = mDrawables[mDrawIndex];
-            ImGui::ColorEdit3("Albdo", &(drawable->GetMaterial().albdo.x));
-            ImGui::SliderFloat("Matelness", &(drawable->GetMaterial().metalness), 0.04f, 1.0f);
-            ImGui::SliderFloat("Roughness", &(drawable->GetMaterial().roughness), 0.04f, 1.0f);
+            const static char* lightCountItems[] = {"0", "1", "2", "3", "4", "5"};
+            static int curLightCount = IM_ARRAYSIZE(lightCountItems) - 1;
+            ImGui::Combo("Point Lights", &curLightCount, lightCountItems, IM_ARRAYSIZE(lightCountItems));
+            mSettings.numLight = static_cast<uint32_t>(curLightCount);
+
+            XMFLOAT3 lightColor = mLights[0].color;
+            if (ImGui::ColorEdit3("Light Color", &(lightColor.x), ImGuiColorEditFlags_Float)) {
+                for (uint32_t i = 0; i < LIGHT_COUNT; ++i) {
+                    mLights[i].color = lightColor;
+                }
+                mDirtyFlag = true;
+            }
+
+            static int component = 0;
+            ImGui::RadioButton("Disable", &component, 0);
+            ImGui::SameLine();
+            ImGui::RadioButton("F", &component, 1); 
+            ImGui::SameLine();
+            ImGui::RadioButton("D", &component, 2);
+            ImGui::SameLine();
+            ImGui::RadioButton("G", &component, 3);
+
+            ImGui::Checkbox("Enable Texture", (bool *)&mAppSettings.enableTexture);
+            ImGui::Checkbox("Enable IBL", (bool *)&mAppSettings.enableIBL);
+            if (!mAppSettings.enableIBL) {
+                ImGui::ColorEdit3("Ambient", &(mSettings.ambientColor.x), ImGuiColorEditFlags_Float);
+            }
+
+            uint32_t state = 0;
+            switch (component) {
+                case 1: {
+                    if (mAppSettings.enableTexture) {
+                        state = PbrPass::FactorFHasTex;
+                    } else {
+                        state = PbrPass::FactorFNoTex;
+                    }
+                } break;
+
+                case 2: {
+                    if (mAppSettings.enableTexture) {
+                        state = PbrPass::FactorDHasTex;
+                    } else {
+                        state = PbrPass::FactorDNoTex;
+                    }
+                } break;
+
+                case 3: {
+                    if (mAppSettings.enableTexture) {
+                        state = PbrPass::FactorGHasTex;
+                    } else {
+                        state = PbrPass::FactorGNoTex;
+                    }
+                } break;
+
+                default: {
+                    if (mAppSettings.enableTexture) {
+                        state |= 0b01;
+                    }
+                    if (mAppSettings.enableIBL) {
+                        state |= 0b10;
+                    }
+                } break;
+            }
+            mAppSettings.pbrPassState = state;
+
+            if (!mAppSettings.enableTexture) {
+                ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
+                PbrDrawable *drawable = mDrawables[mDrawIndex];
+                ImGui::ColorEdit3("Albdo", &(drawable->GetMaterial().albdo.x));
+                ImGui::SliderFloat("Matelness", &(drawable->GetMaterial().metalness), 0.04f, 1.0f);
+                ImGui::SliderFloat("Roughness", &(drawable->GetMaterial().roughness), 0.04f, 1.0f);
+            }
         ImGui::EndChild();
     ImGui::End();
 
@@ -422,6 +489,12 @@ void PbrExample::UpdateGUI(float second) {
 void PbrExample::Render(void) {
     Render::gCommand->Begin();
 
+    // TODO: GPU resource sync
+    if (mDirtyFlag) {
+        Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
+        mDirtyFlag = false;
+    }
+
     Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -431,7 +504,7 @@ void PbrExample::Render(void) {
     Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
     Render::gCommand->ClearDepth(Render::gDepthStencil);
 
-    mPbrPass->PreviousRender();
+    mPbrPass->PreviousRender((PbrPass::State)mAppSettings.pbrPassState);
     mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex]);
     if (mAppSettings.enableSkybox) {
         mSkyboxPass->Render(mCurrentFrame, mTextureHeap, 0);

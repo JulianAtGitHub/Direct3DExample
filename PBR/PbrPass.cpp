@@ -3,10 +3,18 @@
 #include "PbrDrawable.h"
 #include "pbr.vs.h"
 #include "pbr.ps.h"
+#include "pbr.tex.ps.h"
+#include "pbr.ibl.ps.h"
+#include "pbr.tex.ibl.ps.h"
+#include "pbr_d.ps.h"
+#include "pbr_d.tex.ps.h"
+#include "pbr_f.ps.h"
+#include "pbr_f.tex.ps.h"
+#include "pbr_g.ps.h"
+#include "pbr_g.tex.ps.h"
 
 PbrPass::PbrPass(void)
 : mRootSignature(nullptr)
-, mGraphicsState(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
 {
@@ -42,12 +50,26 @@ void PbrPass::Initialize(void) {
         { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
 
-    mGraphicsState = new Render::GraphicsState();
-    mGraphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
-    mGraphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
-    mGraphicsState->SetVertexShader(gscPbrVS, sizeof(gscPbrVS));
-    mGraphicsState->SetPixelShader(gscPbrPS, sizeof(gscPbrPS));
-    mGraphicsState->Create(mRootSignature);
+    for (uint32_t i = 0; i < StateMax; ++i) {
+        Render::GraphicsState *graphicsState = new Render::GraphicsState();
+        graphicsState->GetInputLayout() = { inputElementDesc, _countof(inputElementDesc) };
+        graphicsState->GetRasterizerState().FrontCounterClockwise = TRUE;
+        graphicsState->SetVertexShader(gscPbrVS, sizeof(gscPbrVS));
+        mGraphicsStates[i] = graphicsState;
+    }
+    mGraphicsStates[NoIBLNoTex]->SetPixelShader(gscPbrPS, sizeof(gscPbrPS));
+    mGraphicsStates[NoIBLHasTex]->SetPixelShader(gscPbrTexPS, sizeof(gscPbrTexPS));
+    mGraphicsStates[HasIBLNoTex]->SetPixelShader(gscPbrIblPS, sizeof(gscPbrIblPS));
+    mGraphicsStates[HasIBLHasTex]->SetPixelShader(gscPbrTexIblPS, sizeof(gscPbrTexIblPS));
+    mGraphicsStates[FactorFNoTex]->SetPixelShader(gscPbr_fPS, sizeof(gscPbr_fPS));
+    mGraphicsStates[FactorFHasTex]->SetPixelShader(gscPbr_fTexPS, sizeof(gscPbr_fTexPS));
+    mGraphicsStates[FactorDNoTex]->SetPixelShader(gscPbr_dPS, sizeof(gscPbr_dPS));
+    mGraphicsStates[FactorDHasTex]->SetPixelShader(gscPbr_dTexPS, sizeof(gscPbr_dTexPS));
+    mGraphicsStates[FactorGNoTex]->SetPixelShader(gscPbr_gPS, sizeof(gscPbr_gPS));
+    mGraphicsStates[FactorGHasTex]->SetPixelShader(gscPbr_gTexPS, sizeof(gscPbr_gTexPS));
+    for (uint32_t i = 0; i < StateMax; ++i) {
+        mGraphicsStates[i]->Create(mRootSignature);
+    }
 
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1);
     mSampler = new Render::Sampler();
@@ -58,12 +80,14 @@ void PbrPass::Initialize(void) {
 void PbrPass::Destroy(void) {
     DeleteAndSetNull(mSampler);
     DeleteAndSetNull(mSamplerHeap);
-    DeleteAndSetNull(mGraphicsState);
+    for (uint32_t i = 0; i < StateMax; ++i) {
+        DeleteAndSetNull(mGraphicsStates[i]);
+    }
     DeleteAndSetNull(mRootSignature);
 }
 
-void PbrPass::PreviousRender(void) {
-    Render::gCommand->SetPipelineState(mGraphicsState);
+void PbrPass::PreviousRender(State state) {
+    Render::gCommand->SetPipelineState(mGraphicsStates[state]);
     Render::gCommand->SetRootSignature(mRootSignature);
 }
 

@@ -9,9 +9,8 @@
 #endif
 
 struct SettingsCB {
-    uint    enableTexture;
-    uint    enableIBL;
     uint    numLight;
+    float3  ambientColor;
 };
 
 struct TransformCB {

@@ -27,7 +27,7 @@ void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene,
 
     mName = name;
 
-    mMaterial = { {1.0f, 0.0f, 0.0f }, 0.5f, 0.5f, 1.0f };
+    mMaterial = { {1.0f, 1.0f, 1.0f }, 0.5f, 0.5f, 1.0f };
 
     mSettingsCB = new Render::ConstantBuffer(sizeof(SettingsCB), 1);
     mTransformCB = new Render::ConstantBuffer(sizeof(TransformCB), 1);
