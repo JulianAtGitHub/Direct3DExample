@@ -129,22 +129,19 @@ void PbrExample::Init(HWND hwnd) {
         ASSERT_PRINT(model);
 
         model->mImages.reserve(5);
-        Utils::Scene::Shape &shape = model->mShapes[0];
-
-        shape.normalTex = 0; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\normal.png"));
-
-        shape.albdoTex = 1; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\albedo.png"));
-
-        shape.metalnessTex = 2; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\metallic.png"));
-
-        shape.roughnessTex = 3; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\roughness.png"));
-
-        shape.aoTex = 4; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
+
+        for (auto & shape : model->mShapes) {
+            shape.normalTex = 0; 
+            shape.albdoTex = 1; 
+            shape.metalnessTex = 2; 
+            shape.roughnessTex = 3; 
+            shape.aoTex = 4; 
+        }
 
         PbrDrawable *drawable = new PbrDrawable();
         drawable->Initialize("Sphere", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
@@ -159,22 +156,19 @@ void PbrExample::Init(HWND hwnd) {
         ASSERT_PRINT(model);
 
         model->mImages.reserve(5);
-        Utils::Scene::Shape &shape = model->mShapes[0];
-
-        shape.normalTex = 0; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\normal.png"));
-
-        shape.albdoTex = 1; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\albedo.png"));
-
-        shape.metalnessTex = 2; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\metallic.png"));
-
-        shape.roughnessTex = 3; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\roughness.png"));
-
-        shape.aoTex = 4; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\ao.png"));
+
+        for (auto & shape : model->mShapes) {
+            shape.normalTex = 0; 
+            shape.albdoTex = 1; 
+            shape.metalnessTex = 2; 
+            shape.roughnessTex = 3; 
+            shape.aoTex = 4; 
+        }
 
         PbrDrawable *drawable = new PbrDrawable();
         drawable->Initialize("Monkey", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
@@ -189,22 +183,19 @@ void PbrExample::Init(HWND hwnd) {
         ASSERT_PRINT(model);
 
         model->mImages.reserve(5);
-        Utils::Scene::Shape &shape = model->mShapes[0];
-
-        shape.normalTex = 0; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\normal.png"));
-
-        shape.albdoTex = 1; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\albedo.png"));
-
-        shape.metalnessTex = 2; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\metallic.png"));
-
-        shape.roughnessTex = 3; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\roughness.png"));
-
-        shape.aoTex = 4; 
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\ao.png"));
+
+        for (auto & shape : model->mShapes) {
+            shape.normalTex = 0; 
+            shape.albdoTex = 1; 
+            shape.metalnessTex = 2; 
+            shape.roughnessTex = 3; 
+            shape.aoTex = 4; 
+        }
 
         PbrDrawable *drawable = new PbrDrawable();
         drawable->Initialize("Dragon", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
