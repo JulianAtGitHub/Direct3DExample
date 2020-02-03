@@ -155,7 +155,12 @@ float4 PSMain_F(PSInput input) : SV_TARGET {
     float3 F0 = lerp(F0_MIN, ps.albdo, float3(ps.metalness, ps.metalness, ps.metalness));
     float3 L = normalize(Lights[0].position - input.worldPos);
     float3 H = normalize(V + L);
-    float3 F = FresnelSchlick(saturate(dot(H, V)), F0);
+    float3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+
+    float NotV = max(dot(N, V), 0.0f);
+    float NotL = max(dot(N, L), 0.0f);
+
+    F = (F / max(4.0f * NotV * NotL, 0.001f)) * NotL;
 
     return float4(F, 1.0f);
 }
@@ -170,6 +175,9 @@ float4 PSMain_D(PSInput input) : SV_TARGET {
     float3 H = normalize(V + L);
     float D = DistributionGGX(N, H, ps.roughness);
 
+    float NotL = max(dot(N, L), 0.0f);
+    D *= NotL;
+
     return float4(D, D, D, 1.0f);
 }
 
@@ -181,6 +189,9 @@ float4 PSMain_G(PSInput input) : SV_TARGET {
     float3 V = normalize(Transform.cameraPos.xyz - input.worldPos);
     float3 L = normalize(Lights[0].position - input.worldPos);
     float G = GeometrySmith(N, V, L, ps.roughness);
+
+    float NotL = max(dot(N, L), 0.0f);
+    G *= NotL;
 
     return float4(G, G, G, 1.0f);
 }
