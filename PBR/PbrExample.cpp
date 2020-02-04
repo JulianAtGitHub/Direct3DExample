@@ -55,7 +55,7 @@ void PbrExample::Init(HWND hwnd) {
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
     mAppSettings = { true, false, false, false, false, true, true, 3 };
-    mSettings = { LIGHT_COUNT, { 1.5f, 1.5f, 1.5f } };
+    mSettings = { LIGHT_COUNT, { 0.05f, 0.05f, 0.05f } };
     mLights[0] = { {  0.0f,  0.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[1] = { {-10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[2] = { { 10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
@@ -388,7 +388,7 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("Enable Texture", (bool *)&mAppSettings.enableTexture);
             ImGui::Checkbox("Enable IBL", (bool *)&mAppSettings.enableIBL);
             if (!mAppSettings.enableIBL) {
-                ImGui::ColorEdit3("Ambient", &(mSettings.ambientColor.x), ImGuiColorEditFlags_Float);
+                ImGui::ColorEdit3("Ambient", &(mSettings.ambientColor.x));
             }
 
             uint32_t state = 0;
