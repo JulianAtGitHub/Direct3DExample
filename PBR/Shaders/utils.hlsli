@@ -109,7 +109,7 @@ inline float3 LatLongToDir(float2 ll) {
     float theta = M_PI * (1.0f - ll.y);
 
     // spherical coordinate to cartesian coordinate (right-hand)
-    float3 dir = float3(sin(theta) * cos(phi), cos(theta), -sin(theta) * sin(phi));
+    float3 dir = float3(-sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi));
     return normalize(dir);
 }
 
