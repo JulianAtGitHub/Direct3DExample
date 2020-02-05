@@ -3,10 +3,10 @@
 
 
 PbrDrawable::PbrDrawable(void)
-: mSettingsCB(nullptr)
+: mMatTexOffset(0)
+, mSettingsCB(nullptr)
 , mTransformCB(nullptr)
 , mMaterialCB(nullptr)
-, mResourceHeap(nullptr)
 , mVertexBuffer(nullptr)
 , mIndexBuffer(nullptr)
 {
@@ -17,11 +17,9 @@ PbrDrawable::~PbrDrawable(void) {
     Destroy();
 }
 
-void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene, 
-                             Render::GPUBuffer *lights, uint32_t numLight, 
-                             Render::PixelBuffer *irradianceTex, Render::PixelBuffer *blurredEnvTex, Render::PixelBuffer *brdfLookupTex) {
-    ASSERT_PRINT(scene && lights && irradianceTex);
-    if (!scene || !lights || !irradianceTex || !blurredEnvTex || !brdfLookupTex) {
+void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene, Render::DescriptorHeap *texHeap) {
+    ASSERT_PRINT(scene && texHeap);
+    if (!scene || !texHeap) {
         return;
     }
 
@@ -42,18 +40,13 @@ void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene,
     mVertexBufferView = mVertexBuffer->FillVertexBufferView(0, static_cast<uint32_t>(verticesSize), sizeof(Utils::Scene::Vertex));
     mIndexBufferView = mIndexBuffer->FillIndexBufferView(0, static_cast<uint32_t>(indicesSize), false);
 
-    mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size()) + 4);
-
-    lights->CreateStructBufferSRV(mResourceHeap->Allocate(), numLight, sizeof(LightCB), false);
-    irradianceTex->CreateSRV(mResourceHeap->Allocate(), false);
-    blurredEnvTex->CreateSRV(mResourceHeap->Allocate(), false);
-    brdfLookupTex->CreateSRV(mResourceHeap->Allocate(), false);
+    mMatTexOffset = texHeap->GetUsedCount();
 
     if (scene->mImages.size() > 0) {
         mTextures.reserve(scene->mImages.size());
         for (auto image : scene->mImages) {
             Render::PixelBuffer *texture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), image->GetMipLevels(), image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            texture->CreateSRV(mResourceHeap->Allocate());
+            texture->CreateSRV(texHeap->Allocate());
             mTextures.push_back(texture);
         }
     }
@@ -83,7 +76,6 @@ void PbrDrawable::Destroy(void) {
         delete texture;
     }
     mTextures.clear();
-    DeleteAndSetNull(mResourceHeap);
     DeleteAndSetNull(mIndexBuffer);
     DeleteAndSetNull(mVertexBuffer);
 }

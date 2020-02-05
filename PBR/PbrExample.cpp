@@ -20,11 +20,9 @@ PbrExample::PbrExample(void)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
+, mEnvIndex(0)
 , mDirtyFlag(false)
 , mLightsBuffer(nullptr)
-, mEnvTexture(nullptr)
-, mIrrTexture(nullptr)
-, mBlurredEnvTexture(nullptr)
 , mBRDFLookupTexture(nullptr)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
@@ -63,63 +61,84 @@ void PbrExample::Init(HWND hwnd) {
     mLights[4] = { { 10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
-
-    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
-
-    Utils::Image *image = Utils::Image::CreateFromFile("..\\..\\Models\\WoodenDoor_Ref.hdr", false);
-    mEnvTexture = new Render::PixelBuffer(image->GetPitch(), image->GetWidth(), image->GetHeight(), 1, image->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
-    mEnvTexture->CreateSRV(mTextureHeap->Allocate());
-
-    uint32_t irrWidth = mEnvTexture->GetWidth() >> 1;
-    uint32_t irrHeight = mEnvTexture->GetHeight() >> 1;
-    DXGI_FORMAT irrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    if (Render::gTypedUAVLoadSupport_R16G16B16A16_FLOAT) {
-        irrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    }
-    uint32_t irrPitch = Render::BytesPerPixel(irrFormat) * irrWidth;
-    mIrrTexture = new Render::PixelBuffer(irrPitch, irrWidth, irrHeight, 1, irrFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mIrrTexture->CreateSRV(mTextureHeap->Allocate());
-
-    DXGI_FORMAT blurredFormat = irrFormat;
-    uint32_t blurredWidth = 256;
-    uint32_t blurredPitch = Render::BytesPerPixel(blurredFormat) * blurredWidth;
-    uint32_t blurredMips = 6;
-    mBlurredEnvTexture = new Render::PixelBuffer(blurredPitch, blurredWidth, blurredWidth >> 1, blurredMips, blurredFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mBlurredEnvTexture->CreateSRV(mTextureHeap->Allocate());
-
-    DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
-    if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
-        brdfFormat = DXGI_FORMAT_R16G16_FLOAT;
-    }
-    uint32_t brdfSize = 512;
-    uint32_t brdfPitch = Render::BytesPerPixel(brdfFormat) * brdfSize;
-    mBRDFLookupTexture = new Render::PixelBuffer(brdfPitch, brdfSize, brdfSize, 1, brdfFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    mBRDFLookupTexture->CreateSRV(mTextureHeap->Allocate());
-
     Render::gCommand->Begin();
-    Render::gCommand->UploadTexture(mEnvTexture, image->GetPixels());
     Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
     Render::gCommand->End(true);
 
-    delete image;
+    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1 + 3 * ENV_COUNT + 1 + 3 * 5);
 
-    IrradiancePass *irrPass = new IrradiancePass();
-    irrPass->Dispatch(mEnvTexture, mIrrTexture);
-    delete irrPass;
+    mLightsBuffer->CreateStructBufferSRV(mTextureHeap->Allocate(), LIGHT_COUNT, sizeof(LightCB));
 
-    PrefilteredEnvPass *pfePass = new PrefilteredEnvPass();
-    pfePass->Dispatch(mEnvTexture, mBlurredEnvTexture);
-    delete pfePass;
+    // setup environment textures
+    {
+        // brdf LUT
+        DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
+        if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
+            brdfFormat = DXGI_FORMAT_R16G16_FLOAT;
+        }
+        uint32_t brdfSize = 512;
+        uint32_t brdfPitch = Render::BytesPerPixel(brdfFormat) * brdfSize;
+        mBRDFLookupTexture = new Render::PixelBuffer(brdfPitch, brdfSize, brdfSize, 1, brdfFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        mBRDFLookupTexture->CreateSRV(mTextureHeap->Allocate());
 
-    BRDFIntegrationPass *brdfPass = new BRDFIntegrationPass();
-    brdfPass->Dispatch(mBRDFLookupTexture);
-    delete brdfPass;
+        // env
+        const char *envFile[ENV_COUNT] = {
+            "..\\..\\Models\\Environment\\WoodenDoor_Ref.hdr",
+            "..\\..\\Models\\Environment\\Mans_Outside_2k.hdr",
+            "..\\..\\Models\\Environment\\Tokyo_BigSight_3k.hdr"
+        };
+
+        uint32_t subResSize = 512;
+        DXGI_FORMAT subResFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        if (Render::gTypedUAVLoadSupport_R16G16B16A16_FLOAT) {
+            subResFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+
+        Utils::Image *envImages[ENV_COUNT] = { nullptr, };
+
+        Render::gCommand->Begin();
+        for (uint32_t i = 0; i < ENV_COUNT; ++i) {
+            envImages[i] = Utils::Image::CreateFromFile(envFile[i], false);
+            mEnvTextures[i].original = new Render::PixelBuffer(envImages[i]->GetPitch(), envImages[i]->GetWidth(), envImages[i]->GetHeight(), 1, envImages[i]->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
+            mEnvTextures[i].original->CreateSRV(mTextureHeap->Allocate());
+            Render::gCommand->UploadTexture(mEnvTextures[i].original, envImages[i]->GetPixels());
+
+            uint32_t irrPitch = Render::BytesPerPixel(subResFormat) * subResSize;
+            mEnvTextures[i].irradiance = new Render::PixelBuffer(irrPitch, subResSize, subResSize >> 1, 1, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            mEnvTextures[i].irradiance->CreateSRV(mTextureHeap->Allocate());
+
+            uint32_t pfePitch = Render::BytesPerPixel(subResFormat) * (subResSize >> 1);
+            mEnvTextures[i].prefiltered = new Render::PixelBuffer(pfePitch, subResSize >> 1, subResSize >> 2, 6, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            mEnvTextures[i].prefiltered->CreateSRV(mTextureHeap->Allocate());
+        }
+        Render::gCommand->End(true);
+
+        IrradiancePass *irrPass = new IrradiancePass();
+        PrefilteredEnvPass *pfePass = new PrefilteredEnvPass();
+        for (uint32_t i = 0; i < ENV_COUNT; ++i) {
+            irrPass->Dispatch(mEnvTextures[i].original, mEnvTextures[i].irradiance);
+            pfePass->Dispatch(mEnvTextures[i].original, mEnvTextures[i].prefiltered);
+        }
+
+        BRDFIntegrationPass *brdfPass = new BRDFIntegrationPass();
+        brdfPass->Dispatch(mBRDFLookupTexture);
+
+        // cleanup
+        for (uint32_t i = 0; i < ENV_COUNT; ++i) {
+            DeleteAndSetNull(envImages[i]);
+        }
+        delete irrPass;
+        delete pfePass;
+        delete brdfPass;
+    }
 
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 5.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
-    mGUI->AddImage(mEnvTexture);
-    mGUI->AddImage(mIrrTexture);
-    mGUI->AddImage(mBlurredEnvTexture);
+    for (uint32_t i = 0; i < ENV_COUNT; ++i) {
+        mGUI->AddImage(mEnvTextures[i].original);
+        mGUI->AddImage(mEnvTextures[i].irradiance);
+        mGUI->AddImage(mEnvTextures[i].prefiltered);
+    }
     mGUI->AddImage(mBRDFLookupTexture);
 
     mPbrPass = new PbrPass();
@@ -146,7 +165,7 @@ void PbrExample::Init(HWND hwnd) {
         }
 
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Sphere", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        drawable->Initialize("Sphere", model, mTextureHeap);
         mDrawables.push_back(drawable);
 
         delete model;
@@ -173,7 +192,7 @@ void PbrExample::Init(HWND hwnd) {
         }
 
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Monkey", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        drawable->Initialize("Monkey", model, mTextureHeap);
         mDrawables.push_back(drawable);
 
         delete model;
@@ -200,7 +219,7 @@ void PbrExample::Init(HWND hwnd) {
         }
 
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Dragon", model, mLightsBuffer, LIGHT_COUNT, mIrrTexture, mBlurredEnvTexture, mBRDFLookupTexture);
+        drawable->Initialize("Dragon", model, mTextureHeap);
         mDrawables.push_back(drawable);
 
         delete model;
@@ -215,9 +234,11 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mGUI);
     DeleteAndSetNull(mLightsBuffer);
     DeleteAndSetNull(mTextureHeap);
-    DeleteAndSetNull(mEnvTexture);
-    DeleteAndSetNull(mIrrTexture);
-    DeleteAndSetNull(mBlurredEnvTexture);
+    for (uint32_t i = 0; i < ENV_COUNT; ++i) {
+        DeleteAndSetNull(mEnvTextures[i].original);
+        DeleteAndSetNull(mEnvTextures[i].irradiance);
+        DeleteAndSetNull(mEnvTextures[i].prefiltered);
+    }
     DeleteAndSetNull(mBRDFLookupTexture);
     DeleteAndSetNull(mCamera);
     for (auto drawable : mDrawables) {
@@ -343,7 +364,7 @@ void PbrExample::Update(void) {
 void PbrExample::UpdateGUI(float second) {
     mGUI->BeginFrame(second);
 
-    ImGui::SetNextWindowSize(ImVec2(350.0f, 420.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 460.0f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(5.0f, 5.0f), ImGuiCond_Once);
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::BeginChild("Options");
@@ -355,6 +376,9 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("BRDF Lookup Image", &mAppSettings.showBRDFLookupImage);
 
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
+
+            static const char *envs[ENV_COUNT] = { "WoodenDoor Ref 1k", "Mans Outside 2k", "Tokyo BigSight 3k"};
+            ImGui::Combo("Environment", (int *)&mEnvIndex, envs, ENV_COUNT);
 
             constexpr uint32_t MODEL_COUNT = 8;
             static const char* models[MODEL_COUNT] = { };
@@ -443,7 +467,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
         ImGui::Begin("Environment Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Environment Image");
-                ImGui::Image(mEnvTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTextures[mEnvIndex].original, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -452,7 +476,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 310.0f), ImGuiCond_Once);
         ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Irradiance Image");
-                ImGui::Image(mIrrTexture, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTextures[mEnvIndex].irradiance, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -464,10 +488,10 @@ void PbrExample::UpdateGUI(float second) {
                 const static char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
                 static int curItem = 0;
                 ImGui::Combo("Mipmap Level", &curItem, mipItems, IM_ARRAYSIZE(mipItems));
-                mGUI->SetImageMipLevel(mBlurredEnvTexture, curItem);
-                float width = static_cast<float>(mBlurredEnvTexture->GetWidth() >> curItem);
-                float height = static_cast<float>(mBlurredEnvTexture->GetHeight() >> curItem);
-                ImGui::Image(mBlurredEnvTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                mGUI->SetImageMipLevel(mEnvTextures[mEnvIndex].prefiltered, curItem);
+                float width = static_cast<float>(mEnvTextures[mEnvIndex].prefiltered->GetWidth() >> curItem);
+                float height = static_cast<float>(mEnvTextures[mEnvIndex].prefiltered->GetHeight() >> curItem);
+                ImGui::Image(mEnvTextures[mEnvIndex].prefiltered, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -506,9 +530,9 @@ void PbrExample::Render(void) {
     Render::gCommand->ClearDepth(Render::gDepthStencil);
 
     mPbrPass->PreviousRender((PbrPass::State)mAppSettings.pbrPassState);
-    mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex]);
+    mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex], mTextureHeap, mEnvIndex);
     if (mAppSettings.enableSkybox) {
-        mSkyboxPass->Render(mCurrentFrame, mTextureHeap, 0);
+        mSkyboxPass->Render(mCurrentFrame, mTextureHeap, mEnvIndex);
     }
     mGUI->Draw(mCurrentFrame, renderTargets[mCurrentFrame]);
 

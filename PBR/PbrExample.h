@@ -40,7 +40,15 @@ private:
         uint32_t pbrPassState;
     };
 
+    struct Environment {
+        Environment(void): original(nullptr), irradiance(nullptr), prefiltered(nullptr) { }
+        Render::PixelBuffer *original;
+        Render::PixelBuffer *irradiance;
+        Render::PixelBuffer *prefiltered;
+    };
+
     static constexpr uint32_t LIGHT_COUNT = 5;
+    static constexpr uint32_t ENV_COUNT = 3;
     static std::string WindowTitle;
 
     void UpdateGUI(float second);
@@ -56,6 +64,7 @@ private:
     bool                    mIsRotating;
     int64_t                 mLastMousePos;
     int64_t                 mCurrentMousePos;
+    uint32_t                mEnvIndex;
     bool                    mDirtyFlag;
 
     AppSettings             mAppSettings;
@@ -63,9 +72,7 @@ private:
     LightCB                 mLights[LIGHT_COUNT];
 
     Render::GPUBuffer      *mLightsBuffer;
-    Render::PixelBuffer    *mEnvTexture;
-    Render::PixelBuffer    *mIrrTexture;
-    Render::PixelBuffer    *mBlurredEnvTexture;
+    Environment             mEnvTextures[ENV_COUNT];
     Render::PixelBuffer    *mBRDFLookupTexture;
     Render::DescriptorHeap *mTextureHeap;
 

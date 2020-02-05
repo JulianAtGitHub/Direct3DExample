@@ -24,7 +24,7 @@ public:
     ~PbrPass(void);
 
     void PreviousRender(State state);
-    void Render(uint32_t currentFrame, PbrDrawable *drawable);
+    void Render(uint32_t currentFrame, PbrDrawable *drawable, Render::DescriptorHeap *texHeap, uint32_t envIndex);
 
 private:
     enum RootSignatureSlot {

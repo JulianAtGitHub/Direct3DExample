@@ -91,31 +91,33 @@ void PbrPass::PreviousRender(State state) {
     Render::gCommand->SetRootSignature(mRootSignature);
 }
 
-void PbrPass::Render(uint32_t currentFrame, PbrDrawable *drawable) {
-    if (!drawable) {
+void PbrPass::Render(uint32_t currentFrame, PbrDrawable *drawable, Render::DescriptorHeap *texHeap, uint32_t envIndex) {
+    if (!drawable || !texHeap) {
         return;
     }
 
-    Render::DescriptorHeap * resourceHeap = drawable->GetResourceHeap();
-    Render::DescriptorHeap *heaps[] = { resourceHeap, mSamplerHeap };
+    Render::DescriptorHeap *heaps[] = { texHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
+
     Render::gCommand->SetGraphicsRootConstantBufferView(SettingsSlot, drawable->GetSettingsCB(currentFrame));
     Render::gCommand->SetGraphicsRootConstantBufferView(TransformSlot, drawable->GetTransformCB(currentFrame));
     Render::gCommand->SetGraphicsRootConstantBufferView(MaterialSlot, drawable->GetMaterialCB(currentFrame));
-    Render::gCommand->SetGraphicsRootDescriptorTable(LightsSlot, resourceHeap->GetHandle(0));
-    Render::gCommand->SetGraphicsRootDescriptorTable(IrradianceTexSlot, resourceHeap->GetHandle(PbrDrawable::IrradianceIdx));
-    Render::gCommand->SetGraphicsRootDescriptorTable(BlurredEnvTexSlot, resourceHeap->GetHandle(PbrDrawable::BlurredEnvIdx));
-    Render::gCommand->SetGraphicsRootDescriptorTable(BRDFLookupTexSlot, resourceHeap->GetHandle(PbrDrawable::BRDFLookupIdx));
+    Render::gCommand->SetGraphicsRootDescriptorTable(LightsSlot, texHeap->GetHandle(0));
+    Render::gCommand->SetGraphicsRootDescriptorTable(BRDFLookupTexSlot, texHeap->GetHandle(1));
+    Render::gCommand->SetGraphicsRootDescriptorTable(IrradianceTexSlot, texHeap->GetHandle(2 + 3 * envIndex + 1));
+    Render::gCommand->SetGraphicsRootDescriptorTable(BlurredEnvTexSlot, texHeap->GetHandle(2 + 3 * envIndex + 2));
     Render::gCommand->SetGraphicsRootDescriptorTable(SamplerSlot, mSampler->GetHandle());
+
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(drawable->GetVertexBufferView(), drawable->GetIndexBufferView());
-    uint32_t texOffset = PbrDrawable::MatTexOffset;
+
+    uint32_t texOffset = drawable->GetMatTexOffset();
     for (auto &shape : drawable->GetShapes()) {
-        Render::gCommand->SetGraphicsRootDescriptorTable(NormalTexSlot, resourceHeap->GetHandle(shape.normalTex + texOffset));
-        Render::gCommand->SetGraphicsRootDescriptorTable(AlbdoTexSlot, resourceHeap->GetHandle(shape.albdoTex + texOffset));
-        Render::gCommand->SetGraphicsRootDescriptorTable(MetalnessTexSlot, resourceHeap->GetHandle(shape.metalnessTex + texOffset));
-        Render::gCommand->SetGraphicsRootDescriptorTable(RoughnessTexSlot, resourceHeap->GetHandle(shape.roughnessTex + texOffset));
-        Render::gCommand->SetGraphicsRootDescriptorTable(AOTexSlot, resourceHeap->GetHandle(shape.albdoTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(NormalTexSlot, texHeap->GetHandle(shape.normalTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(AlbdoTexSlot, texHeap->GetHandle(shape.albdoTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(MetalnessTexSlot, texHeap->GetHandle(shape.metalnessTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(RoughnessTexSlot, texHeap->GetHandle(shape.roughnessTex + texOffset));
+        Render::gCommand->SetGraphicsRootDescriptorTable(AOTexSlot, texHeap->GetHandle(shape.albdoTex + texOffset));
         Render::gCommand->DrawIndexed(shape.indexCount, shape.indexOffset);
     }
 }

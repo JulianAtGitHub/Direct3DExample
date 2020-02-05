@@ -129,7 +129,7 @@ void SkyboxPass::Render(uint32_t currentFrame, Render::DescriptorHeap *envTexHea
     Render::DescriptorHeap *heaps[] = { envTexHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, currentFrame));
-    Render::gCommand->SetGraphicsRootDescriptorTable(1, envTexHeap->GetHandle(envTexIndex));
+    Render::gCommand->SetGraphicsRootDescriptorTable(1, envTexHeap->GetHandle(2 + 3 * envTexIndex));
     Render::gCommand->SetGraphicsRootDescriptorTable(2, mSamplerHeap->GetHandle(0));
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
