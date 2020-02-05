@@ -6,33 +6,34 @@ namespace Render {
 
 DescriptorHeap::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count)
 : mHeap(nullptr)
+, mType(type)
 , mDescriptorSize(0)
 , mTotalCount(0)
 , mRemainingCount(0)
 {
-    Initialize(type, count);
+    Initialize(count);
 }
 
 DescriptorHeap::~DescriptorHeap(void) {
     Destroy();
 }
 
-void DescriptorHeap::Initialize(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t count) {
+void DescriptorHeap::Initialize(uint32_t count) {
     ASSERT_PRINT((count > 0));
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.NumDescriptors = count;
-    heapDesc.Type = type;
+    heapDesc.Type = mType;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     heapDesc.NodeMask = 1;
 
-    if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-        || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
+    if (mType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+        || mType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) {
         heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     }
 
     ASSERT_SUCCEEDED(gDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mHeap)));
-    mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(type);
+    mDescriptorSize = gDevice->GetDescriptorHandleIncrementSize(mType);
     mTotalCount = count;
     mRemainingCount = count;
 }
@@ -47,7 +48,7 @@ void DescriptorHeap::Destroy(void) {
 DescriptorHandle DescriptorHeap::Allocate(void) {
     ASSERT_PRINT((mRemainingCount > 0));
 
-    uint32_t offset = mTotalCount - mRemainingCount;
+    uint32_t offset = GetUsedCount();
     -- mRemainingCount;
 
     return DescriptorHandle(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + offset * mDescriptorSize,
