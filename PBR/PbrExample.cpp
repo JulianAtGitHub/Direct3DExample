@@ -50,7 +50,7 @@ void PbrExample::Init(HWND hwnd) {
     mHeight = windowInfo.rcClient.bottom - windowInfo.rcClient.top;
 
     SetWindowText(mHwnd, WindowTitle.c_str());
-    Render::Initialize(mHwnd);
+    Render::Initialize(mHwnd, Render::Enable8xMSAA);
     Utils::CreateMipsGenerator();
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
@@ -497,11 +497,12 @@ void PbrExample::Render(void) {
 
     Render::gCommand->SetViewportAndScissor(0, 0, mWidth, mHeight);
 
-    Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+    Render::RenderTargetBuffer **renderTargets = (Render::gMSAAState == Render::DisableMSAA ? Render::gRenderTarget : Render::gRenderTargetMSAA);
 
-    Render::gCommand->SetRenderTarget(Render::gRenderTarget[mCurrentFrame], Render::gDepthStencil);
+    Render::gCommand->TransitResource(renderTargets[mCurrentFrame], D3D12_RESOURCE_STATE_RENDER_TARGET);
+    Render::gCommand->SetRenderTarget(renderTargets[mCurrentFrame], Render::gDepthStencil);
 
-    Render::gCommand->ClearColor(Render::gRenderTarget[mCurrentFrame]);
+    Render::gCommand->ClearColor(renderTargets[mCurrentFrame]);
     Render::gCommand->ClearDepth(Render::gDepthStencil);
 
     mPbrPass->PreviousRender((PbrPass::State)mAppSettings.pbrPassState);
@@ -509,7 +510,13 @@ void PbrExample::Render(void) {
     if (mAppSettings.enableSkybox) {
         mSkyboxPass->Render(mCurrentFrame, mTextureHeap, 0);
     }
-    mGUI->Draw(mCurrentFrame, Render::gRenderTarget[mCurrentFrame]);
+    mGUI->Draw(mCurrentFrame, renderTargets[mCurrentFrame]);
+
+    if (Render::gMSAAState != Render::DisableMSAA) {
+        Render::gCommand->TransitResource(Render::gRenderTargetMSAA[mCurrentFrame], D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+        Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_RESOLVE_DEST);
+        Render::gCommand->ResolveSubresource(Render::gRenderTarget[mCurrentFrame], Render::gRenderTargetMSAA[mCurrentFrame], Render::gRenderTargetFormat);
+    }
 
     Render::gCommand->TransitResource(Render::gRenderTarget[mCurrentFrame], D3D12_RESOURCE_STATE_PRESENT);
 
