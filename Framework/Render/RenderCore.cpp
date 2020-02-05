@@ -8,26 +8,37 @@
 
 namespace Render {
 
-ID3D12Device       *gDevice                     = nullptr;
-ID3D12Device5      *gDXRDevice                  = nullptr;
-IDXGISwapChain3    *gSwapChain                  = nullptr;
-CommandContext     *gCommand                    = nullptr;
+ID3D12Device       *gDevice                         = nullptr;
+ID3D12Device5      *gDXRDevice                      = nullptr;
+IDXGISwapChain3    *gSwapChain                      = nullptr;
+CommandContext     *gCommand                        = nullptr;
 
-DescriptorHeap     *gRenderTargetHeap           = nullptr;
-DescriptorHeap     *gDepthStencilHeap           = nullptr;
+DescriptorHeap     *gRenderTargetHeap               = nullptr;
+DescriptorHeap     *gDepthStencilHeap               = nullptr;
 
-RenderTargetBuffer *gRenderTarget[FRAME_COUNT]  = { nullptr };
-DepthStencilBuffer *gDepthStencil               = nullptr;
+RenderTargetBuffer *gRenderTarget[FRAME_COUNT]      = { nullptr };
+RenderTargetBuffer *gRenderTargetMSAA[FRAME_COUNT]  = { nullptr };
+DepthStencilBuffer *gDepthStencil                   = nullptr;
+
+DXGI_FORMAT         gRenderTargetFormat             = DXGI_FORMAT_R8G8B8A8_UNORM;
+MSAAState           gMSAAState                      = DisableMSAA;
+
+constexpr uint32_t  FORMAT_COUNT                    = DXGI_FORMAT_V408 + 1;
+static uint32_t     gMSAASampleCount[FORMAT_COUNT]  = { 0, };
+static uint32_t     gMSAAQualityLevel[FORMAT_COUNT] = { 0, };
 
 // feature abilities
 bool                gRootSignatureSupport_Version_1_1 = false;
 bool                gTypedUAVLoadSupport_R11G11B10_FLOAT = false;
 bool                gTypedUAVLoadSupport_R16G16_FLOAT = false;
 bool                gTypedUAVLoadSupport_R16G16B16A16_FLOAT = false;
+bool                gMSAASupport[MSAAStateMax] = { true, false, };
 bool                gHDROutputSupport = false;
 bool                gRayTracingSupport = false;
 
-void Initialize(HWND hwnd) {
+void Initialize(HWND hwnd, MSAAState msaa) {
+    gMSAAState = msaa;
+
     // fill view port
     WINDOWINFO windowInfo;
     GetWindowInfo(hwnd, &windowInfo);
@@ -171,6 +182,45 @@ void Initialize(HWND hwnd) {
     }
 
     {
+        // D3D12 guarantees that FEATURE_LEVEL_11_0 devices must support 4xMSAA for all render target formats, 
+        // and 8xMSAA for all render target formats except R32G32B32A32 formats.
+        // https://docs.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11device-checkmultisamplequalitylevels
+        gMSAASupport[Enable2xMSAA] = true;
+        gMSAASupport[Enable4xMSAA] = true;
+
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msaaLevels = {};
+        msaaLevels.Format = gRenderTargetFormat;
+        msaaLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+
+        msaaLevels.SampleCount = (1 << Enable8xMSAA);
+        if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msaaLevels, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS)))
+            && msaaLevels.NumQualityLevels > 0) {
+            gMSAASupport[Enable8xMSAA] = true;
+        }
+
+        msaaLevels.SampleCount = (1 << Enable16xMSAA);
+        if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msaaLevels, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS)))
+            && msaaLevels.NumQualityLevels > 0) {
+            gMSAASupport[Enable16xMSAA] = true;
+        }
+
+        // check msaa support
+        if (gMSAAState != DisableMSAA && !gMSAASupport[gMSAAState]) {
+            for (uint32_t i = gMSAAState - 1; i >= 0; --i) {
+                if (gMSAASupport[i]) {
+                    gMSAAState = (MSAAState)i;
+                    break;
+                }
+            }
+        }
+
+        if (gMSAAState != DisableMSAA) {
+            DXGI_SAMPLE_DESC desc;
+            FillSampleDesc(desc, gRenderTargetFormat);
+        }
+    }
+
+    {
         // check if support ray tracing
         D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureData = {};
         if(SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureData, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5)))
@@ -186,10 +236,10 @@ void Initialize(HWND hwnd) {
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = width;
     swapChainDesc.Height = height;
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.Format = gRenderTargetFormat;
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
-    swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = FRAME_COUNT;
     swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -221,7 +271,7 @@ void Initialize(HWND hwnd) {
 #endif
 
     // frame buffer
-    gRenderTargetHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, FRAME_COUNT);
+    gRenderTargetHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, gMSAAState == DisableMSAA ? FRAME_COUNT : 2 * FRAME_COUNT);
     gDepthStencilHeap = new DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
 
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
@@ -230,6 +280,14 @@ void Initialize(HWND hwnd) {
         gRenderTarget[i] = new RenderTargetBuffer(resource);
         gRenderTarget[i]->CreateView(gRenderTargetHeap->Allocate());
     }
+
+    if (gMSAAState != DisableMSAA) {
+        for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+            gRenderTargetMSAA[i] = new RenderTargetBuffer(width, height, gRenderTargetFormat);
+            gRenderTargetMSAA[i]->CreateView(gRenderTargetHeap->Allocate());
+        }
+    }
+
     gDepthStencil = new DepthStencilBuffer(width, height, DXGI_FORMAT_D32_FLOAT);
     gDepthStencil->CreateView(gDepthStencilHeap->Allocate());
 }
@@ -241,12 +299,37 @@ void Terminate(void) {
     DeleteAndSetNull(gDepthStencil);
     for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
         DeleteAndSetNull(gRenderTarget[i]);
+        DeleteAndSetNull(gRenderTargetMSAA[i]);
     }
 
     DeleteAndSetNull(gCommand);
     ReleaseAndSetNull(gSwapChain);
     ReleaseAndSetNull(gDevice);
     ReleaseAndSetNull(gDXRDevice);
+}
+
+void FillSampleDesc(DXGI_SAMPLE_DESC &desc, DXGI_FORMAT format) {
+    const static DXGI_SAMPLE_DESC defaultDesc = { 1, 0 };
+
+    if (gMSAAState == DisableMSAA || (uint32_t)format >= FORMAT_COUNT) {
+        desc = defaultDesc;
+    } else if (gMSAASampleCount[format] == 0) {
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msaaLevels = {};
+        msaaLevels.Format = format;
+        msaaLevels.SampleCount = (1 << gMSAAState);
+        msaaLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+        if (SUCCEEDED(gDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msaaLevels, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS)))
+            && msaaLevels.NumQualityLevels > 0) {
+            gMSAASampleCount[format] = msaaLevels.SampleCount;
+            gMSAAQualityLevel[format] = msaaLevels.NumQualityLevels - 1;
+        } else {
+            gMSAASampleCount[format] = 1;
+            gMSAAQualityLevel[format] = 0;
+        }
+    }
+
+    desc.Count = gMSAASampleCount[format];
+    desc.Quality = gMSAAQualityLevel[format];
 }
 
 uint32_t BytesPerPixel(DXGI_FORMAT format) {

@@ -27,10 +27,6 @@ GraphicsState::~GraphicsState(void) {
 }
 
 void GraphicsState::Initialize(D3D12_PIPELINE_STATE_FLAGS flag) {
-
-    DXGI_SAMPLE_DESC sampleDesc = {};
-    sampleDesc.Count = 1;
-
     mDesc = {};
     mDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
     mDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -38,11 +34,13 @@ void GraphicsState::Initialize(D3D12_PIPELINE_STATE_FLAGS flag) {
     mDesc.SampleMask = UINT_MAX;
     mDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     mDesc.NumRenderTargets = 1;
-    mDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    mDesc.RTVFormats[0] = gRenderTargetFormat;
     mDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-    mDesc.SampleDesc = sampleDesc;
+    FillSampleDesc(mDesc.SampleDesc, gRenderTargetFormat);
     mDesc.NodeMask = 1;
     mDesc.Flags = flag;
+
+    mDesc.RasterizerState.MultisampleEnable = (gMSAAState != DisableMSAA);
 }
 
 void GraphicsState::Create(RootSignature *rootSignature) {

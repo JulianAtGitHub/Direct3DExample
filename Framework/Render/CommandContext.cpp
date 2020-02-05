@@ -249,6 +249,10 @@ void CommandContext::SetDescriptorHeaps(DescriptorHeap **heaps, uint32_t count) 
     mCommandList->SetDescriptorHeaps(count, msDescriptorHeaps);
 }
 
+void CommandContext::ResolveSubresource(RenderTargetBuffer *dest, RenderTargetBuffer *source, DXGI_FORMAT format) {
+    mCommandList->ResolveSubresource(dest->Get(), 0, source->Get(), 0, format);
+}
+
 void CommandContext::BuildAccelerationStructure(AccelerationStructure *blas) {
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
     desc.Inputs = blas->GetInputs();

@@ -68,6 +68,8 @@ public:
     void DrawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffset = 0);
     void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount = 1);
 
+    void ResolveSubresource(RenderTargetBuffer *dest, RenderTargetBuffer *source, DXGI_FORMAT format);
+
     void ExecuteBundle(ID3D12GraphicsCommandList *bundle);
 
     void BuildAccelerationStructure(AccelerationStructure *as);
