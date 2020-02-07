@@ -61,7 +61,6 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Shaders\inputs.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>

@@ -71,7 +71,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Shaders\pbr.hlsli">
       <Filter>Resource Files\Shaders</Filter>
     </None>

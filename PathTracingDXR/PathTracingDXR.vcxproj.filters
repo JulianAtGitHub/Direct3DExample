@@ -48,7 +48,6 @@
     <None Include="Shaders\PathTrace\PathTrace.hlsli">
       <Filter>Resource Files\Shaders\PathTrace</Filter>
     </None>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenPass\PostPass.ps.hlsl">

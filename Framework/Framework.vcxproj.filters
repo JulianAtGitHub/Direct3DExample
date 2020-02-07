@@ -215,7 +215,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Shader\GenerateMips.hlsli">
       <Filter>Sources\Shader</Filter>
     </None>
