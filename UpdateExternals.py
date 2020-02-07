@@ -6,6 +6,8 @@ from subprocess import check_output
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 EXTERNAL_DIR = CURRENT_DIR + os.path.sep + "Externals"
 REVISION_FILE = EXTERNAL_DIR + os.path.sep + "Revisions"
+BUILD_FOLDER = "build"
+BUILD_ARCH = "Visual Studio 15 2017 Win64"
 
 class Repository:
     def __init__(self, path, name, url, revision):
@@ -25,14 +27,13 @@ class Repository:
             shutil.rmtree(self.path)
         os.makedirs(self.path)
         os.chdir(self.path)
-        check_output(["git", "clone", self.url, "."])
-        check_output(["git", "checkout", self.revision])
+        os.system("git clone " + self.url + " .")
+        os.system("git checkout " + self.revision)
 
     def Update(self):
         os.chdir(self.path)
-        check_output(["git", "fetch", "--all"])
-        check_output(["git", "checkout", "--force", self.revision])
-
+        os.system("git fetch --all")
+        os.system("git checkout --force " + self.revision)
 
 with open(REVISION_FILE, "rb") as file:
    for line in file:
@@ -45,4 +46,13 @@ with open(REVISION_FILE, "rb") as file:
                 repo.Create()
             os.chdir(CURRENT_DIR)
 
+# build assimp
+os.chdir(EXTERNAL_DIR + os.path.sep + "assimp")
+if os.path.exists(BUILD_FOLDER) == False:
+    os.mkdir(BUILD_FOLDER)
+os.chdir(BUILD_FOLDER)
+print check_output(["cmake", "..", "-G", "Visual Studio 15 2017 Win64", "-DCMAKE_INSTALL_PREFIX=Debug"])
+os.system("cmake --build . --config Debug --target install")
+print check_output(["cmake", "..", "-G", "Visual Studio 15 2017 Win64", "-DCMAKE_INSTALL_PREFIX=Release"])
+os.system("cmake --build . --config Release --target install")
 
