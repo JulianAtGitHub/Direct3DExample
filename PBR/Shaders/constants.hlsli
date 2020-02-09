@@ -17,4 +17,6 @@
 
 #define F0_MIN      float3(0.04f, 0.04f, 0.04f)
 
+#define TEX_INDEX_INVALID   0xFFFFFFFF
+
 #endif // _CONSTANTS_HLSLI_

@@ -10,7 +10,9 @@
 
 struct SettingsCB {
     uint    numLight;
-    float3  ambientColor;
+    uint    brdfIndex;
+    uint    envTexCount;
+    uint    envIndex;
 };
 
 struct TransformCB {
@@ -19,11 +21,14 @@ struct TransformCB {
     float4   cameraPos;
 };
 
-struct MaterialCB {
-    float3  albdo;
-    float   metalness;
+struct MatValuesCB {
+    float3  basic;
+    float   metallic;
     float   roughness;
-    float   ao;
+    float   occlusion;
+    float3  ambient;
+    float3  emissive;
+    uint    matIndex;
 };
 
 struct LightCB {
@@ -31,6 +36,22 @@ struct LightCB {
     uint    type;
     float3  color;
     float   angle;
+};
+
+struct MaterialCB {
+    float   normalScale;
+    uint    normalTexture;
+    float   occlusionStrength;
+    uint    occlusionTexture;
+    float3  emissiveFactor;
+    uint    emissiveTexture;
+    float4  baseFactor;
+    uint    baseTexture;
+    float3  reserved;   // unused
+    float   metallicFactor;
+    uint    metallicTexture;
+    float   roughnessFactor;
+    uint    roughnessTexture;
 };
 
 #endif // _TYPES_PBR_H_
