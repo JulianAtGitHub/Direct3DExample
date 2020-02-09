@@ -66,9 +66,9 @@ void GUILayer::Initialize(HWND hwnd) {
     io.KeyMap[ImGuiKey_Z] = 'Z';
 
     mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, RootSigSlotMax, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-    mRootSignature->SetDescriptor(TransformSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-    mRootSignature->SetConstants(ConstantSlot, 1, 1, D3D12_SHADER_VISIBILITY_PIXEL);
-    mRootSignature->SetDescriptorTable(TextureSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptor(TransformSlot, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    mRootSignature->SetConstants(ConstantSlot, 1, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptorTable(TextureSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
     mRootSignature->SetDescriptorTable(SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mRootSignature->Create();
 

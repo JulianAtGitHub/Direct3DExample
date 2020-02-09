@@ -21,12 +21,14 @@ public:
         uint32_t index, 
         uint32_t num32BitValues,
         uint32_t shaderRegister,
+        uint32_t space = 0,
         D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
 
     void SetDescriptor(
         uint32_t index, 
         D3D12_ROOT_PARAMETER_TYPE type,
         uint32_t shaderRegister,
+        uint32_t space = 0,
         D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
 
     void SetDescriptorTable(
@@ -34,6 +36,7 @@ public:
         D3D12_DESCRIPTOR_RANGE_TYPE rangeType, 
         uint32_t descCount,
         uint32_t baseRegister,
+        uint32_t space = 0,
         D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
 
 private:
@@ -53,7 +56,7 @@ INLINE void RootSignature::CleanupDescriptorRanges(D3D12_ROOT_PARAMETER &param) 
     }
 }
 
-INLINE void RootSignature::SetConstants(uint32_t index, uint32_t num32BitValues, uint32_t shaderRegister, D3D12_SHADER_VISIBILITY visibility) {
+INLINE void RootSignature::SetConstants(uint32_t index, uint32_t num32BitValues, uint32_t shaderRegister, uint32_t space, D3D12_SHADER_VISIBILITY visibility) {
     if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
@@ -65,10 +68,10 @@ INLINE void RootSignature::SetConstants(uint32_t index, uint32_t num32BitValues,
     param.ShaderVisibility = visibility;
     param.Constants.Num32BitValues = num32BitValues;
     param.Constants.ShaderRegister = shaderRegister;
-    param.Constants.RegisterSpace = 0;
+    param.Constants.RegisterSpace = space;
 }
 
-INLINE void RootSignature::SetDescriptor(uint32_t index, D3D12_ROOT_PARAMETER_TYPE type, uint32_t shaderRegister, D3D12_SHADER_VISIBILITY visibility) {
+INLINE void RootSignature::SetDescriptor(uint32_t index, D3D12_ROOT_PARAMETER_TYPE type, uint32_t shaderRegister, uint32_t space, D3D12_SHADER_VISIBILITY visibility) {
     if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
@@ -79,10 +82,10 @@ INLINE void RootSignature::SetDescriptor(uint32_t index, D3D12_ROOT_PARAMETER_TY
     param.ParameterType = type;
     param.ShaderVisibility = visibility;
     param.Descriptor.ShaderRegister = shaderRegister;
-    param.Descriptor.RegisterSpace = 0;
+    param.Descriptor.RegisterSpace = space;
 }
 
-INLINE void RootSignature::SetDescriptorTable(uint32_t index, D3D12_DESCRIPTOR_RANGE_TYPE rangeType, uint32_t descCount, uint32_t baseRegister, D3D12_SHADER_VISIBILITY visibility) {
+INLINE void RootSignature::SetDescriptorTable(uint32_t index, D3D12_DESCRIPTOR_RANGE_TYPE rangeType, uint32_t descCount, uint32_t baseRegister, uint32_t space, D3D12_SHADER_VISIBILITY visibility) {
     if (index >= static_cast<uint32_t>(mParameters.size())) {
         return;
     }
@@ -95,7 +98,7 @@ INLINE void RootSignature::SetDescriptorTable(uint32_t index, D3D12_DESCRIPTOR_R
     param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     param.ShaderVisibility = visibility;
     param.DescriptorTable.NumDescriptorRanges = 1;
-    param.DescriptorTable.pDescriptorRanges = new CD3DX12_DESCRIPTOR_RANGE(rangeType, descCount, baseRegister, 0 /*register space*/);
+    param.DescriptorTable.pDescriptorRanges = new CD3DX12_DESCRIPTOR_RANGE(rangeType, descCount, baseRegister, space);
 }
 
 }
