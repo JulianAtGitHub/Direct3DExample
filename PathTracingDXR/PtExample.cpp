@@ -469,16 +469,17 @@ void PtExample::BuildGeometry(void) {
     Material *materials = new Material[mScene->mShapes.size()];
     for (uint32_t i = 0; i < mScene->mShapes.size(); ++i) {
         auto &shape = mScene->mShapes[i];
+        auto &mat = mScene->mMaterials[shape.materialIndex];
         geometries[i].indexOffset = shape.indexOffset;
         geometries[i].indexCount = shape.indexCount;
         geometries[i].reserve0 = 0;
         geometries[i].reserve1 = 0;
         materials[i].type = LambertianMat;
-        materials[i].normalTex = shape.normalTex;
-        materials[i].albedoTex = shape.albdoTex;
-        materials[i].roughnessTex = shape.roughnessTex;
-        materials[i].albedoColor = float4(shape.diffuseColor.x, shape.diffuseColor.y, shape.diffuseColor.z, 1.0f);
-        materials[i].emissiveColor = float3(shape.emissiveColor.x, shape.emissiveColor.y, shape.emissiveColor.z);
+        materials[i].normalTex = mat.normalTexture;
+        materials[i].albedoTex = mat.baseTexture;
+        materials[i].roughnessTex = mat.roughnessTexture;
+        materials[i].albedoColor = mat.baseFactor;;
+        materials[i].emissiveColor = mat.emissiveFactor;
         materials[i].roughness = 0.1f;
     }
 
@@ -519,7 +520,7 @@ void PtExample::BuildAccelerationStructure(void) {
         BLAS *blas = new BLAS();
         blas->AddTriangles(mIndices, shape.indexOffset, shape.indexCount, false, 
                            mVertices, 0, static_cast<uint32_t>(mScene->mVertices.size()), sizeof(Utils::Scene::Vertex), DXGI_FORMAT_R32G32B32_FLOAT, 
-                           shape.isOpacity ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
+                           mScene->mMaterials[shape.materialIndex].isOpacity ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
         blas->PreBuild();
         mBLASes.push_back(blas);
         mTLAS->AddInstance(blas, i, 0, transform);
