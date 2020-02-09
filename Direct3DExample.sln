@@ -3,11 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2050
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Direct3DExample", "Direct3DExample\Direct3DExample.vcxproj", "{8593AF7D-0826-49C9-81C8-14EEE9EF5817}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A69F0E29-ECE1-4B8D-A619-AB6B59E233C2} = {A69F0E29-ECE1-4B8D-A619-AB6B59E233C2}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Framework", "Framework\Framework.vcxproj", "{A69F0E29-ECE1-4B8D-A619-AB6B59E233C2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingCpp", "RayTracingCpp\RayTracingCpp.vcxproj", "{2CE05AD6-9C07-4376-B94A-F04666D014F9}"
@@ -28,9 +23,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8593AF7D-0826-49C9-81C8-14EEE9EF5817}.Debug|x64.ActiveCfg = Debug|x64
-		{8593AF7D-0826-49C9-81C8-14EEE9EF5817}.Debug|x64.Build.0 = Debug|x64
-		{8593AF7D-0826-49C9-81C8-14EEE9EF5817}.Release|x64.ActiveCfg = Release|x64
 		{A69F0E29-ECE1-4B8D-A619-AB6B59E233C2}.Debug|x64.ActiveCfg = Debug|x64
 		{A69F0E29-ECE1-4B8D-A619-AB6B59E233C2}.Debug|x64.Build.0 = Debug|x64
 		{A69F0E29-ECE1-4B8D-A619-AB6B59E233C2}.Release|x64.ActiveCfg = Release|x64
