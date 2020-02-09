@@ -9,36 +9,12 @@ public:
     constexpr static uint32_t TEX_INDEX_INVALID = 0xFFFFFFFF;
 
     struct Shape {
-        Shape(void)
-        : indexOffset(0)
-        , indexCount(0)
-        , ambientColor(0.0f, 0.0f, 0.0f)
-        , diffuseColor(0.0f, 0.0f, 0.0f)
-        , specularColor(0.0f, 0.0f, 0.0f)
-        , emissiveColor(0.0f, 0.0f, 0.0f)
-        , normalTex(TEX_INDEX_INVALID)
-        , albdoTex(TEX_INDEX_INVALID)
-        , metalnessTex(TEX_INDEX_INVALID)
-        , roughnessTex(TEX_INDEX_INVALID)
-        , aoTex(TEX_INDEX_INVALID)
-        , isOpacity(true) 
-        {
-
-        }
+        Shape(void);
 
         std::string name;
         uint32_t indexOffset;
         uint32_t indexCount;
-        XMFLOAT3 ambientColor;
-        XMFLOAT3 diffuseColor;
-        XMFLOAT3 specularColor;
-        XMFLOAT3 emissiveColor;
-        uint32_t normalTex;
-        uint32_t albdoTex;
-        uint32_t metalnessTex;
-        uint32_t roughnessTex;
-        uint32_t aoTex;
-        bool     isOpacity;
+        uint32_t materialIndex;
     };
 
     struct Vertex {
@@ -49,11 +25,33 @@ public:
         XMFLOAT3 bitangent;
     };
 
+    struct Material {
+        Material(void);
+
+        // basic
+        float    normalScale;
+        uint32_t normalTexture;
+        float    occlusionStrength; // ambient occlusion
+        uint32_t occlusionTexture;  // red channel of texture
+        XMFLOAT3 emissiveFactor;
+        uint32_t emissiveTexture;
+        // pbr
+        XMFLOAT4 baseFactor;        // AKA albdo
+        uint32_t baseTexture;
+        float    metallicFactor;
+        uint32_t metallicTexture;   // blue channel of texture
+        float    roughnessFactor;
+        uint32_t roughnessTexture;  // green channel of texture
+        // others
+        bool     isOpacity;
+    };
+
     ~Scene(void);
 
     std::vector<Vertex>     mVertices;
     std::vector<uint32_t>   mIndices;
     std::vector<Shape>      mShapes;
+    std::vector<Material>   mMaterials;
     std::vector<Image *>    mImages;
 };
 
@@ -64,17 +62,6 @@ public:
     static Scene * CreateUnitQuad(void);
     static Scene * CreateUnitCube(void);
     static Scene * CreateUnitSphere(void);
-
-private:
-    struct Header {
-        char     tag[4];
-        uint32_t vertexCount;
-        uint32_t indexCount;
-        uint32_t shapeCount;
-        uint32_t imageCount;
-        uint32_t dataSize;
-        uint32_t compressedSize;
-    };
 };
 
 }

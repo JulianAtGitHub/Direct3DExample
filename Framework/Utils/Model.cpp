@@ -4,6 +4,7 @@
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
+#include "assimp/pbrmaterial.h"
 
 namespace Utils {
 
@@ -12,22 +13,53 @@ static void PrintMaterialInfo(aiMaterial *material) {
         return;
     }
 
-    aiString name;
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_NAME, name)) { DEBUG_PRINT("Material: %s", name.C_Str()); }
+    //aiString name; if (aiReturn_SUCCESS == material->Get(AI_MATKEY_NAME, name)) { DEBUG_PRINT("Material: %s", name.C_Str()); }
 
-    aiString tex;
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_DIFFUSE, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_SPECULAR, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_AMBIENT, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_EMISSIVE, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_EMISSIVE, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_HEIGHT, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_NORMALS, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_SHININESS, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_OPACITY, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DISPLACEMENT, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_DISPLACEMENT, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_LIGHTMAP, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_LIGHTMAP, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_REFLECTION, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_REFLECTION, tex.C_Str()); }
-    if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_UNKNOWN, 0), tex)) { DEBUG_PRINT("%d, %s", aiTextureType_UNKNOWN, tex.C_Str()); }
+    //#define PRINT_MAT_TEXTURE(type, i) { aiString tex; if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(type, i), tex)) { DEBUG_PRINT("%s, %s", #type, tex.C_Str()); } }
+
+    //PRINT_MAT_TEXTURE(aiTextureType_DIFFUSE, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_SPECULAR, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_AMBIENT, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_EMISSIVE, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_HEIGHT, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_NORMALS, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_SHININESS, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_OPACITY, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_DISPLACEMENT, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_LIGHTMAP, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_REFLECTION, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_BASE_COLOR, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_NORMAL_CAMERA, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_EMISSION_COLOR, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_METALNESS, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0);
+    //PRINT_MAT_TEXTURE(aiTextureType_AMBIENT_OCCLUSION, 0);
+}
+
+Scene::Shape::Shape(void)
+: indexOffset(0)
+, indexCount(0)
+, materialIndex(0)
+{
+
+}
+
+Scene::Material::Material(void)
+: normalScale(1.0f)
+, normalTexture(TEX_INDEX_INVALID)
+, occlusionStrength(1.0f)
+, occlusionTexture(TEX_INDEX_INVALID)
+, emissiveFactor(0.0f, 0.0f, 0.0f)
+, emissiveTexture(TEX_INDEX_INVALID)
+, baseFactor(1.0f, 1.0f, 1.0f, 1.0f)
+, baseTexture(TEX_INDEX_INVALID)
+, metallicFactor(1.0f)
+, metallicTexture(TEX_INDEX_INVALID)
+, roughnessFactor(1.0f)
+, roughnessTexture(TEX_INDEX_INVALID)
+, isOpacity(true) 
+{
+
 }
 
 Scene::~Scene(void) {
@@ -38,8 +70,6 @@ Scene::~Scene(void) {
 Scene * Model::LoadFromFile(const char *fileName) {
     Assimp::Importer aiImporter;
 
-    // remove unused data
-    aiImporter.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, aiComponent_COLORS | aiComponent_LIGHTS | aiComponent_CAMERAS);
     // max triangles and vertices per mesh, splits above this threshold
     aiImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, INT_MAX);
     aiImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_VERTEX_LIMIT, 0xfffe); // avoid the primitive restart index
@@ -50,18 +80,11 @@ Scene * Model::LoadFromFile(const char *fileName) {
         aiProcess_CalcTangentSpace 
         | aiProcess_JoinIdenticalVertices
         | aiProcess_Triangulate
-        | aiProcess_RemoveComponent
         | aiProcess_GenSmoothNormals
-        //| aiProcess_SplitLargeMeshes
         | aiProcess_ValidateDataStructure
-        // | aiProcess_ImproveCacheLocality // handled by optimizePostTransform()
         | aiProcess_RemoveRedundantMaterials
         | aiProcess_SortByPType
         | aiProcess_FindInvalidData
-        | aiProcess_GenUVCoords
-        | aiProcess_TransformUVCoords
-        //| aiProcess_OptimizeMeshes
-        //| aiProcess_OptimizeGraph
     );
 
     if (!scene) {
@@ -80,22 +103,6 @@ Scene * Model::LoadFromFile(const char *fileName) {
     uint32_t vertexCount = 0;
     uint32_t indexCount = 0;
 
-    auto AddImage = [](std::vector<std::string> &images, aiString &newImage)->uint32_t {
-        uint32_t idx = static_cast<uint32_t>(images.size());
-        for (uint32_t i = 0; i < static_cast<uint32_t>(images.size()); ++i) {
-            if (images[i] == newImage.C_Str()) {
-                idx = i;
-                break;
-            }
-        }
-        if (idx == images.size()) {
-            images.push_back(newImage.C_Str());
-        }
-        return idx;
-    };
-    std::vector<std::string> images;
-    images.reserve(scene->mNumMaterials * 3);
-
     Scene *out = new Scene;
     out->mShapes.reserve(scene->mNumMeshes);
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
@@ -106,26 +113,10 @@ Scene * Model::LoadFromFile(const char *fileName) {
         shape.name = mesh->mName.C_Str();
         shape.indexOffset = indexCount;
         shape.indexCount = mesh->mNumFaces * 3;
+        shape.materialIndex = mesh->mMaterialIndex;
 
         vertexCount += mesh->mNumVertices;
         indexCount += shape.indexCount;
-
-        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-        //PrintMaterialInfo(material);
-
-        aiColor3D color;
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_AMBIENT, color)) { shape.ambientColor = XMFLOAT3(color.r, color.g, color.b); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, color)) { shape.diffuseColor = XMFLOAT3(color.r, color.g, color.b); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_SPECULAR, color)) { shape.specularColor = XMFLOAT3(color.r, color.g, color.b); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, color)) { shape.emissiveColor = XMFLOAT3(color.r, color.g, color.b); }
-
-        aiString texture;
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), texture)) { shape.normalTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture)) { shape.albdoTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SHININESS, 0), texture)) { shape.metalnessTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), texture)) { shape.roughnessTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), texture)) { shape.aoTex = AddImage(images, texture); }
-        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0), texture)) { shape.isOpacity = false; }
 
         out->mShapes.push_back(shape);
     }
@@ -190,6 +181,52 @@ Scene * Model::LoadFromFile(const char *fileName) {
         }
 
         indexOffset += mesh->mNumVertices;
+    }
+
+    auto AddImage = [](std::vector<std::string> &images, aiString &newImage)->uint32_t {
+        uint32_t idx = static_cast<uint32_t>(images.size());
+        for (uint32_t i = 0; i < static_cast<uint32_t>(images.size()); ++i) {
+            if (images[i] == newImage.C_Str()) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == images.size()) {
+            images.push_back(newImage.C_Str());
+        }
+        return idx;
+    };
+    std::vector<std::string> images;
+    images.reserve(scene->mNumMaterials * 3);
+
+    // material
+    out->mMaterials.resize(scene->mNumMaterials);
+    for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
+        aiMaterial *material = scene->mMaterials[i];
+        if (!material) {
+            continue;
+        }
+
+        auto &mat = out->mMaterials[i];
+        ai_real realValue;
+        aiColor3D color3Value;
+        aiColor4D color4Value;
+        aiString stringValue;
+
+        // material load code check with function ImportMaterial in file assimp/code/glTF2/glTF2Importer.cpp
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), realValue)) { mat.normalScale = realValue; }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), stringValue)) { mat.normalTexture = AddImage(images, stringValue); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_LIGHTMAP, 0), realValue)) { mat.occlusionStrength = realValue; }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_LIGHTMAP, 0), stringValue)) { mat.occlusionTexture = AddImage(images, stringValue); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_TEXTURE(aiTextureType_EMISSIVE, 0), stringValue)) { mat.emissiveTexture = AddImage(images, stringValue); mat.emissiveFactor = XMFLOAT3(1.0f, 1.0f, 1.0f); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, color3Value)) { mat.emissiveFactor = XMFLOAT3(color3Value.r, color3Value.g, color3Value.b); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, color4Value)) { mat.baseFactor = XMFLOAT4(color4Value.r, color4Value.g, color4Value.b, color4Value.a); }
+        if (aiReturn_SUCCESS == material->Get(_AI_MATKEY_TEXTURE_BASE, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, stringValue)) { mat.baseTexture = AddImage(images, stringValue); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, realValue)) { mat.metallicFactor = realValue; }
+        if (aiReturn_SUCCESS == material->Get(_AI_MATKEY_TEXTURE_BASE, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, stringValue)) { mat.metallicTexture = AddImage(images, stringValue); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, realValue)) { mat.roughnessFactor = realValue; }
+        if (aiReturn_SUCCESS == material->Get(_AI_MATKEY_TEXTURE_BASE, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, stringValue)) { mat.roughnessTexture = AddImage(images, stringValue); }
+        if (aiReturn_SUCCESS == material->Get(AI_MATKEY_GLTF_ALPHAMODE, stringValue)) { mat.isOpacity = (stringValue == aiString("OPAQUE")); }
     }
 
     // images
