@@ -20,10 +20,8 @@ PbrExample::PbrExample(void)
 , mIsRotating(false)
 , mLastMousePos(0)
 , mCurrentMousePos(0)
-, mEnvIndex(0)
 , mDirtyFlag(false)
 , mLightsBuffer(nullptr)
-, mBRDFLookupTexture(nullptr)
 , mTextureHeap(nullptr)
 , mCamera(nullptr)
 , mGUI(nullptr)
@@ -53,33 +51,28 @@ void PbrExample::Init(HWND hwnd) {
     mCurrentFrame = Render::gSwapChain->GetCurrentBackBufferIndex();
 
     mAppSettings = { true, false, false, false, false, true, true, 3 };
-    mSettings = { LIGHT_COUNT, { 0.05f, 0.05f, 0.05f } };
+    mSettings = { LIGHT_COUNT, ENV_TEX_TOTAL - 1, ENV_TEX_COUNT, 0 };
     mLights[0] = { {  0.0f,  0.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[1] = { {-10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[2] = { { 10.0f, 10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[3] = { {-10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
     mLights[4] = { { 10.0f,-10.0f, 10.0f }, 0, { 100.0f, 100.0f, 100.0f }, 0.0f };
+    mMatValues = { {1.0f, 1.0f, 1.0f }, 0.5f, 0.5f, 1.0f, { 0.05f, 0.05f, 0.05f }, { 0.0f, 0.0f, 0.0f }, 0 };
 
     mLightsBuffer = new Render::GPUBuffer(LIGHT_COUNT * sizeof(LightCB));
     Render::gCommand->Begin();
     Render::gCommand->UploadBuffer(mLightsBuffer, 0, mLights, mLightsBuffer->GetBufferSize());
     Render::gCommand->End(true);
 
-    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1 + 3 * ENV_COUNT + 1 + 3 * 5);
+    mTextureHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, ENV_TEX_TOTAL);
 
-    mLightsBuffer->CreateStructBufferSRV(mTextureHeap->Allocate(), LIGHT_COUNT, sizeof(LightCB));
+    //mLightsBuffer->CreateStructBufferSRV(mTextureHeap->Allocate(), LIGHT_COUNT, sizeof(LightCB));
 
     // setup environment textures
     {
-        // brdf LUT
-        DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
-        if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
-            brdfFormat = DXGI_FORMAT_R16G16_FLOAT;
+        for (uint32_t i = 0; i < ENV_TEX_TOTAL; ++i) {
+            mEnvTexture[i] = nullptr;
         }
-        uint32_t brdfSize = 512;
-        uint32_t brdfPitch = Render::BytesPerPixel(brdfFormat) * brdfSize;
-        mBRDFLookupTexture = new Render::PixelBuffer(brdfPitch, brdfSize, brdfSize, 1, brdfFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        mBRDFLookupTexture->CreateSRV(mTextureHeap->Allocate());
 
         // env
         const char *envFile[ENV_COUNT] = {
@@ -99,29 +92,43 @@ void PbrExample::Init(HWND hwnd) {
         Render::gCommand->Begin();
         for (uint32_t i = 0; i < ENV_COUNT; ++i) {
             envImages[i] = Utils::Image::CreateFromFile(envFile[i], false);
-            mEnvTextures[i].original = new Render::PixelBuffer(envImages[i]->GetPitch(), envImages[i]->GetWidth(), envImages[i]->GetHeight(), 1, envImages[i]->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
-            mEnvTextures[i].original->CreateSRV(mTextureHeap->Allocate());
-            Render::gCommand->UploadTexture(mEnvTextures[i].original, envImages[i]->GetPixels());
+            Render::PixelBuffer *original = new Render::PixelBuffer(envImages[i]->GetPitch(), envImages[i]->GetWidth(), envImages[i]->GetHeight(), 1, envImages[i]->GetDXGIFormat(), D3D12_RESOURCE_STATE_COMMON);
+            original->CreateSRV(mTextureHeap->Allocate());
+            Render::gCommand->UploadTexture(original, envImages[i]->GetPixels());
 
             uint32_t irrPitch = Render::BytesPerPixel(subResFormat) * subResSize;
-            mEnvTextures[i].irradiance = new Render::PixelBuffer(irrPitch, subResSize, subResSize >> 1, 1, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            mEnvTextures[i].irradiance->CreateSRV(mTextureHeap->Allocate());
+            Render::PixelBuffer *irradiance = new Render::PixelBuffer(irrPitch, subResSize, subResSize >> 1, 1, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            irradiance->CreateSRV(mTextureHeap->Allocate());
 
             uint32_t pfePitch = Render::BytesPerPixel(subResFormat) * (subResSize >> 1);
-            mEnvTextures[i].prefiltered = new Render::PixelBuffer(pfePitch, subResSize >> 1, subResSize >> 2, 6, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            mEnvTextures[i].prefiltered->CreateSRV(mTextureHeap->Allocate());
+            Render::PixelBuffer *prefiltered = new Render::PixelBuffer(pfePitch, subResSize >> 1, subResSize >> 2, 6, subResFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            prefiltered->CreateSRV(mTextureHeap->Allocate());
+
+            mEnvTexture[i * ENV_COUNT + 0] = original;
+            mEnvTexture[i * ENV_COUNT + 1] = irradiance;
+            mEnvTexture[i * ENV_COUNT + 2] = prefiltered;
         }
         Render::gCommand->End(true);
+
+        // brdf LUT
+        DXGI_FORMAT brdfFormat = DXGI_FORMAT_R32G32_FLOAT;
+        if (Render::gTypedUAVLoadSupport_R16G16_FLOAT) {
+            brdfFormat = DXGI_FORMAT_R16G16_FLOAT;
+        }
+        uint32_t brdfSize = 512;
+        uint32_t brdfPitch = Render::BytesPerPixel(brdfFormat) * brdfSize;
+        mEnvTexture[ENV_TEX_TOTAL - 1] = new Render::PixelBuffer(brdfPitch, brdfSize, brdfSize, 1, brdfFormat, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        mEnvTexture[ENV_TEX_TOTAL - 1]->CreateSRV(mTextureHeap->Allocate());
 
         IrradiancePass *irrPass = new IrradiancePass();
         PrefilteredEnvPass *pfePass = new PrefilteredEnvPass();
         for (uint32_t i = 0; i < ENV_COUNT; ++i) {
-            irrPass->Dispatch(mEnvTextures[i].original, mEnvTextures[i].irradiance);
-            pfePass->Dispatch(mEnvTextures[i].original, mEnvTextures[i].prefiltered);
+            irrPass->Dispatch(mEnvTexture[i * ENV_COUNT + 0], mEnvTexture[i * ENV_COUNT + 1]);
+            pfePass->Dispatch(mEnvTexture[i * ENV_COUNT + 0], mEnvTexture[i * ENV_COUNT + 2]);
         }
 
         BRDFIntegrationPass *brdfPass = new BRDFIntegrationPass();
-        brdfPass->Dispatch(mBRDFLookupTexture);
+        brdfPass->Dispatch(mEnvTexture[ENV_TEX_TOTAL - 1]);
 
         // cleanup
         for (uint32_t i = 0; i < ENV_COUNT; ++i) {
@@ -135,14 +142,21 @@ void PbrExample::Init(HWND hwnd) {
     mCamera = new Utils::Camera(XM_PIDIV4, static_cast<float>(mWidth) / static_cast<float>(mHeight), 0.001f, 100.0f, XMFLOAT4(0.0f, 0.0f, 5.0f, 0.0f));
     mGUI = new Utils::GUILayer(mHwnd, mWidth, mHeight);
     for (uint32_t i = 0; i < ENV_COUNT; ++i) {
-        mGUI->AddImage(mEnvTextures[i].original);
-        mGUI->AddImage(mEnvTextures[i].irradiance);
-        mGUI->AddImage(mEnvTextures[i].prefiltered);
+        mGUI->AddImage(mEnvTexture[i * ENV_COUNT + 0]);
+        mGUI->AddImage(mEnvTexture[i * ENV_COUNT + 1]);
+        mGUI->AddImage(mEnvTexture[i * ENV_COUNT + 2]);
     }
-    mGUI->AddImage(mBRDFLookupTexture);
+    mGUI->AddImage(mEnvTexture[ENV_TEX_TOTAL - 1]);
 
     mPbrPass = new PbrPass();
     mSkyboxPass = new SkyboxPass();
+
+    Utils::Scene::Material defaultMat;
+    defaultMat.normalTexture = 0;
+    defaultMat.baseTexture = 1;
+    defaultMat.metallicTexture = 2;
+    defaultMat.roughnessTexture = 3;
+    defaultMat.occlusionTexture = 4;
 
     // Sphere
     {
@@ -156,16 +170,14 @@ void PbrExample::Init(HWND hwnd) {
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\roughness.png"));
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Rusted\\ao.png"));
 
+        model->mMaterials.clear();
+        model->mMaterials.push_back(defaultMat);
         for (auto & shape : model->mShapes) {
-            shape.normalTex = 0; 
-            shape.albdoTex = 1; 
-            shape.metalnessTex = 2; 
-            shape.roughnessTex = 3; 
-            shape.aoTex = 4; 
+            shape.materialIndex = 0;
         }
 
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Sphere", model, mTextureHeap);
+        drawable->Initialize("Sphere", model, mLightsBuffer, LIGHT_COUNT, mEnvTexture, ENV_TEX_TOTAL);
         mDrawables.push_back(drawable);
 
         delete model;
@@ -183,43 +195,26 @@ void PbrExample::Init(HWND hwnd) {
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\roughness.png"));
         model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Gold\\ao.png"));
 
+        model->mMaterials.clear();
+        model->mMaterials.push_back(defaultMat);
         for (auto & shape : model->mShapes) {
-            shape.normalTex = 0; 
-            shape.albdoTex = 1; 
-            shape.metalnessTex = 2; 
-            shape.roughnessTex = 3; 
-            shape.aoTex = 4; 
+            shape.materialIndex = 0;
         }
 
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Monkey", model, mTextureHeap);
+        drawable->Initialize("Monkey", model, mLightsBuffer, LIGHT_COUNT, mEnvTexture, ENV_TEX_TOTAL);
         mDrawables.push_back(drawable);
 
         delete model;
     }
 
-    // Dragon
+    // BoomBox
     {
-        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\Others\\dragon.obj");
+        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\BoomBox\\BoomBox.gltf");
         ASSERT_PRINT(model);
 
-        model->mImages.reserve(5);
-        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\normal.png"));
-        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\albedo.png"));
-        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\metallic.png"));
-        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\roughness.png"));
-        model->mImages.push_back(Utils::Image::CreateFromFile("..\\..\\Models\\PBR\\Marble\\ao.png"));
-
-        for (auto & shape : model->mShapes) {
-            shape.normalTex = 0; 
-            shape.albdoTex = 1; 
-            shape.metalnessTex = 2; 
-            shape.roughnessTex = 3; 
-            shape.aoTex = 4; 
-        }
-
         PbrDrawable *drawable = new PbrDrawable();
-        drawable->Initialize("Dragon", model, mTextureHeap);
+        drawable->Initialize("BoomBox", model, mLightsBuffer, LIGHT_COUNT, mEnvTexture, ENV_TEX_TOTAL);
         mDrawables.push_back(drawable);
 
         delete model;
@@ -234,12 +229,9 @@ void PbrExample::Destroy(void) {
     DeleteAndSetNull(mGUI);
     DeleteAndSetNull(mLightsBuffer);
     DeleteAndSetNull(mTextureHeap);
-    for (uint32_t i = 0; i < ENV_COUNT; ++i) {
-        DeleteAndSetNull(mEnvTextures[i].original);
-        DeleteAndSetNull(mEnvTextures[i].irradiance);
-        DeleteAndSetNull(mEnvTextures[i].prefiltered);
+    for (uint32_t i = 0; i < ENV_TEX_TOTAL; ++i) {
+        DeleteAndSetNull(mEnvTexture[i]);
     }
-    DeleteAndSetNull(mBRDFLookupTexture);
     DeleteAndSetNull(mCamera);
     for (auto drawable : mDrawables) {
         delete drawable;
@@ -354,7 +346,7 @@ void PbrExample::Update(void) {
     mCamera->UpdateMatrixs();
 
     for (auto drawable : mDrawables) {
-        drawable->Update(mCurrentFrame, *mCamera, mSettings);
+        drawable->Update(mCurrentFrame, *mCamera, mSettings, mMatValues);
     }
     mSkyboxPass->Update(mCurrentFrame, *mCamera);
 
@@ -378,7 +370,7 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Render");
 
             static const char *envs[ENV_COUNT] = { "WoodenDoor Ref 1k", "Mans Outside 2k", "Tokyo BigSight 3k"};
-            ImGui::Combo("Environment", (int *)&mEnvIndex, envs, ENV_COUNT);
+            ImGui::Combo("Environment", (int *)&(mSettings.envIndex), envs, ENV_COUNT);
 
             constexpr uint32_t MODEL_COUNT = 8;
             static const char* models[MODEL_COUNT] = { };
@@ -412,7 +404,7 @@ void PbrExample::UpdateGUI(float second) {
             ImGui::Checkbox("Enable Texture", (bool *)&mAppSettings.enableTexture);
             ImGui::Checkbox("Enable IBL", (bool *)&mAppSettings.enableIBL);
             if (!mAppSettings.enableIBL) {
-                ImGui::ColorEdit3("Ambient", &(mSettings.ambientColor.x));
+                ImGui::ColorEdit3("Ambient", &(mMatValues.ambient.x));
             }
 
             uint32_t state = 0;
@@ -455,9 +447,9 @@ void PbrExample::UpdateGUI(float second) {
             if (!mAppSettings.enableTexture) {
                 ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.0f, 1.0f), "Material");
                 PbrDrawable *drawable = mDrawables[mDrawIndex];
-                ImGui::ColorEdit3("Albdo", &(drawable->GetMaterial().albdo.x));
-                ImGui::SliderFloat("Matelness", &(drawable->GetMaterial().metalness), 0.04f, 1.0f);
-                ImGui::SliderFloat("Roughness", &(drawable->GetMaterial().roughness), 0.04f, 1.0f);
+                ImGui::ColorEdit3("Albdo", &(mMatValues.basic.x));
+                ImGui::SliderFloat("Matellic", &(mMatValues.metallic), 0.04f, 1.0f);
+                ImGui::SliderFloat("Roughness", &(mMatValues.roughness), 0.04f, 1.0f);
             }
         ImGui::EndChild();
     ImGui::End();
@@ -467,7 +459,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
         ImGui::Begin("Environment Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Environment Image");
-                ImGui::Image(mEnvTextures[mEnvIndex].original, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 0], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -476,7 +468,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 310.0f), ImGuiCond_Once);
         ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Irradiance Image");
-                ImGui::Image(mEnvTextures[mEnvIndex].irradiance, ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 1], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -488,10 +480,11 @@ void PbrExample::UpdateGUI(float second) {
                 const static char* mipItems[] = { "0", "1", "2", "3", "4", "5"};
                 static int curItem = 0;
                 ImGui::Combo("Mipmap Level", &curItem, mipItems, IM_ARRAYSIZE(mipItems));
-                mGUI->SetImageMipLevel(mEnvTextures[mEnvIndex].prefiltered, curItem);
-                float width = static_cast<float>(mEnvTextures[mEnvIndex].prefiltered->GetWidth() >> curItem);
-                float height = static_cast<float>(mEnvTextures[mEnvIndex].prefiltered->GetHeight() >> curItem);
-                ImGui::Image(mEnvTextures[mEnvIndex].prefiltered, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                auto texture = mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 2];
+                mGUI->SetImageMipLevel(texture, curItem);
+                float width = static_cast<float>(texture->GetWidth() >> curItem);
+                float height = static_cast<float>(texture->GetHeight() >> curItem);
+                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -500,9 +493,10 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(900.0f, 5.0f), ImGuiCond_Once);
         ImGui::Begin("BRDF Lookup Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("BRDF Lookup Image");
-                float width = static_cast<float>(mBRDFLookupTexture->GetWidth());
-                float height = static_cast<float>(mBRDFLookupTexture->GetHeight());
-                ImGui::Image(mBRDFLookupTexture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                auto texture = mEnvTexture[ENV_TEX_TOTAL - 1];
+                float width = static_cast<float>(texture->GetWidth());
+                float height = static_cast<float>(texture->GetHeight());
+                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -530,9 +524,9 @@ void PbrExample::Render(void) {
     Render::gCommand->ClearDepth(Render::gDepthStencil);
 
     mPbrPass->PreviousRender((PbrPass::State)mAppSettings.pbrPassState);
-    mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex], mTextureHeap, mEnvIndex);
+    mPbrPass->Render(mCurrentFrame, mDrawables[mDrawIndex]);
     if (mAppSettings.enableSkybox) {
-        mSkyboxPass->Render(mCurrentFrame, mTextureHeap, mEnvIndex);
+        mSkyboxPass->Render(mCurrentFrame, mTextureHeap, ENV_TEX_COUNT * mSettings.envIndex);
     }
     mGUI->Draw(mCurrentFrame, renderTargets[mCurrentFrame]);
 

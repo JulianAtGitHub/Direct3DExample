@@ -49,6 +49,8 @@ private:
 
     static constexpr uint32_t LIGHT_COUNT = 5;
     static constexpr uint32_t ENV_COUNT = 3;
+    static constexpr uint32_t ENV_TEX_COUNT = 3;
+    static constexpr uint32_t ENV_TEX_TOTAL = ENV_TEX_COUNT * ENV_COUNT + 1;
     static std::string WindowTitle;
 
     void UpdateGUI(float second);
@@ -64,16 +66,15 @@ private:
     bool                    mIsRotating;
     int64_t                 mLastMousePos;
     int64_t                 mCurrentMousePos;
-    uint32_t                mEnvIndex;
     bool                    mDirtyFlag;
 
     AppSettings             mAppSettings;
     SettingsCB              mSettings;
     LightCB                 mLights[LIGHT_COUNT];
+    MatValuesCB             mMatValues;
 
     Render::GPUBuffer      *mLightsBuffer;
-    Environment             mEnvTextures[ENV_COUNT];
-    Render::PixelBuffer    *mBRDFLookupTexture;
+    Render::PixelBuffer    *mEnvTexture[ENV_TEX_TOTAL];
     Render::DescriptorHeap *mTextureHeap;
 
     Utils::Timer            mTimer;

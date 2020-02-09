@@ -20,27 +20,26 @@ public:
         StateMax
     };
 
+    const static uint32_t ENV_TEX_MAX = 16;
+    const static uint32_t MAT_TEX_MAX = 16;
+
     PbrPass(void);
     ~PbrPass(void);
 
     void PreviousRender(State state);
-    void Render(uint32_t currentFrame, PbrDrawable *drawable, Render::DescriptorHeap *texHeap, uint32_t envIndex);
+    void Render(uint32_t currentFrame, PbrDrawable *drawable);
 
 private:
     enum RootSignatureSlot {
         SettingsSlot = 0,
         TransformSlot,
-        MaterialSlot,
+        MatValuesSlot,
         LightsSlot,
-        IrradianceTexSlot,
-        BlurredEnvTexSlot,
-        BRDFLookupTexSlot,
-        NormalTexSlot,
-        AlbdoTexSlot,
-        MetalnessTexSlot,
-        RoughnessTexSlot,
-        AOTexSlot,
+        MaterialsSlot,
+        MatTexsSlot,
+        EnvTexsSlot,
         SamplerSlot,
+        Sampler1Slot,
         SlotCount
     };
 

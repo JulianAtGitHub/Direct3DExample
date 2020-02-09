@@ -63,8 +63,8 @@ SkyboxPass::~SkyboxPass(void) {
 
 void SkyboxPass::Initialize(void) {
     mRootSignature = new Render::RootSignature(Render::RootSignature::Graphics, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-    mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-    mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+    mRootSignature->SetDescriptor(0, D3D12_ROOT_PARAMETER_TYPE_CBV, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    mRootSignature->SetDescriptorTable(1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
     mRootSignature->SetDescriptorTable(2, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
     mRootSignature->Create();
 
@@ -129,7 +129,7 @@ void SkyboxPass::Render(uint32_t currentFrame, Render::DescriptorHeap *envTexHea
     Render::DescriptorHeap *heaps[] = { envTexHeap, mSamplerHeap };
     Render::gCommand->SetDescriptorHeaps(heaps, _countof(heaps));
     Render::gCommand->SetGraphicsRootConstantBufferView(0, mConstBuffer->GetGPUAddress(0, currentFrame));
-    Render::gCommand->SetGraphicsRootDescriptorTable(1, envTexHeap->GetHandle(2 + 3 * envTexIndex));
+    Render::gCommand->SetGraphicsRootDescriptorTable(1, envTexHeap->GetHandle(envTexIndex));
     Render::gCommand->SetGraphicsRootDescriptorTable(2, mSamplerHeap->GetHandle(0));
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(mVertexBufferView, mIndexBufferView);
