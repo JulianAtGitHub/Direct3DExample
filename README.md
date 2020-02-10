@@ -1,11 +1,19 @@
 # DirectX Examples
+
+- Native Direct3D 12
+- Native DirectX Raytracing
+- Integrate With Assimp
+- Integrate With Dear Imgui
+- GLTF support
+
+## PBR
+A Raster example of PBR implementation on D3D12.
+- Implement based on [SIGGRAPH 2012 Course: Practical Physically Based Shading in Film and Game Production](https://blog.selfshadow.com/publications/s2012-shading-course/#course_content)
+![Result of display](https://github.com/JulianAtGitHub/Direct3DExample/blob/master/pbrshot.jpg)
+
 ## Raytracing
 A DXR path tracing example with a simple framework to learn and understand raytracing concept.
-
 - Implement Monte Carlo pathtracing
-- Native DirectX Raytracing
-- Integrate With Dear Imgui
-
 ![Result of display](https://github.com/JulianAtGitHub/Direct3DExample/blob/master/screenshot.jpg)
 
 **Requirements**
@@ -13,15 +21,6 @@ A DXR path tracing example with a simple framework to learn and understand raytr
 - Windows 10 SDK version 10.0.17763.0 or newer.
 - DXR supported GPU: NVIDIA Turing or Volta GPU or newer.
 - Visual Studio 2017 v15.8.6+.
-
-## PBR
-A Raster example of PBR implementation on D3D12.
-
-- Implement based on [SIGGRAPH 2012 Course: Practical Physically Based Shading in Film and Game Production](https://blog.selfshadow.com/publications/s2012-shading-course/#course_content)
-- Using Direct3D 12
-- Integrate With Dear Imgui
-
-![Result of display](https://github.com/JulianAtGitHub/Direct3DExample/blob/master/pbrshot.jpg)
 
 ## Building project
 1. Install python
