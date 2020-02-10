@@ -23,13 +23,14 @@ A DXR path tracing example with a simple framework to learn and understand raytr
 - Visual Studio 2017 v15.8.6+.
 
 ## Building project
-1. Install python
-2. Clone the project
-3. Update sub resources
+1. Install CMake
+2. Install python
+3. Clone the project
+4. Update sub resources
 > 
     cd path/to/root/folder
     python UpdateExternals.py
-4. Open Direct3DExample.sln and select an example project as start up project.
-5. Set work directory to $(OutDir)
-6. Build and run.
+5. Open Direct3DExample.sln and select an example project as start up project.
+6. Set work directory to $(OutDir)
+7. Build and run.
 
