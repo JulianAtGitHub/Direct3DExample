@@ -62,6 +62,7 @@ void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene, Rende
     Render::gCommand->Begin();
     Render::gCommand->UploadBuffer(mMaterialBuffer, 0, materials, mMaterialBuffer->GetBufferSize());
     Render::gCommand->End(true);
+    delete [] materials;
 
     mResourceHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(scene->mImages.size() + envTexCount + 2)); // light buffer + material buffer
 
