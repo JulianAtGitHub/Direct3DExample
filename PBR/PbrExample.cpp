@@ -220,6 +220,18 @@ void PbrExample::Init(HWND hwnd) {
         delete model;
     }
 
+    // DamageHelmet
+    {
+        Utils::Scene *model = Utils::Model::LoadFromFile("..\\..\\Models\\DamagedHelmet\\DamagedHelmet.gltf");
+        ASSERT_PRINT(model);
+
+        PbrDrawable *drawable = new PbrDrawable();
+        drawable->Initialize("DamagedHelmet", model, mLightsBuffer, LIGHT_COUNT, mEnvTexture, ENV_TEX_TOTAL);
+        mDrawables.push_back(drawable);
+
+        delete model;
+    }
+
     mTimer.Reset();
 }
 
