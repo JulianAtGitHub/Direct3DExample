@@ -97,6 +97,8 @@ void PbrDrawable::Initialize(const std::string &name, Utils::Scene *scene, Rende
     }
 
     mShapes = scene->mShapes;
+
+    mTransform = XMLoadFloat4x4(&(scene->mTransform));
 }
 
 void PbrDrawable::Destroy(void) {
@@ -114,13 +116,12 @@ void PbrDrawable::Destroy(void) {
 }
 
 void PbrDrawable::Update(uint32_t currentFrame, Utils::Camera &camera, const SettingsCB &settings, const MatValuesCB &matValues) {
-    XMMATRIX model = XMMatrixIdentity();
     XMMATRIX view = camera.GetViewMatrix();
     XMMATRIX proj = camera.GetProjectMatrix();
 
     TransformCB transform;
-    XMStoreFloat4x4(&(transform.model), model);
-    XMStoreFloat4x4(&(transform.mvp), XMMatrixMultiply(XMMatrixMultiply(model, view), proj));
+    XMStoreFloat4x4(&(transform.model), mTransform);
+    XMStoreFloat4x4(&(transform.mvp), XMMatrixMultiply(XMMatrixMultiply(mTransform, view), proj));
     XMStoreFloat4(&(transform.cameraPos), camera.GetPosition());
 
     mSettingsCB->CopyData(&settings, sizeof(SettingsCB), 0, currentFrame);

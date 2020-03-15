@@ -39,7 +39,7 @@ private:
         MatTexsSlot,
         EnvTexsSlot,
         SamplerSlot,
-        Sampler1Slot,
+        SamplerEnvSlot,
         SlotCount
     };
 
@@ -50,4 +50,5 @@ private:
     Render::GraphicsState  *mGraphicsStates[StateMax];
     Render::DescriptorHeap *mSamplerHeap;
     Render::Sampler        *mSampler;
+    Render::Sampler        *mSamplerEnv;
 };

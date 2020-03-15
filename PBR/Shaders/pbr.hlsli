@@ -29,6 +29,7 @@ Texture2D<float4>               MatTexs[]   : register(t2);
 // change to space1 to avoid resource range overlap
 Texture2D<float4>               EnvTexs[]   : register(t3, space1);
 SamplerState                    Sampler     : register(s0);
+SamplerState                    SamplerEnv  : register(s1, space1);
 
 PSInput VSMain(VSInput input) {
     PSInput ret;
@@ -123,13 +124,13 @@ float4 PSMain(PSInput input) : SV_TARGET {
     Kd *= 1.0f - ps.metallic;
 
     uint irrTexIdx = Settings.envTexCount * Settings.envIndex + 1;
-    float3 irradiance = EnvTexs[irrTexIdx].SampleLevel(Sampler, DirToLatLong(N), 0).rgb;
+    float3 irradiance = EnvTexs[irrTexIdx].SampleLevel(SamplerEnv, DirToLatLong(N), 0).rgb;
     float3 diffuse = irradiance * ps.albdo;
 
     float3 R = reflect(-V, N);
     uint blurredTexIdx = Settings.envTexCount * Settings.envIndex + 2;
-    float3 blurredEnvColor = EnvTexs[blurredTexIdx].SampleLevel(Sampler, DirToLatLong(R), MAX_REFLECTION_LOD * ps.roughness).rgb;
-    float2 envBRDF = EnvTexs[Settings.brdfIndex].SampleLevel(Sampler, float2(NotV, ps.roughness), 0).rg;
+    float3 blurredEnvColor = EnvTexs[blurredTexIdx].SampleLevel(SamplerEnv, DirToLatLong(R), MAX_REFLECTION_LOD * ps.roughness).rgb;
+    float2 envBRDF = EnvTexs[Settings.brdfIndex].SampleLevel(SamplerEnv, float2(NotV, ps.roughness), 0).rg;
     float3 specular = blurredEnvColor * (Ks * envBRDF.x + envBRDF.y);
 
     float3 ambient = (Kd * diffuse + specular) * ps.ocllusion;

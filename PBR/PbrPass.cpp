@@ -17,6 +17,7 @@ PbrPass::PbrPass(void)
 : mRootSignature(nullptr)
 , mSamplerHeap(nullptr)
 , mSampler(nullptr)
+, mSamplerEnv(nullptr)
 {
     Initialize();
 }
@@ -35,7 +36,7 @@ void PbrPass::Initialize(void) {
     mRootSignature->SetDescriptorTable(MatTexsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MAT_TEX_MAX, 2);
     mRootSignature->SetDescriptorTable(EnvTexsSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ENV_TEX_MAX, 3, 1);
     mRootSignature->SetDescriptorTable(SamplerSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
-    mRootSignature->SetDescriptorTable(Sampler1Slot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 1, 1);
+    mRootSignature->SetDescriptorTable(SamplerEnvSlot, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 1, 1);
     mRootSignature->Create();
 
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -68,13 +69,19 @@ void PbrPass::Initialize(void) {
     }
 
     mSamplerHeap = new Render::DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 2);
+
     mSampler = new Render::Sampler();
-    mSampler->SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+    mSampler->SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE_WRAP);
     mSampler->Create(mSamplerHeap->Allocate());
+
+    mSamplerEnv = new Render::Sampler();
+    mSamplerEnv->SetAddressMode(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+    mSamplerEnv->Create(mSamplerHeap->Allocate());
 }
 
 void PbrPass::Destroy(void) {
     DeleteAndSetNull(mSampler);
+    DeleteAndSetNull(mSamplerEnv);
     DeleteAndSetNull(mSamplerHeap);
     for (uint32_t i = 0; i < StateMax; ++i) {
         DeleteAndSetNull(mGraphicsStates[i]);
@@ -103,7 +110,7 @@ void PbrPass::Render(uint32_t currentFrame, PbrDrawable *drawable) {
     Render::gCommand->SetGraphicsRootDescriptorTable(EnvTexsSlot, drawable->GetEnvTexsHandle());
     Render::gCommand->SetGraphicsRootDescriptorTable(MatTexsSlot, drawable->GetMatTexsHandle());
     Render::gCommand->SetGraphicsRootDescriptorTable(SamplerSlot, mSampler->GetHandle());
-
+    Render::gCommand->SetGraphicsRootDescriptorTable(SamplerEnvSlot, mSamplerEnv->GetHandle());
     Render::gCommand->SetPrimitiveType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     Render::gCommand->SetVerticesAndIndices(drawable->GetVertexBufferView(), drawable->GetIndexBufferView());
     const std::vector<Utils::Scene::Shape> &shapes = drawable->GetShapes();
