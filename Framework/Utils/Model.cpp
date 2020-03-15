@@ -8,6 +8,8 @@
 
 namespace Utils {
 
+static const uint32_t aiProcess_NoFlag = 0;
+
 static void PrintMaterialInfo(aiMaterial *material) {
     if (material == nullptr) {
         return;
@@ -62,6 +64,10 @@ Scene::Material::Material(void)
 
 }
 
+Scene::Scene(void) {
+    XMStoreFloat4x4(&mTransform, XMMatrixIdentity());
+}
+
 Scene::~Scene(void) {
     for (auto image : mImages) { delete image; }
     mImages.clear();
@@ -77,7 +83,8 @@ Scene * Model::LoadFromFile(const char *fileName) {
     aiImporter.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
     const aiScene *scene = aiImporter.ReadFile(fileName,
-        aiProcess_CalcTangentSpace 
+        aiProcess_NoFlag
+        | aiProcess_CalcTangentSpace 
         | aiProcess_JoinIdenticalVertices
         | aiProcess_Triangulate
         | aiProcess_GenSmoothNormals
@@ -88,7 +95,7 @@ Scene * Model::LoadFromFile(const char *fileName) {
     );
 
     if (!scene) {
-        Print("Loader: load model %s failed!\n", fileName);
+        Print("Loader: load model %s failed with error %s \n", fileName, aiImporter.GetErrorString());
         return nullptr;
     }
 
@@ -236,6 +243,11 @@ Scene * Model::LoadFromFile(const char *fileName) {
         strcpy(imagePath, resPath);
         strcat(imagePath, images[i].c_str());
         out->mImages[i] = Image::CreateFromFile(imagePath);
+    }
+
+    // transform
+    if (scene->mRootNode) {
+        out->mTransform = *((XMFLOAT4X4 *)&(scene->mRootNode->mTransformation));
     }
 
     return out;

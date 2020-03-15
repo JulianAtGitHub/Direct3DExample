@@ -46,6 +46,7 @@ public:
         bool     isOpacity;
     };
 
+    Scene(void);
     ~Scene(void);
 
     std::vector<Vertex>     mVertices;
@@ -53,6 +54,7 @@ public:
     std::vector<Shape>      mShapes;
     std::vector<Material>   mMaterials;
     std::vector<Image *>    mImages;
+    XMFLOAT4X4              mTransform;
 };
 
 class Model {
