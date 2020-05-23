@@ -217,8 +217,8 @@ void GUILayer::EndFrame(uint32_t frameIdx) {
     const float T = 0.0f;
     XMFLOAT4X4 matrix = XMFLOAT4X4(2.0f/(R-L),   0.0f,           0.0f,       0.0f,
                                    0.0f,         2.0f/(T-B),     0.0f,       0.0f,
-                                   0.0f,         0.0f,           0.5f,       0.0f,
-                                   (R+L)/(L-R),  (T+B)/(B-T),    0.5f,       1.0f);
+                                   0.0f,         0.0f,           1.0f,       0.0f,
+                                   (R+L)/(L-R),  (T+B)/(B-T),    0.0f,       1.0f);
 
     mConstBuffer->CopyData(&matrix, sizeof(XMFLOAT4X4), 0, frameIdx);
 }

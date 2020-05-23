@@ -83,16 +83,17 @@ Scene * Model::LoadFromFile(const char *fileName) {
     aiImporter.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
     const aiScene *scene = aiImporter.ReadFile(fileName,
-        aiProcess_NoFlag
-        | aiProcess_CalcTangentSpace 
-        | aiProcess_JoinIdenticalVertices
-        | aiProcess_Triangulate
-        | aiProcess_GenSmoothNormals
-        | aiProcess_ValidateDataStructure
-        | aiProcess_RemoveRedundantMaterials
-        | aiProcess_SortByPType
-        | aiProcess_FindInvalidData
-    );
+                                                aiProcess_NoFlag
+                                                | aiProcess_FlipUVs
+                                                | aiProcess_CalcTangentSpace 
+                                                | aiProcess_JoinIdenticalVertices
+                                                | aiProcess_Triangulate
+                                                | aiProcess_GenSmoothNormals
+                                                | aiProcess_ValidateDataStructure
+                                                | aiProcess_RemoveRedundantMaterials
+                                                | aiProcess_SortByPType
+                                                | aiProcess_FindInvalidData
+                                                );
 
     if (!scene) {
         Print("Loader: load model %s failed with error %s \n", fileName, aiImporter.GetErrorString());

@@ -51,6 +51,30 @@ INLINE char * WStr2Str(const wchar_t *wstr) {
     return str;
 }
 
+INLINE char * CopyStr(const char *source) {
+    if (!source) {
+        return nullptr;
+    }
+
+    size_t size = strlen(source) + 1;
+    char *dest = new char[size];
+    strcpy_s(dest, size, source);
+
+    return dest;
+}
+
+INLINE wchar_t * CopyWStr(const wchar_t *source) {
+    if (!source) {
+        return nullptr;
+    }
+
+    size_t size = wcslen(source) + 1;
+    wchar_t *dest = new wchar_t[size];
+    wcscpy_s(dest, size, source);
+
+    return dest;
+}
+
 struct CHException : public std::exception {
     CHException(HRESULT hr) {
         sprintf(mStr, "HRESULT of 0x%08X", static_cast<UINT>(hr));
@@ -162,6 +186,10 @@ INLINE void PrintSub(void) {
 #endif // _DEBUG
 
 #define DeleteAndSetNull( obj ) if (obj) { delete obj; obj = nullptr; }
+
+#define DeleteArrayAndSetNull( obj ) if (obj) { delete [] obj; obj = nullptr; }
+
+#define DeleteArray( obj ) if (obj) { delete [] obj; }
 
 #define ReleaseAndSetNull( obj ) if (obj) { obj->Release(); obj = nullptr; }
 

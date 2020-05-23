@@ -100,13 +100,13 @@ inline float2 DirToLatLong(float3 dir) {
     float3 p = normalize(dir);
     float u = (1.0f + atan2(p.x, -p.z) * M_1_PI) * 0.5f; // atan2 => [-PI, PI]
     float v = acos(p.y) * M_1_PI; //  acos => [0, PI]
-    return float2(u, 1.0f - v);
+    return float2(u, v);
 }
 
 inline float3 LatLongToDir(float2 ll) {
     ll = saturate(ll);
     float phi = 2.0f * M_PI * ll.x;
-    float theta = M_PI * (1.0f - ll.y);
+    float theta = M_PI * ll.y;
 
     // spherical coordinate to cartesian coordinate (right-hand)
     float3 dir = float3(-sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi));

@@ -471,7 +471,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 5.0f), ImGuiCond_Once);
         ImGui::Begin("Environment Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Environment Image");
-                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 0], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 0], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -480,7 +480,7 @@ void PbrExample::UpdateGUI(float second) {
         ImGui::SetNextWindowPos(ImVec2(360.0f, 310.0f), ImGuiCond_Once);
         ImGui::Begin("Irradiance Image", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::BeginChild("Irradiance Image");
-                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 1], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(mEnvTexture[mSettings.envIndex * ENV_TEX_COUNT + 1], ImVec2(512.0f, 256.0f), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -496,7 +496,7 @@ void PbrExample::UpdateGUI(float second) {
                 mGUI->SetImageMipLevel(texture, curItem);
                 float width = static_cast<float>(texture->GetWidth() >> curItem);
                 float height = static_cast<float>(texture->GetHeight() >> curItem);
-                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
             ImGui::EndChild();
         ImGui::End();
     }
@@ -508,7 +508,7 @@ void PbrExample::UpdateGUI(float second) {
                 auto texture = mEnvTexture[ENV_TEX_TOTAL - 1];
                 float width = static_cast<float>(texture->GetWidth());
                 float height = static_cast<float>(texture->GetHeight());
-                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+                ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
             ImGui::EndChild();
         ImGui::End();
     }

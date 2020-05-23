@@ -11,8 +11,6 @@ Image * Image::CreateFromFile(const char *filePath, bool hdr2ldr) {
         return nullptr;
     }
 
-    stbi_set_flip_vertically_on_load(1);
-
     if (!hdr2ldr && stbi_is_hdr(filePath)) {
         return CreateHDRImage(filePath);
     } else {
