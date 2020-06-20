@@ -56,18 +56,18 @@ int32_t RayTracingState::AddNodeMask(uint32_t mask) {
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK, object);
 }
 
-int32_t RayTracingState::AddDXILLibrary(const char *shaderFile, const wchar_t *functions[], uint32_t funcCount) {
-    if (!shaderFile || !functions || !funcCount) {
+int32_t RayTracingState::AddDXILLibrary(const void *shader, const wchar_t *functions[], uint32_t funcCount) {
+    if (!shader || !functions || !funcCount) {
         return -1;
     }
 
     ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_DXIL_LIBRARY_DESC *object = new D3D12_DXIL_LIBRARY_DESC;
-    object->DXILLibrary.pShaderBytecode = ReadFileData(shaderFile, object->DXILLibrary.BytecodeLength);
+    object->DXILLibrary.pShaderBytecode = shader;
     object->NumExports = funcCount;
     object->pExports = new D3D12_EXPORT_DESC[funcCount];
     for (uint32_t i = 0; i < funcCount; ++i) {
-        object->pExports[i].Name = functions[i];
+        object->pExports[i].Name = CopyWStr(functions[i]);
         object->pExports[i].ExportToRename = nullptr;
         object->pExports[i].Flags = D3D12_EXPORT_FLAG_NONE;
     }
@@ -83,7 +83,10 @@ int32_t RayTracingState::AddSubObjectToExportsAssociation(uint32_t subObjIndex, 
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = new D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     object->pSubobjectToAssociate = mSubObjects.data() + subObjIndex;
     object->NumExports = exportCount;
-    object->pExports = exports;
+    object->pExports = new LPCWSTR[exportCount];
+    for (uint32_t i = 0; i < exportCount; ++i) {
+        object->pExports[i] = CopyWStr(exports[i]);
+    }
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION, object);
 }
 
@@ -94,9 +97,12 @@ int32_t RayTracingState::AddDXILSubObjectToExportsAssociation(const wchar_t *sub
 
     ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = new D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
-    object->SubobjectToAssociate = subObj;
+    object->SubobjectToAssociate = CopyWStr(subObj);
     object->NumExports = exportCount;
-    object->pExports = exports;
+    object->pExports = new LPCWSTR[exportCount];
+    for (uint32_t i = 0; i < exportCount; ++i) {
+        object->pExports[i] = CopyWStr(exports[i]);
+    }
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION, object);
 }
 
@@ -124,10 +130,10 @@ int32_t RayTracingState::AddHitGroup(const wchar_t *hitGroup, const wchar_t *clo
 
     ASSERT_PRINT(mSubObjects.size() < mSubObjects.capacity());
     D3D12_HIT_GROUP_DESC *object = new D3D12_HIT_GROUP_DESC;
-    object->HitGroupExport = hitGroup;
-    object->ClosestHitShaderImport = closetHit;
-    object->AnyHitShaderImport = anyHit;
-    object->IntersectionShaderImport = intersection;
+    object->HitGroupExport = CopyWStr(hitGroup);
+    object->ClosestHitShaderImport = CopyWStr(closetHit);
+    object->AnyHitShaderImport = CopyWStr(anyHit);
+    object->IntersectionShaderImport = CopyWStr(intersection);
     object->Type = type;
     return AddSubObject(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, object);
 }
@@ -158,7 +164,35 @@ void RayTracingState::CleanupSubObjects(void) {
         switch (subObject.Type) {
         case D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY: {
             D3D12_DXIL_LIBRARY_DESC *object = (D3D12_DXIL_LIBRARY_DESC *)(subObject.pDesc);
-            DeleteAndSetNull(object->pExports);
+            for (uint32_t i = 0; i < object->NumExports; ++i) {
+                DeleteArray(object->pExports[i].Name);
+            }
+            DeleteArrayAndSetNull(object->pExports);
+            DeleteAndSetNull(object);
+        }   break;
+        case D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
+            D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = (D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION *)(subObject.pDesc);
+            for (uint32_t i = 0; i < object->NumExports; ++i) {
+                DeleteArray(object->pExports[i]);
+            }
+            DeleteArrayAndSetNull(object->pExports);
+            DeleteAndSetNull(object);
+        }   break;
+        case D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION: {
+            D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION *object = (D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION *)(subObject.pDesc);
+            DeleteArrayAndSetNull(object->SubobjectToAssociate);
+            for (uint32_t i = 0; i < object->NumExports; ++i) {
+                DeleteArray(object->pExports[i]);
+            }
+            DeleteArrayAndSetNull(object->pExports);
+            DeleteAndSetNull(object);
+        }   break;
+        case D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP: {
+            D3D12_HIT_GROUP_DESC *object = (D3D12_HIT_GROUP_DESC *)(subObject.pDesc);
+            DeleteArrayAndSetNull(object->HitGroupExport);
+            DeleteArrayAndSetNull(object->ClosestHitShaderImport);
+            DeleteArrayAndSetNull(object->AnyHitShaderImport);
+            DeleteArrayAndSetNull(object->IntersectionShaderImport);
             DeleteAndSetNull(object);
         }   break;
         default:
@@ -230,8 +264,7 @@ void RayTracingState::BuildShaderTable(const wchar_t *rayGens[], uint32_t rayGen
     stateProperties->Release();
 }
 
-INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC &desc)
-{
+INLINE void RayTracingState::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC &desc) {
     Printf("\n");
     Printf("--------------------------------------------------------------------\n");
     Print("| D3D12 State Object 0x%llx: ", desc);

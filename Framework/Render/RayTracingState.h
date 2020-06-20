@@ -17,7 +17,7 @@ public:
     int32_t AddGlobalRootSignature(RootSignature *rs);
     int32_t AddLocalRootSignature(RootSignature *rs);
     int32_t AddNodeMask(uint32_t mask);
-    int32_t AddDXILLibrary(const char *shaderFile, const wchar_t *functions[], uint32_t funcCount);
+    int32_t AddDXILLibrary(const void *shader, const wchar_t *functions[], uint32_t funcCount);
     int32_t AddSubObjectToExportsAssociation(uint32_t subObjIndex, const wchar_t *exports[], uint32_t exportCount);
     int32_t AddDXILSubObjectToExportsAssociation(const wchar_t *subObj, const wchar_t *exports[], uint32_t exportCount);
     int32_t AddRayTracingShaderConfig(uint32_t maxPayloadSize, uint32_t maxAttributeSize);

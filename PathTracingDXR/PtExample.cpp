@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "PtExample.h"
+#include "PtMain.h"
 #include <sys/timeb.h>
 
 const static wchar_t *RayGenerationName = L"RayGener";
@@ -437,7 +438,7 @@ void PtExample::CreateRayTracingPipelineState(void) {
                                     PrimaryMissName, PrimaryAnyHitName, PrimaryClosetHitName,
                                     IndirectMissName, IndirectAnyHitName, IndirectClosetHitName,
                                     ShadowMissName, ShadowAnyHitName, ShadowClosetHitName};
-    mRayTracingState->AddDXILLibrary("PtMain.cso", shaderFuncs, _countof(shaderFuncs));
+    mRayTracingState->AddDXILLibrary(gscPtMain, shaderFuncs, _countof(shaderFuncs));
 
     mRayTracingState->AddRayTracingShaderConfig(2 * sizeof(XMFLOAT4), sizeof(XMFLOAT2) /*float2 barycentrics*/);
 
